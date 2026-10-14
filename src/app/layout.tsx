@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans, IBM_Plex_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { CurrencyProvider } from '@/lib/CurrencyContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import GlobalFooterAndBottomBar from '@/components/GlobalFooterAndBottomBar';
 import AIChatSidebar from '@/components/AIChatSidebar';
 import '../styles/tailwind.css';
@@ -29,6 +30,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  interactiveWidget: 'resizes-content',
 };
 
 export const metadata: Metadata = {
@@ -43,17 +46,40 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+import { cookies } from 'next/headers';
+import { LanguageCode } from '@/lib/translations';
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  let initialLanguage: LanguageCode = 'en';
+  try {
+    const cookieStore = await cookies();
+    const langCookie = cookieStore.get('astroparihar_language')?.value;
+    if (langCookie && ['en', 'te', 'hi', 'ta'].includes(langCookie)) {
+      initialLanguage = langCookie as LanguageCode;
+    } else {
+      const googtrans = cookieStore.get('googtrans')?.value;
+      if (googtrans) {
+        const parts = googtrans.split('/');
+        const target = parts[parts.length - 1];
+        if (['en', 'te', 'hi', 'ta'].includes(target)) {
+          initialLanguage = target as LanguageCode;
+        }
+      }
+    }
+  } catch (_e) {}
+
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} ${ibmPlexMono.variable}`}>
+    <html lang={initialLanguage} data-lang={initialLanguage} className={`${plusJakartaSans.variable} ${ibmPlexMono.variable}`} suppressHydrationWarning>
       <body className={plusJakartaSans.className} suppressHydrationWarning>
         <AuthProvider>
-          <CurrencyProvider>
-            {children}
-            <GlobalFooterAndBottomBar />
-            <AIChatSidebar />
-            <Toaster position="top-center" richColors closeButton />
-          </CurrencyProvider>
+          <LanguageProvider initialLanguage={initialLanguage}>
+            <CurrencyProvider>
+              {children}
+              <GlobalFooterAndBottomBar />
+              <AIChatSidebar />
+              <Toaster position="top-center" richColors closeButton />
+            </CurrencyProvider>
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

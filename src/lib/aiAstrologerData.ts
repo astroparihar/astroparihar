@@ -1750,7 +1750,11 @@ function deduplicateAstrologers(astros: AIAstrologer[]): AIAstrologer[] {
 export const DEFAULT_AI_ASTROLOGERS: AIAstrologer[] = deduplicateAstrologers([
   ...RAW_DEFAULT_AI_ASTROLOGERS,
   ...DEFAULT_REMEDY_ASTROLOGERS,
-]);
+]).map((a) => ({
+  ...a,
+  pricePerMin: 7, // Fixed ₹7/min Call in India (controlled via admin dashboard)
+  pricePerMinUSD: 0.15, // Fixed $0.15/min Call Abroad (controlled via admin dashboard)
+}));
 
 export { DEFAULT_REMEDY_ASTROLOGERS };
 

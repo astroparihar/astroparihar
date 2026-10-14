@@ -7,10 +7,14 @@ import {
   AIDiscipline,
   normalizeAIAstrologerAvatar,
 } from '@/lib/aiAstrologerData';
+import { getPricingSettings } from '@/lib/settings';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+    const pricing = await getPricingSettings();
+    const fixedPricePerMin = pricing.aiVoicePricePerMinute || 7;
+    const fixedPricePerMinUSD = pricing.aiVoicePricePerMinuteUSD || 0.15;
 
     // 1. Fetch AI Astrologers
     let astrologers: AIAstrologer[] = [];
@@ -19,13 +23,26 @@ export async function GET(req: Request) {
       if (!astSnap.empty) {
         astSnap.forEach((doc: any) => {
           const item = { id: doc.id, ...doc.data() } as AIAstrologer;
-          astrologers.push(normalizeAIAstrologerAvatar(item));
+          const normalized = normalizeAIAstrologerAvatar(item);
+          astrologers.push({
+            ...normalized,
+            pricePerMin: fixedPricePerMin,
+            pricePerMinUSD: fixedPricePerMinUSD,
+          });
         });
       } else {
-        astrologers = [...DEFAULT_AI_ASTROLOGERS];
+        astrologers = DEFAULT_AI_ASTROLOGERS.map((a) => ({
+          ...a,
+          pricePerMin: fixedPricePerMin,
+          pricePerMinUSD: fixedPricePerMinUSD,
+        }));
       }
     } catch (e) {
-      astrologers = [...DEFAULT_AI_ASTROLOGERS];
+      astrologers = DEFAULT_AI_ASTROLOGERS.map((a) => ({
+        ...a,
+        pricePerMin: fixedPricePerMin,
+        pricePerMinUSD: fixedPricePerMinUSD,
+      }));
     }
 
     // 2. Fetch AI Disciplines
@@ -81,6 +98,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
+      pricing,
       astrologers,
       disciplines,
       analytics: {
@@ -193,10 +211,22 @@ export async function POST(req: Request) {
 
     // One-Click Bulk Sync all 50 AI Astrologers & Disciplines to Firestore
     if (action === 'reset_astrologers' || action === 'sync_all_50') {
+      const pricing = await getPricingSettings();
+      const fixedCallRate = pricing.aiVoicePricePerMinute || 7;
+      const fixedCallRateUSD = pricing.aiVoicePricePerMinuteUSD || 0.15;
       const batch = adminDb.batch();
       for (const a of DEFAULT_AI_ASTROLOGERS) {
         const docRef = adminDb.collection('ai_astrologers').doc(a.id);
-        batch.set(docRef, { ...a, updatedAt: new Date().toISOString() }, { merge: true });
+        batch.set(
+          docRef,
+          {
+            ...a,
+            pricePerMin: fixedCallRate,
+            pricePerMinUSD: fixedCallRateUSD,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
       }
       for (const d of DEFAULT_AI_DISCIPLINES) {
         const discRef = adminDb.collection('ai_disciplines').doc(d.id);

@@ -75,7 +75,7 @@ function TalkToAIAstrologerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, userData } = useUserData();
-  const { formatPrice, currencySymbol } = useCurrency();
+  const { formatPrice, currencySymbol, currencyCode } = useCurrency();
 
   const [astrologers, setAstrologers] = useState<AIAstrologer[]>(DEFAULT_AI_ASTROLOGERS);
   const [disciplines, setDisciplines] = useState<AIDiscipline[]>(DEFAULT_AI_DISCIPLINES);
@@ -106,6 +106,8 @@ function TalkToAIAstrologerContent() {
     newUserTrialMinutes: 5,
     aiChatPricePerMinute: 5,
     aiVoicePricePerMinute: 7,
+    aiChatPricePerMinuteUSD: 0.10,
+    aiVoicePricePerMinuteUSD: 0.15,
     aiSessionPackages: [
       { id: 'session-15', minutes: 15, price: 69, label: '15-minute AI session', popular: false },
       { id: 'session-30', minutes: 30, price: 129, label: '30-minute AI session', popular: true },
@@ -420,14 +422,14 @@ function TalkToAIAstrologerContent() {
     const isTrialEligible = trialAllowed > 0 && trialUsed < trialAllowed;
 
     const currentBalance = userData?.walletBalance || 0;
-    const pricePerMin =
-      selectedAstrologer.pricePerMin && selectedAstrologer.pricePerMin !== 20
-        ? selectedAstrologer.pricePerMin
+    const effectiveCallRate =
+      currencyCode === 'USD'
+        ? pricing.aiVoicePricePerMinuteUSD || 0.15
         : pricing.aiVoicePricePerMinute || 7;
 
-    if (!isTrialEligible && currentBalance < pricePerMin) {
+    if (!isTrialEligible && currentBalance < effectiveCallRate) {
       toast.error(
-        `Insufficient balance in wallet (${formatPrice(currentBalance)} available, ${formatPrice(pricePerMin)} required). Redirecting to recharge...`
+        `Insufficient balance in wallet (${formatPrice(currentBalance)} available, ${formatPrice(pricing.aiVoicePricePerMinute || 7, pricing.aiVoicePricePerMinuteUSD || 0.15)} required). Redirecting to recharge...`
       );
       const returnUrl = `/talk-to-ai-astrologer?astrologer=${selectedAstrologer.id}`;
       router.push(`/wallet?redirect=${encodeURIComponent(returnUrl)}`);
@@ -445,6 +447,7 @@ function TalkToAIAstrologerContent() {
           customerName: birthForm.name || user.displayName || 'Devotee',
           customerEmail: user.email || '',
           astrologerId: selectedAstrologer.id,
+          currency: currencyCode,
           language: callLanguage,
           birthDetails: birthForm,
         }),
@@ -548,13 +551,13 @@ function TalkToAIAstrologerContent() {
 
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-[#D4AF37]/30">
                 <span className="text-[10px] uppercase font-bold text-[#F6D075] block tracking-wider">Ask AI Jyotish</span>
-                <span className="text-sm sm:text-base font-black text-white">₹{pricing.aiChatPricePerMinute ?? 5}/min</span>
+                <span className="text-sm sm:text-base font-black text-white">{formatPrice(pricing.aiChatPricePerMinute ?? 5, pricing.aiChatPricePerMinuteUSD ?? 0.10)}/min</span>
                 <span className="text-[10px] text-white/60 block">Live Chat</span>
               </div>
 
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-[#D4AF37]/30">
                 <span className="text-[10px] uppercase font-bold text-[#F6D075] block tracking-wider">AI Voice Call</span>
-                <span className="text-sm sm:text-base font-black text-white">₹{pricing.aiVoicePricePerMinute ?? 7}/min</span>
+                <span className="text-sm sm:text-base font-black text-white">{formatPrice(pricing.aiVoicePricePerMinute ?? 7, pricing.aiVoicePricePerMinuteUSD ?? 0.15)}/min</span>
                 <span className="text-[10px] text-white/60 block">1-on-1 Voice</span>
               </div>
 
@@ -929,9 +932,8 @@ function TalkToAIAstrologerContent() {
                     <div>
                       <div className="text-sm font-bold text-[#C9952B]">
                         {formatPrice(
-                          astro.pricePerMin && astro.pricePerMin !== 20
-                            ? astro.pricePerMin
-                            : pricing.aiVoicePricePerMinute || 7
+                          pricing.aiVoicePricePerMinute || 7,
+                          pricing.aiVoicePricePerMinuteUSD || 0.15
                         )}
                         <span className="text-[10px] font-normal text-muted-foreground">/min</span>
                       </div>
@@ -1087,7 +1089,7 @@ function TalkToAIAstrologerContent() {
                     Consultation Rate
                   </span>
                   <div className="text-base font-bold text-[#C9952B]">
-                    {formatPrice(selectedAstrologer.pricePerMin)}/min
+                    {formatPrice(pricing.aiVoicePricePerMinute || 7, pricing.aiVoicePricePerMinuteUSD || 0.15)}/min
                   </div>
                 </div>
 
@@ -1143,7 +1145,7 @@ function TalkToAIAstrologerContent() {
                       Voice Consultation with {selectedAstrologer.name}
                     </h3>
                     <p className="text-xs text-[#E5D5BA] font-medium">
-                      Rate: <span className="text-[#E5B54F] font-bold">{formatPrice(selectedAstrologer.pricePerMin && selectedAstrologer.pricePerMin !== 20 ? selectedAstrologer.pricePerMin : pricing.aiVoicePricePerMinute || 7)}/min</span> · 24x7 Instant Voice Call
+                      Rate: <span className="text-[#E5B54F] font-bold">{formatPrice(pricing.aiVoicePricePerMinute || 7, pricing.aiVoicePricePerMinuteUSD || 0.15)}/min</span> · 24x7 Instant Voice Call
                     </p>
                   </div>
                 </div>
@@ -1195,8 +1197,8 @@ function TalkToAIAstrologerContent() {
                       ~
                       {Math.floor(
                         (userData?.walletBalance || 0) /
-                          (selectedAstrologer.pricePerMin && selectedAstrologer.pricePerMin !== 20
-                            ? selectedAstrologer.pricePerMin
+                          (currencyCode === 'USD'
+                            ? pricing.aiVoicePricePerMinuteUSD || 0.15
                             : pricing.aiVoicePricePerMinute || 7)
                       )}{' '}
                       mins
@@ -1210,8 +1212,8 @@ function TalkToAIAstrologerContent() {
                   const trialUsed = Number(userData?.trialMinutesUsed) || 0;
                   const isTrial = trialAllowed > 0 && trialUsed < trialAllowed;
                   const effectiveRate =
-                    selectedAstrologer.pricePerMin && selectedAstrologer.pricePerMin !== 20
-                      ? selectedAstrologer.pricePerMin
+                    currencyCode === 'USD'
+                      ? pricing.aiVoicePricePerMinuteUSD || 0.15
                       : pricing.aiVoicePricePerMinute || 7;
 
                   if (isTrial) {
@@ -1236,7 +1238,7 @@ function TalkToAIAstrologerContent() {
                         <div className="flex items-center gap-2">
                           <AlertTriangle size={15} className="shrink-0" />
                           <span>
-                            Min {formatPrice(effectiveRate)} (1 min) required to start.
+                            Min {formatPrice(pricing.aiVoicePricePerMinute || 7, pricing.aiVoicePricePerMinuteUSD || 0.15)} (1 min) required to start.
                           </span>
                         </div>
                         <Link

@@ -167,7 +167,7 @@ export default function FeaturedAstrologers() {
             <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-[#EDE4D5] text-[#713B32] border border-[#E5D9C8] mb-3">
               Verified Expert Astrologers
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#292522]">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#292522] tracking-normal leading-tight">
               Talk to India's <span className="text-gradient-gold">Best Astrologers</span>
             </h2>
             <p className="text-sm text-[#6B5E55] mt-1">

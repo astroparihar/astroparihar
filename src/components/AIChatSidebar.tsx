@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUserData } from '@/lib/useUserData';
+import { useCurrency } from '@/lib/CurrencyContext';
 import AppImage from '@/components/ui/AppImage';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { AIAstrologer } from '@/lib/aiAstrologerData';
@@ -446,9 +447,38 @@ export default function AIChatSidebar() {
   const [selectedCompareYear, setSelectedCompareYear] = useState<number>(new Date().getFullYear());
   const [timelineMilestones, setTimelineMilestones] = useState<TimelineMilestone[]>([]);
 
+  const { currencyCode } = useCurrency();
+  const isUSD = currencyCode === 'USD';
+
   // Dynamic Pricing & Wallet
   const [pricePerPrompt, setPricePerPrompt] = useState<number>(5);
+  const [pricePerPromptUSD, setPricePerPromptUSD] = useState<number>(0.10);
   const [currentWallet, setCurrentWallet] = useState<number>(0);
+
+  const activePromptPrice = isUSD ? pricePerPromptUSD : pricePerPrompt;
+  const activePromptPriceLabel = isUSD ? `$${activePromptPrice.toFixed(2)}` : `₹${activePromptPrice}`;
+
+  // Mobile keyboard visibility & textarea ref
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+    const handleResize = () => {
+      const vh = window.visualViewport?.height || window.innerHeight;
+      setIsKeyboardVisible(vh < window.innerHeight * 0.8);
+    };
+    window.visualViewport.addEventListener('resize', handleResize);
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 150);
+  };
 
   // Prediction Outcome Verification State
   const [pendingVerification, setPendingVerification] = useState<any>(null);
@@ -638,6 +668,9 @@ export default function AIChatSidebar() {
           if (data?.pricePerPrompt !== undefined) {
             setPricePerPrompt(Number(data.pricePerPrompt));
           }
+          if (data?.pricePerPromptUSD !== undefined) {
+            setPricePerPromptUSD(Number(data.pricePerPromptUSD));
+          }
           if (data?.pendingPrediction) {
             setPendingVerification(data.pendingPrediction);
           }
@@ -720,14 +753,14 @@ export default function AIChatSidebar() {
     }
   }, [messages, isOpen]);
 
-  // Focus input when opened
+  // Focus textarea when opened
   useEffect(() => {
-    if (isOpen && user && currentWallet >= pricePerPrompt) {
+    if (isOpen && user && currentWallet >= activePromptPrice) {
       setTimeout(() => {
-        inputRef.current?.focus();
+        textareaRef.current?.focus();
       }, 300);
     }
-  }, [isOpen, user, currentWallet, pricePerPrompt]);
+  }, [isOpen, user, currentWallet, activePromptPrice]);
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -737,7 +770,7 @@ export default function AIChatSidebar() {
       setAlertModal({
         isOpen: true,
         title: 'Sign In to Consult',
-        description: `Please sign in to ask Acharya Parihar. Each consultation prompt costs ₹${pricePerPrompt} from your wallet.`,
+        description: `Please sign in to ask Acharya Parihar. Each consultation prompt costs ${activePromptPriceLabel} from your wallet.`,
         confirmText: 'Sign In Now',
         variant: 'primary',
         action: () => {
@@ -747,7 +780,7 @@ export default function AIChatSidebar() {
       return;
     }
 
-    if (currentWallet < pricePerPrompt) {
+    if (currentWallet < activePromptPrice) {
       setAlertModal({
         isOpen: true,
         title: isTelugu
@@ -758,12 +791,12 @@ export default function AIChatSidebar() {
           ? 'போதிய வாலட் இருப்பு இல்லை'
           : 'Insufficient Wallet Balance',
         description: isTelugu
-          ? `ప్రతి ప్రశ్నకు ₹${pricePerPrompt} అవుతుంది, కానీ మీ అందుబాటులో ఉన్న బ్యాలెన్స్ ₹${currentWallet.toFixed(2)}. సంభాషణ కొనసాగించడానికి దయచేసి రీఛార్జ్ చేయండి.`
+          ? `ప్రతి ప్రశ్నకు ${activePromptPriceLabel} అవుతుంది, కానీ మీ అందుబాటులో ఉన్న బ్యాలెన్స్ ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)}. సంభాషణ కొనసాగించడానికి దయచేసి రీఛార్జ్ చేయండి.`
           : isHindi
-          ? `प्रत्येक प्रश्न की लागत ₹${pricePerPrompt} है, लेकिन आपका उपलब्ध बैलेंस ₹${currentWallet.toFixed(2)} है। बातचीत जारी रखने के लिए कृपया रीचार्ज करें।`
+          ? `प्रत्येक प्रश्न की लागत ${activePromptPriceLabel} है, लेकिन आपका उपलब्ध बैलेंस ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)} है। बातचीत जारी रखने के लिए कृपया रीचार्ज करें।`
           : isTamil
-          ? `ஒவ்வொரு கேள்விக்கும் ₹${pricePerPrompt} தேவை, ஆனால் உங்கள் இருப்பு ₹${currentWallet.toFixed(2)}. தொடர்ந்து பேச தயவுசெய்து ரீசார்ஜ் செய்யவும்.`
-          : `Each prompt costs ₹${pricePerPrompt}, but your available wallet balance is ₹${currentWallet.toFixed(2)}. Please recharge your wallet to continue.`,
+          ? `ஒவ்வொரு கேள்விக்கும் ${activePromptPriceLabel} தேவை, ஆனால் உங்கள் இருப்பு ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)}. தொடர்ந்து பேச தயவுசெய்து ரீசார்ஜ் செய்யவும்.`
+          : `Each prompt costs ${activePromptPriceLabel}, but your available wallet balance is ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)}. Please recharge your wallet to continue.`,
         confirmText: isTelugu
           ? 'వాలెట్ రీఛార్జ్ చేయండి'
           : isHindi
@@ -831,6 +864,7 @@ export default function AIChatSidebar() {
           userId: user.uid,
           userInfo,
           language,
+          currency: currencyCode,
           astrologerId: activeAstrologer?.id || sessionAstrologer.id,
           persona: activeAstrologer?.name || sessionAstrologer.name,
         }),
@@ -969,7 +1003,7 @@ export default function AIChatSidebar() {
     return null;
   }
 
-  const isLowBalance = Boolean(user && currentWallet < pricePerPrompt);
+  const isLowBalance = Boolean(user && currentWallet < activePromptPrice);
 
   return (
     <>
@@ -985,7 +1019,7 @@ export default function AIChatSidebar() {
               className="hidden md:flex items-center gap-2 bg-[#FFFDFC] text-[#292522] px-3.5 py-2 rounded-2xl border border-[#E5D9C8] shadow-xl text-xs font-bold pointer-events-none"
             >
               <Sparkles size={13} className="text-[#25D366]" />
-              <span>Ask AI Jyotish • ₹{pricePerPrompt}/prompt</span>
+              <span>Ask AI Jyotish • {activePromptPriceLabel}/prompt</span>
               <span className="w-2 h-2 rounded-full bg-[#25D366] animate-ping" />
             </motion.div>
           )}
@@ -1175,7 +1209,7 @@ export default function AIChatSidebar() {
                           isLowBalance ? 'text-rose-600' : 'text-[#713B32]'
                         }`}
                       >
-                        ₹{currentWallet.toFixed(2)}
+                        {isUSD ? '$' : '₹'}{currentWallet.toFixed(2)}
                       </span>
                     </div>
                   ) : (
@@ -1187,7 +1221,7 @@ export default function AIChatSidebar() {
 
                 <div className="flex items-center gap-2.5">
                   <span className="px-2 py-0.5 rounded-md bg-[#FFFDFC] border border-[#E5D9C8] text-[11px] font-bold text-[#C9952B]">
-                    ⚡ ₹{pricePerPrompt} / {isTelugu ? 'ప్రశ్న' : isHindi ? 'प्रश्न' : isTamil ? 'கேள்வி' : 'prompt'}
+                    ⚡ {activePromptPriceLabel} / {isTelugu ? 'ప్రశ్న' : isHindi ? 'प्रश्न' : isTamil ? 'கேள்வி' : 'prompt'}
                   </span>
                   {user ? (
                     <Link
@@ -2118,21 +2152,25 @@ export default function AIChatSidebar() {
               </div>
 
               {/* Input Area / Low Balance Alert / Sign In Prompt (WhatsApp Dock #F0F2F5) */}
-              <div className="border-t border-[#D1D7DB] bg-[#F0F2F5]">
+              <div className={`border-t border-[#D1D7DB] bg-[#F0F2F5] transition-all duration-150 ${
+                isKeyboardVisible
+                  ? 'pb-2'
+                  : 'pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+              }`}>
                 {!user ? (
                   /* 1. Guest User Prompt */
                   <div className="p-4 bg-[#F0F2F5] text-center space-y-2">
                     <p className="text-xs text-[#54656F] font-medium">
                       {isTelugu ? (
-                        <>దయచేసి {currentAstrologer.name}తో మాట్లాడటానికి సైన్ ఇన్ చేయండి. ప్రతి ప్రశ్నకు మీ వాలెట్ నుండి <strong className="text-[#075E54]">₹{pricePerPrompt}</strong> ఖర్చు అవుతుంది.</>
+                        <>దయచేసి {currentAstrologer.name}తో మాట్లాడటానికి సైన్ ఇన్ చేయండి. ప్రతి ప్రశ్నకు మీ వాలెట్ నుండి <strong className="text-[#075E54]">{activePromptPriceLabel}</strong> ఖర్చు అవుతుంది.</>
                       ) : isHindi ? (
-                        <>कृपया {currentAstrologer.name} से मार्गदर्शन हेतु साइन इन करें। प्रति प्रश्न आपके वॉलेट से <strong className="text-[#075E54]">₹{pricePerPrompt}</strong> लिए जाएंगे।</>
+                        <>कृपया {currentAstrologer.name} से मार्गदर्शन हेतु साइन इन करें। प्रति प्रश्न आपके वॉलेट से <strong className="text-[#075E54]">{activePromptPriceLabel}</strong> लिए जाएंगे।</>
                       ) : isTamil ? (
-                        <>{currentAstrologer.name} இடம் கேட்க தயவுசெய்து உள்நுழையவும். ஒவ்வொரு கேள்விக்கும் உங்கள் வாலட்டிலிருந்து <strong className="text-[#075E54]">₹{pricePerPrompt}</strong> கழிக்கப்படும்.</>
+                        <>{currentAstrologer.name} இடம் கேட்க தயவுசெய்து உள்நுழையவும். ஒவ்வொரு கேள்விக்கும் உங்கள் வாலட்டிலிருந்து <strong className="text-[#075E54]">{activePromptPriceLabel}</strong> கழிக்கப்படும்.</>
                       ) : isKannada ? (
-                        <>{currentAstrologer.name} ಅವರೊಂದಿಗೆ ಮಾತನಾಡಲು ದಯವಿಟ್ಟು ಸೈನ್ ಇನ್ ಮಾಡಿ. ಪ್ರತಿ ಪ್ರಶ್ನೆಗೆ ನಿಮ್ಮ ವಾಲೆಟ್‌ನಿಂದ <strong className="text-[#075E54]">₹{pricePerPrompt}</strong> ಕಡಿತಗೊಳ್ಳುತ್ತದೆ.</>
+                        <>{currentAstrologer.name} ಅವರೊಂದಿಗೆ ಮಾತನಾಡಲು ದಯವಿಟ್ಟು ಸೈನ್ ಇನ್ ಮಾಡಿ. ಪ್ರತಿ ಪ್ರಶ್ನೆಗೆ ನಿಮ್ಮ ವಾಲೆಟ್‌ನಿಂದ <strong className="text-[#075E54]">{activePromptPriceLabel}</strong> ಕಡಿತಗೊಳ್ಳುತ್ತದೆ.</>
                       ) : (
-                        <>Please sign in to ask {currentAstrologer.name}. Each prompt costs <strong className="text-[#075E54]">₹{pricePerPrompt}</strong> from your wallet.</>
+                        <>Please sign in to ask {currentAstrologer.name}. Each prompt costs <strong className="text-[#075E54]">{activePromptPriceLabel}</strong> from your wallet.</>
                       )}
                     </p>
                     <Link
@@ -2151,22 +2189,22 @@ export default function AIChatSidebar() {
                       <div>
                         <p className="font-bold text-rose-800">
                           {isTelugu
-                            ? `తక్కువ వాలెట్ బ్యాలెన్స్ (లభ్యత: ₹${currentWallet.toFixed(2)})`
+                            ? `తక్కువ వాలెట్ బ్యాలెన్స్ (లభ్యత: ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)})`
                             : isHindi
-                            ? `कम वॉलेट बैलेंस (उपलब्ध: ₹${currentWallet.toFixed(2)})`
+                            ? `कम वॉलेट बैलेंस (उपलब्ध: ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)})`
                             : isTamil
-                            ? `குறைந்த வாலட் இருப்பு (இருப்பு: ₹${currentWallet.toFixed(2)})`
-                            : `Low Wallet Balance (Available: ₹${currentWallet.toFixed(2)})`}
+                            ? `குறைந்த வாலட் இருப்பு (இருப்பு: ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)})`
+                            : `Low Wallet Balance (Available: ${isUSD ? '$' : '₹'}${currentWallet.toFixed(2)})`}
                         </p>
                         <p className="text-[11px] text-rose-700 mt-0.5">
                           {isTelugu ? (
-                            <>ప్రతి ప్రశ్నకు <strong>₹{pricePerPrompt}</strong> అవసరం. చాట్ కొనసాగించడానికి దయచేసి రీఛార్జ్ చేయండి.</>
+                            <>ప్రతి ప్రశ్నకు <strong>{activePromptPriceLabel}</strong> అవసరం. చాట్ కొనసాగించడానికి దయచేసి రీఛార్జ్ చేయండి.</>
                           ) : isHindi ? (
-                            <>प्रत्येक प्रश्न के लिए <strong>₹{pricePerPrompt}</strong> आवश्यक है। चैट जारी रखने के लिए कृपया रीचार्ज करें।</>
+                            <>प्रत्येक प्रश्न के लिए <strong>{activePromptPriceLabel}</strong> आवश्यक है। चैट जारी रखने के लिए कृपया रीचार्ज करें।</>
                           ) : isTamil ? (
-                            <>ஒவ்வொரு கேள்விக்கும் <strong>₹{pricePerPrompt}</strong> தேவை. தொடர்ந்து உரையாட தயவுசெய்து ரீசார்ஜ் செய்யவும்.</>
+                            <>ஒவ்வொரு கேள்விக்கும் <strong>{activePromptPriceLabel}</strong> தேவை. தொடர்ந்து உரையாட தயவுசெய்து ரீசார்ஜ் செய்யவும்.</>
                           ) : (
-                            <>Each prompt requires <strong>₹{pricePerPrompt}</strong>. Please recharge your wallet to continue chatting.</>
+                            <>Each prompt requires <strong>{activePromptPriceLabel}</strong>. Please recharge your wallet to continue chatting.</>
                           )}
                         </p>
                       </div>
@@ -2180,45 +2218,72 @@ export default function AIChatSidebar() {
                     </Link>
                   </div>
                 ) : (
-                  /* 3. Normal Active Input Form (WhatsApp Pill Style) */
-                  <div className="p-3">
+                  /* 3. Normal Active Input Form (WhatsApp Pill Style with Textarea) */
+                  <div className="p-2.5 sm:p-3">
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
                         handleSendMessage();
                       }}
-                      className="flex items-center gap-2"
+                      className="flex items-end gap-2"
                     >
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        placeholder={PLACEHOLDERS_BY_LANG[language] || PLACEHOLDERS_BY_LANG.English}
-                        disabled={loading}
-                        className="flex-1 px-4 py-2.5 rounded-full bg-white border border-[#E9EDEF] text-xs text-[#111B21] placeholder:text-[#667781] outline-none focus:ring-2 focus:ring-[#25D366]/50 shadow-xs font-medium"
-                      />
+                      <div className="relative flex-1 flex items-center bg-white rounded-2xl border border-[#E9EDEF] focus-within:border-[#25D366] focus-within:ring-2 focus-within:ring-[#25D366]/40 shadow-xs transition-all">
+                        <textarea
+                          ref={textareaRef}
+                          rows={1}
+                          value={inputText}
+                          onChange={(e) => setInputText(e.target.value)}
+                          onFocus={handleInputFocus}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          placeholder={PLACEHOLDERS_BY_LANG[language] || PLACEHOLDERS_BY_LANG.English}
+                          disabled={loading}
+                          className="w-full pl-3.5 pr-8 py-2.5 bg-transparent resize-none outline-none text-[16px] sm:text-xs text-[#111B21] placeholder:text-[#667781] font-medium leading-relaxed max-h-[120px] [scrollbar-width:thin]"
+                          style={{ minHeight: '42px' }}
+                        />
+                        {inputText.trim().length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInputText('');
+                              if (textareaRef.current) {
+                                textareaRef.current.style.height = '42px';
+                                textareaRef.current.focus();
+                              }
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#8696A0] hover:text-[#54656F] rounded-full hover:bg-black/5 active:scale-95 transition-all cursor-pointer"
+                            aria-label="Clear input"
+                          >
+                            <X size={15} />
+                          </button>
+                        )}
+                      </div>
+
                       <button
                         type="submit"
                         disabled={!inputText.trim() || loading}
-                        className="w-10 h-10 rounded-full bg-[#25D366] hover:bg-[#1EBE5D] disabled:opacity-40 text-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                        className="w-11 h-11 sm:w-10 sm:h-10 min-w-[44px] min-h-[44px] sm:min-w-[40px] sm:min-h-[40px] rounded-full bg-[#25D366] hover:bg-[#1EBE5D] disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer shrink-0 mb-0.5"
                         aria-label="Send Question"
                       >
-                        <Send size={16} className="translate-x-0.5" />
+                        <Send size={18} className="translate-x-0.5 text-white" />
                       </button>
                     </form>
 
                     <div className="flex items-center justify-between text-[10px] text-[#667781] mt-2 px-1">
                       <span className="font-semibold text-[#075E54]">
                         {isTelugu
-                          ? `⚡ ప్రతి ప్రశ్నకు ₹${pricePerPrompt} తీసివేయబడుతుంది`
+                          ? `⚡ ప్రతి ప్రశ్నకు ${activePromptPriceLabel} తీసివేయబడుతుంది`
                           : isHindi
-                          ? `⚡ प्रति प्रश्न ₹${pricePerPrompt} काटा जाएगा`
+                          ? `⚡ प्रति प्रश्न ${activePromptPriceLabel} काटा जाएगा`
                           : isTamil
-                          ? `⚡ ஒரு கேள்விக்கு ₹${pricePerPrompt} கழிக்கப்படும்`
+                          ? `⚡ ஒரு கேள்விக்கு ${activePromptPriceLabel} கழிக்கப்படும்`
                           : isKannada
-                          ? `⚡ ಪ್ರತಿ ಪ್ರಶ್ನೆಗೆ ₹${pricePerPrompt} ಕಡಿತಗೊಳಿಸಲಾಗುತ್ತದೆ`
-                          : `⚡ ₹${pricePerPrompt} deducted per prompt`}
+                          ? `⚡ ಪ್ರತಿ ಪ್ರಶ್ನೆಗೆ ${activePromptPriceLabel} ಕಡಿತಗೊಳಿಸಲಾಗುತ್ತದೆ`
+                          : `⚡ ${activePromptPriceLabel} deducted per prompt`}
                       </span>
                       <span>
                         {isTelugu

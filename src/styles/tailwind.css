@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,7 +22,7 @@
   --input: #fffdfc;
   --ring: #b88a44;
   --radius: 0.75rem;
-  --font-sans: var(--font-plus-jakarta-sans), sans-serif;
+  --font-sans: var(--font-plus-jakarta-sans), 'Nirmala UI', 'Noto Sans Telugu', 'Noto Sans Devanagari', 'Noto Sans Tamil', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   --terracotta: #713b32;
   --terracotta-dark: #552b24;
@@ -92,7 +94,7 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-sans);
+    font-family: var(--font-sans) !important;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -736,4 +738,136 @@
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+/* Google Translate Clean Custom Integration */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  opacity: 0 !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+#google_translate_element {
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+.skiptranslate:not(.notranslate) {
+  display: none !important;
+}
+
+/* Google Translate / Font tag normalization */
+font {
+  font-family: inherit !important;
+  font-size: 1em !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  vertical-align: baseline !important;
+  display: inline !important;
+}
+
+/* Indic Script Typography Normalization (Telugu, Hindi, Tamil) */
+html[lang='te'],
+html[lang='hi'],
+html[lang='ta'],
+html[data-lang='te'],
+html[data-lang='hi'],
+html[data-lang='ta'],
+html:lang(te),
+html:lang(hi),
+html:lang(ta) {
+  letter-spacing: normal !important;
+}
+
+html[lang='te'] *,
+html[lang='hi'] *,
+html[lang='ta'] *,
+html[data-lang='te'] *,
+html[data-lang='hi'] *,
+html[data-lang='ta'] *,
+html:lang(te) *,
+html:lang(hi) *,
+html:lang(ta) * {
+  letter-spacing: normal !important;
+}
+
+/* Headings scale and line-height control for Indic scripts */
+html[lang='te'] h1,
+html[lang='hi'] h1,
+html[lang='ta'] h1,
+html[data-lang='te'] h1,
+html[data-lang='hi'] h1,
+html[data-lang='ta'] h1 {
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem) !important;
+  line-height: 1.28 !important;
+  word-break: break-word;
+}
+
+html[lang='te'] h2,
+html[lang='hi'] h2,
+html[lang='ta'] h2,
+html[data-lang='te'] h2,
+html[data-lang='hi'] h2,
+html[data-lang='ta'] h2 {
+  font-size: clamp(1.4rem, 2.4vw, 1.95rem) !important;
+  line-height: 1.32 !important;
+  word-break: break-word;
+}
+
+html[lang='te'] h3,
+html[lang='hi'] h3,
+html[lang='ta'] h3,
+html[data-lang='te'] h3,
+html[data-lang='hi'] h3,
+html[data-lang='ta'] h3 {
+  font-size: clamp(1.15rem, 1.8vw, 1.45rem) !important;
+  line-height: 1.36 !important;
+  word-break: break-word;
+}
+
+/* Home page hero headline glow & banner scaling in Indic */
+html[lang='te'] .hero-text-glow,
+html[lang='hi'] .hero-text-glow,
+html[lang='ta'] .hero-text-glow,
+html[data-lang='te'] .hero-text-glow,
+html[data-lang='hi'] .hero-text-glow,
+html[data-lang='ta'] .hero-text-glow {
+  font-size: clamp(1.85rem, 3.4vw, 2.6rem) !important;
+  line-height: 1.25 !important;
+}
+
+/* Header link stability */
+html[lang='te'] nav,
+html[lang='hi'] nav,
+html[lang='ta'] nav,
+html[data-lang='te'] nav,
+html[data-lang='hi'] nav,
+html[data-lang='ta'] nav {
+  font-size: 0.95em;
 }

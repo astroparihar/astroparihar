@@ -1,0 +1,358 @@
+export type LanguageCode = 'en' | 'te' | 'hi' | 'ta';
+
+export interface LanguageOption {
+  code: LanguageCode;
+  name: string;        // 'English', 'Telugu', 'Hindi', 'Tamil'
+  nativeName: string;  // 'English', 'తెలుగు', 'हिन्दी', 'தமிழ்'
+  shortLabel: string;  // 'EN', 'TE', 'HI', 'TA'
+}
+
+export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+  { code: 'en', name: 'English', nativeName: 'English', shortLabel: 'EN' },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', shortLabel: 'TE' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', shortLabel: 'HI' },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', shortLabel: 'TA' },
+];
+
+export const translations: Record<LanguageCode, Record<string, string>> = {
+  en: {
+    // Navigation
+    'nav.home': 'Home',
+    'nav.services': 'Services',
+    'nav.panchang': 'Panchang',
+    'nav.talkToAstrologer': 'Talk to Astrologer',
+    'nav.aiExpertAstrologer': '✦ AI Expert Astrologer',
+    'nav.remedies': 'Remedies',
+    'nav.astrologerLogin': 'Astrologer Login',
+    'nav.signIn': 'Sign In',
+    'nav.signOut': 'Sign Out',
+    'nav.myProfile': 'My Profile',
+    'nav.settings': 'Settings',
+    'nav.wallet': 'Wallet',
+    'nav.activeCall': 'You have an active ongoing call!',
+    'nav.rejoinCall': 'Rejoin Call',
+    'nav.todayPanchangFull': "Today's Full Panchang",
+
+    // Mega Menu Categories
+    'category.freeServices': 'Free Services & Tools',
+    'category.mahadashaGuides': 'Mahadasha Guides',
+    'category.dailyCelestial': 'Daily Celestial Elements',
+    'category.muhuratsTiming': 'Muhurats & Timing Windows',
+
+    // Services
+    'service.janamKundli': 'Janam Kundli',
+    'service.janamKundliDesc': 'Personalized Vedic birth chart & life predictions',
+    'service.kundliMatching': 'Kundli Matching',
+    'service.kundliMatchingDesc': 'Vedic Gun Milan & marital compatibility check',
+    'service.panchang': 'Panchang',
+    'service.panchangDesc': 'Tithi, Nakshatra, Yoga & Shubh Muhurat',
+    'service.dailyHoroscope': 'Daily Horoscope',
+    'service.dailyHoroscopeDesc': 'Daily zodiac forecasts & lucky guidance',
+    'service.meditationGuide': 'Meditation Guide',
+    'service.meditationGuideDesc': 'Mindfulness, mantras & spiritual alignment',
+    'service.fastingPlanner': 'Fasting Planner',
+    'service.fastingPlannerDesc': 'Sacred Vrat schedules, rules & rituals',
+    'service.rahuStabilisation': 'Rahu Mahadasha Stabilisation Guide',
+    'service.rahuStabilisationDesc': 'Harmonize intense Rahu transit & remedies',
+    'service.rahuSurvival': 'Rahu Mahadasha Survival Guide',
+    'service.rahuSurvivalDesc': 'Tactical survival & protective mantras',
+    'service.saniStabilisation': 'Sani Mahadasha Stabilisation Guide',
+    'service.saniStabilisationDesc': 'Saturn discipline, endurance & remedies',
+    'service.saniSurvival': 'Sani Mahadasha Survival Guide',
+    'service.saniSurvivalDesc': 'Navigating Saturn trials & karmic phase',
+
+    // Panchang
+    'panchang.today': 'Today Panchang',
+    'panchang.todayDesc': 'Tithi, Nakshatra, Yoga & Shubh Muhurat',
+    'panchang.tomorrow': 'Tomorrow Panchang',
+    'panchang.tomorrowDesc': 'Advance next-day celestial alignments',
+    'panchang.tithi': 'Tithi',
+    'panchang.tithiDesc': 'Lunar phases & paksha calculations',
+    'panchang.vaar': 'Vaar',
+    'panchang.vaarDesc': 'Seven day lords & planetary deity',
+    'panchang.karana': 'Karana',
+    'panchang.karanaDesc': 'Half-tithi interval for action planning',
+    'panchang.shubhMuhurat': 'Shubh Muhurat',
+    'panchang.shubhMuhuratDesc': 'Auspicious Abhijit & Amrit timing windows',
+    'panchang.rahuKaal': 'Rahu Kaal',
+    'panchang.rahuKaalDesc': 'Inauspicious Rahu periods & cautions',
+    'panchang.choghadiya': 'Choghadiya',
+    'panchang.choghadiyaDesc': 'Day & night 7-fold auspicious divisions',
+    'panchang.hora': 'Hora',
+    'panchang.horaDesc': 'Hourly planetary ruler alignment & tasks',
+
+    // Badges
+    'badge.free': 'Free',
+    'badge.live': 'Live',
+    'badge.auspicious': 'Auspicious',
+    'badge.caution': 'Caution',
+    'badge.advance': 'Advance',
+
+    // Language Selector
+    'lang.selectLanguage': 'Select Language',
+    'lang.languages': 'Languages',
+    'lang.updated': 'Language set to English',
+
+    // Bottom Bar
+    'bar.home': 'Home',
+    'bar.aiExpert': 'AI Expert',
+    'bar.talkToAstro': 'Talk to Astro',
+    'bar.remedies': 'Remedies',
+    'bar.myReports': 'My Reports',
+  },
+  te: {
+    // Navigation
+    'nav.home': 'హోమ్',
+    'nav.services': 'సేవలు',
+    'nav.panchang': 'పంచాంగం',
+    'nav.talkToAstrologer': 'జ్యోతిష్య సలహా',
+    'nav.aiExpertAstrologer': '✦ AI జ్యోతిష్కుడు',
+    'nav.remedies': 'పరిహారాలు',
+    'nav.astrologerLogin': 'జ్యోతిష్య లాగిన్',
+    'nav.signIn': 'లాగిన్',
+    'nav.signOut': 'లాగ్ అవుట్',
+    'nav.myProfile': 'నా ప్రొఫైల్',
+    'nav.settings': 'సెట్టింగ్‌లు',
+    'nav.wallet': 'వాలెట్',
+    'nav.activeCall': 'మీకు యాక్టివ్ కాల్ కొనసాగుతోంది!',
+    'nav.rejoinCall': 'కాల్‌లో చేరండి',
+    'nav.todayPanchangFull': 'నేటి సంపూర్ణ పంచాంగం',
+
+    // Mega Menu Categories
+    'category.freeServices': 'ఉచిత సేవలు & సాధనాలు',
+    'category.mahadashaGuides': 'మహాదశ మార్గదర్శకాలు',
+    'category.dailyCelestial': 'రోజువారీ ఖగోళ అంశాలు',
+    'category.muhuratsTiming': 'ముహూర్తాలు & సమయ వేళలు',
+
+    // Services
+    'service.janamKundli': 'జనన కుండలి',
+    'service.janamKundliDesc': 'వ్యక్తిగత వేద జన్మ పత్రిక & జీవిత ఫలితాలు',
+    'service.kundliMatching': 'కుండలి కలయిక (గుణ మిలన్)',
+    'service.kundliMatchingDesc': 'వేద గుణ మిలన్ & వివాహ అనుకూలత పరిశీలన',
+    'service.panchang': 'పంచాంగం',
+    'service.panchangDesc': 'తిథి, నక్షత్రం, యోగం & శుభ ముహూర్తం',
+    'service.dailyHoroscope': 'దినఫలాలు',
+    'service.dailyHoroscopeDesc': 'రోజువారీ రాశి ఫలితాలు & అదృష్ట సూచనలు',
+    'service.meditationGuide': 'ధ్యాన మార్గదర్శి',
+    'service.meditationGuideDesc': 'మానసిక ప్రశాంతత, మంత్రాలు & ఆధ్యాత్మిక సాధన',
+    'service.fastingPlanner': 'వ్రత ప్రణాళిక',
+    'service.fastingPlannerDesc': 'పవిత్ర వ్రత తేదీలు, నియమాలు & పూజా విధులు',
+    'service.rahuStabilisation': 'రాహు మహాదశ సమతుల్య మార్గదర్శి',
+    'service.rahuStabilisationDesc': 'తీవ్రమైన రాహు సంచార ప్రభావాల శాంతి & పరిహారాలు',
+    'service.rahuSurvival': 'రాహు మహాదశ రక్షణ మార్గదర్శి',
+    'service.rahuSurvivalDesc': 'రక్షణ మంత్రాలు & సంక్షోభ నివారణ ఉపాయాలు',
+    'service.saniStabilisation': 'శని మహాదశ శాంతి మార్గదర్శి',
+    'service.saniStabilisationDesc': 'శని దేవుని అనుగ్రహం, క్రమశిక్షణ & పరిహారాలు',
+    'service.saniSurvival': 'శని మహాదశ రక్షణ మార్గదర్శి',
+    'service.saniSurvivalDesc': 'శని కర్మ పరీక్షల నుండి విముక్తి మార్గాలు',
+
+    // Panchang
+    'panchang.today': 'నేటి పంచాంగం',
+    'panchang.todayDesc': 'తిథి, నక్షత్రం, యోగం & శుభ ముహూర్తం',
+    'panchang.tomorrow': 'రేపటి పంచాంగం',
+    'panchang.tomorrowDesc': 'మరుసటి రోజు ఖగోళ స్థితిగతులు & శుభ వేళలు',
+    'panchang.tithi': 'తిథి',
+    'panchang.tithiDesc': 'చంద్ర దశలు & పక్ష గణనలు',
+    'panchang.vaar': 'వారం',
+    'panchang.vaarDesc': 'ఏడు వారాల అధిపతులు & గ్రహ దేవతలు',
+    'panchang.karana': 'కరణం',
+    'panchang.karanaDesc': 'కార్య సిద్ధి కొరకు అర్థ తిథి విశ్లేషణ',
+    'panchang.shubhMuhurat': 'శుభ ముహూర్తం',
+    'panchang.shubhMuhuratDesc': 'అభిజిత్ & అమృత ఘడియల శుభ సమయాలు',
+    'panchang.rahuKaal': 'రాహు కాలం',
+    'panchang.rahuKaalDesc': 'రాహు కాల సమయాలు & జాగ్రత్తలు',
+    'panchang.choghadiya': 'చోఘడియా',
+    'panchang.choghadiyaDesc': 'పగలు & రాత్రి శుభాశుభ ఘడియలు',
+    'panchang.hora': 'హోర',
+    'panchang.horaDesc': 'ప్రతి గంట గ్రహాధిపత్యం & అనుకూల పనులు',
+
+    // Badges
+    'badge.free': 'ఉచితం',
+    'badge.live': 'ప్రత్యక్షం',
+    'badge.auspicious': 'శుభప్రదం',
+    'badge.caution': 'జాగ్రత్త',
+    'badge.advance': 'ముందస్తు',
+
+    // Language Selector
+    'lang.selectLanguage': 'భాషను ఎంచుకోండి',
+    'lang.languages': 'భాషలు',
+    'lang.updated': 'భాష తెలుగులోకి మార్చబడింది',
+
+    // Bottom Bar
+    'bar.home': 'హోమ్',
+    'bar.aiExpert': 'AI జ్యోతిష్కుడు',
+    'bar.talkToAstro': 'జ్యోతిష్య సలహా',
+    'bar.remedies': 'పరిహారాలు',
+    'bar.myReports': 'నా నివేదికలు',
+  },
+  hi: {
+    // Navigation
+    'nav.home': 'होम',
+    'nav.services': 'सेवाएं',
+    'nav.panchang': 'पंचांग',
+    'nav.talkToAstrologer': 'ज्योतिषी परामर्श',
+    'nav.aiExpertAstrologer': '✦ AI ज्योतिषी',
+    'nav.remedies': 'उपाय',
+    'nav.astrologerLogin': 'ज्योतिषी लॉगिन',
+    'nav.signIn': 'साइन इन',
+    'nav.signOut': 'साइन आउट',
+    'nav.myProfile': 'मेरी प्रोफाइल',
+    'nav.settings': 'सेटिंग्स',
+    'nav.wallet': 'वॉलेट',
+    'nav.activeCall': 'आपकी सक्रिय कॉल चल रही है!',
+    'nav.rejoinCall': 'कॉल में फिर से जुड़ें',
+    'nav.todayPanchangFull': 'आज का संपूर्ण पंचांग',
+
+    // Mega Menu Categories
+    'category.freeServices': 'मुफ्त सेवाएं और उपकरण',
+    'category.mahadashaGuides': 'महादशा गाइड्स',
+    'category.dailyCelestial': 'दैनिक खगोलीय तत्व',
+    'category.muhuratsTiming': 'मुहूर्त और समय सारणी',
+
+    // Services
+    'service.janamKundli': 'जन्म कुंडली',
+    'service.janamKundliDesc': 'व्यक्तिगत वैदिक जन्म पत्रिका और जीवन भविष्यवाणियां',
+    'service.kundliMatching': 'कुंडली मिलान',
+    'service.kundliMatchingDesc': 'वैदिक गुण मिलान और वैवाहिक अनुकूलता',
+    'service.panchang': 'पंचांग',
+    'service.panchangDesc': 'तिथि, नक्षत्र, योग और शुभ मुहूर्त',
+    'service.dailyHoroscope': 'दैनिक राशिफल',
+    'service.dailyHoroscopeDesc': 'दैनिक राशि भविष्य और शुभ मार्गदर्शन',
+    'service.meditationGuide': 'ध्यान मार्गदर्शिका',
+    'service.meditationGuideDesc': 'मानसिक शांति, मंत्र और आध्यात्मिक संरेखण',
+    'service.fastingPlanner': 'व्रत योजनाकार',
+    'service.fastingPlannerDesc': 'पवित्र व्रत अनुसूचियां, नियम और अनुष्ठान',
+    'service.rahuStabilisation': 'राहु महादशा स्थिरीकरण गाइड',
+    'service.rahuStabilisationDesc': 'तीव्र राहु गोचर और उपायों का सामंजस्य',
+    'service.rahuSurvival': 'राहु महादशा सर्वाइवल गाइड',
+    'service.rahuSurvivalDesc': 'रणनीतिक उपाय और सुरक्षात्मक मंत्र',
+    'service.saniStabilisation': 'शनि महादशा स्थिरीकरण गाइड',
+    'service.saniStabilisationDesc': 'शनि अनुशासन, सहनशक्ति और निवारक उपाय',
+    'service.saniSurvival': 'शनि महादशा सर्वाइवल गाइड',
+    'service.saniSurvivalDesc': 'शनि परीक्षणों और कार्मिक चरण का समाधान',
+
+    // Panchang
+    'panchang.today': 'आज का पंचांग',
+    'panchang.todayDesc': 'तिथि, नक्षत्र, योग और शुभ मुहूर्त',
+    'panchang.tomorrow': 'कल का पंचांग',
+    'panchang.tomorrowDesc': 'अगले दिन के खगोलीय योग और शुभ समय',
+    'panchang.tithi': 'तिथि',
+    'panchang.tithiDesc': 'चंद्र कलाएं और पक्ष गणना',
+    'panchang.vaar': 'वार',
+    'panchang.vaarDesc': 'सप्ताह के सात दिन और उनके ग्रह स्वामी',
+    'panchang.karana': 'करण',
+    'panchang.karanaDesc': 'कार्य सिद्धि के लिए अर्ध-तिथि विश्लेषण',
+    'panchang.shubhMuhurat': 'शुभ मुहूर्त',
+    'panchang.shubhMuhuratDesc': 'अभिजीत और अमृत काल की शुभ घड़ियां',
+    'panchang.rahuKaal': 'राहु काल',
+    'panchang.rahuKaalDesc': 'राहु काल का समय और सावधानियां',
+    'panchang.choghadiya': 'चौघड़िया',
+    'panchang.choghadiyaDesc': 'दिन और रात का चौघड़िया मुहूर्त',
+    'panchang.hora': 'होरा',
+    'panchang.horaDesc': 'प्रत्येक घंटे के ग्रह स्वामी और उपयुक्त कार्य',
+
+    // Badges
+    'badge.free': 'मुफ्त',
+    'badge.live': 'लाइव',
+    'badge.auspicious': 'शुभ',
+    'badge.caution': 'सावधानी',
+    'badge.advance': 'अग्रिम',
+
+    // Language Selector
+    'lang.selectLanguage': 'भाषा चुनें',
+    'lang.languages': 'भाषाएं',
+    'lang.updated': 'भाषा हिन्दी में अपडेट हो गई',
+
+    // Bottom Bar
+    'bar.home': 'होम',
+    'bar.aiExpert': 'AI ज्योतिषी',
+    'bar.talkToAstro': 'ज्योतिषी परामर्श',
+    'bar.remedies': 'उपाय',
+    'bar.myReports': 'मेरी रिपोर्ट्स',
+  },
+  ta: {
+    // Navigation
+    'nav.home': 'முகப்பு',
+    'nav.services': 'சேவைகள்',
+    'nav.panchang': 'பஞ்சாங்கம்',
+    'nav.talkToAstrologer': 'ஜோதிடர் ஆலோசனை',
+    'nav.aiExpertAstrologer': '✦ AI ஜோதிடர்',
+    'nav.remedies': 'பரிகாரங்கள்',
+    'nav.astrologerLogin': 'ஜோதிடர் உள்நுழைவு',
+    'nav.signIn': 'உள்நுழைக',
+    'nav.signOut': 'வெளியேறு',
+    'nav.myProfile': 'என் சுயவிவரம்',
+    'nav.settings': 'அமைப்புகள்',
+    'nav.wallet': 'வாலட்',
+    'nav.activeCall': 'உங்களிடம் நேரடி அழைப்பு உள்ளது!',
+    'nav.rejoinCall': 'அழைப்பில் மீண்டும் இணையுங்கள்',
+    'nav.todayPanchangFull': 'இன்றைய முழு பஞ்சாங்கம்',
+
+    // Mega Menu Categories
+    'category.freeServices': 'இலவச சேவைகள் & கருவிகள்',
+    'category.mahadashaGuides': 'மகாதசை வழிகாட்டிகள்',
+    'category.dailyCelestial': 'தினசரி வானியல் கூறுகள்',
+    'category.muhuratsTiming': 'முகூர்த்தங்கள் & நேர விண்டோக்கள்',
+
+    // Services
+    'service.janamKundli': 'ஜனன ஜாதகம்',
+    'service.janamKundliDesc': 'தனிப்பயனாக்கப்பட்ட வேத பிறப்பு ஜாதகம் & கணிப்புகள்',
+    'service.kundliMatching': 'ஜாதகப் பொருத்தம்',
+    'service.kundliMatchingDesc': 'வேத குண பொருத்தம் & திருமண இணக்கம்',
+    'service.panchang': 'பஞ்சாங்கம்',
+    'service.panchangDesc': 'திதி, நட்சத்திரம், யோகம் & சுப முகூர்த்தம்',
+    'service.dailyHoroscope': 'தினசரி ராசிபலன்',
+    'service.dailyHoroscopeDesc': 'தினசரி ராசி முன்னறிவிப்புகள் & அதிர்ஷ்ட வழிகாட்டல்',
+    'service.meditationGuide': 'தியான வழிகாட்டி',
+    'service.meditationGuideDesc': 'மன அமைதி, மந்திரங்கள் & ஆன்மீக வழிகாட்டல்',
+    'service.fastingPlanner': 'விரதத் திட்டமிடுபவர்',
+    'service.fastingPlannerDesc': 'புனித விரத அட்டவணைகள், விதிகள் & சடங்குகள்',
+    'service.rahuStabilisation': 'ராகு மகாதசை நிலைப்படுத்தல் வழிகாட்டி',
+    'service.rahuStabilisationDesc': 'தீவிர ராகு பெயர்ச்சி சமநிலை & பரிகாரங்கள்',
+    'service.rahuSurvival': 'ராகு மகாதசை தற்காப்பு வழிகாட்டி',
+    'service.rahuSurvivalDesc': 'பாதுகாப்பு மந்திரங்கள் & பரிகார உத்திகள்',
+    'service.saniStabilisation': 'சனி மகாதசை நிலைப்படுத்தல் வழிகாட்டி',
+    'service.saniStabilisationDesc': 'சனி ஒழுக்கம், சகிப்புத்தன்மை & பரிகாரங்கள்',
+    'service.saniSurvival': 'சனி மகாதசை தற்காப்பு வழிகாட்டி',
+    'service.saniSurvivalDesc': 'சனி சோதனைகள் & கர்ம வினைகளுக்கான தீர்வு',
+
+    // Panchang
+    'panchang.today': 'இன்றைய பஞ்சாங்கம்',
+    'panchang.todayDesc': 'திதி, நட்சத்திரம், யோகம் & சுப முகூர்த்தம்',
+    'panchang.tomorrow': 'நாளை பஞ்சாங்கம்',
+    'panchang.tomorrowDesc': 'அடுத்த நாள் வானியல் நிலைகள் & சுப நேரம்',
+    'panchang.tithi': 'திதி',
+    'panchang.tithiDesc': 'சந்திர கட்டங்கள் & பக்ஷ கணிப்புகள்',
+    'panchang.vaar': 'வாரம்',
+    'panchang.vaarDesc': 'ஏழு நாட்கள் மற்றும் கிரக அதிபதிகள்',
+    'panchang.karana': 'கரணம்',
+    'panchang.karanaDesc': 'செயல் திட்டமிடலுக்கான அரை திதி இடைவெளி',
+    'panchang.shubhMuhurat': 'சுப முகூர்த்தம்',
+    'panchang.shubhMuhuratDesc': 'அபிஜித் & அமிர்த சுப நேரங்கள்',
+    'panchang.rahuKaal': 'ராகு காலம்',
+    'panchang.rahuKaalDesc': 'ராகு கால நேரம் & எச்சரிக்கைகள்',
+    'panchang.choghadiya': 'சோகடியா',
+    'panchang.choghadiyaDesc': 'பகல் & இரவு சுப நேரப் பகுப்புகள்',
+    'panchang.hora': 'ஹோரை',
+    'panchang.horaDesc': 'ஒவ்வொரு மணிநேர கிரக ஆதிக்கம் & செயல்பாடுகள்',
+
+    // Badges
+    'badge.free': 'இலவசம்',
+    'badge.live': 'நேரலை',
+    'badge.auspicious': 'சுபமானது',
+    'badge.caution': 'எச்சரிக்கை',
+    'badge.advance': 'முன்னதாக',
+
+    // Language Selector
+    'lang.selectLanguage': 'மொழியைத் தேர்ந்தெடுக்கவும்',
+    'lang.languages': 'மொழிகள்',
+    'lang.updated': 'மொழி தமிழுக்கு மாற்றப்பட்டது',
+
+    // Bottom Bar
+    'bar.home': 'முகப்பு',
+    'bar.aiExpert': 'AI ஜோதிடர்',
+    'bar.talkToAstro': 'ஜோதிடர் ஆலோசனை',
+    'bar.remedies': 'பரிகாரங்கள்',
+    'bar.myReports': 'என் அறிக்கைகள்',
+  },
+};

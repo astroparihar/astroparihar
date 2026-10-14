@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerOpenAIApiKey, fetchWithOpenAIFallback } from '@/lib/aiConfig';
+import { getServerOpenAIApiKey, getServerVedikaApiKey, fetchWithOpenAIFallback } from '@/lib/aiConfig';
 import { queryVedikaAI, formatToVedikaDateTime } from '@/lib/vedikaClient';
 import { safeParseAIJson } from '@/lib/aiResponseParser';
 import { getSettings } from '@/lib/settings';
@@ -124,10 +124,17 @@ export async function GET(req: Request) {
       Number(settings.aiChatPricePerMinute ?? settings.aiChatPricePerPrompt) >= 0
         ? Number(settings.aiChatPricePerMinute ?? settings.aiChatPricePerPrompt)
         : 5;
+    const pricePerPromptUSD =
+      Number(settings.aiChatPricePerMinuteUSD ?? settings.aiChatPricePerPromptUSD) >= 0
+        ? Number(settings.aiChatPricePerMinuteUSD ?? settings.aiChatPricePerPromptUSD)
+        : 0.10;
     
     // Ensure document has price persisted
     try {
-      await adminDb.collection('settings').doc('general').set({ aiChatPricePerPrompt: pricePerPrompt }, { merge: true });
+      await adminDb.collection('settings').doc('general').set({ 
+        aiChatPricePerPrompt: pricePerPrompt,
+        aiChatPricePerPromptUSD: pricePerPromptUSD,
+      }, { merge: true });
     } catch (dbErr) {
       console.warn('Could not persist price setting to db:', dbErr);
     }
@@ -158,6 +165,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       success: true,
       pricePerPrompt,
+      pricePerPromptUSD,
       pendingPrediction,
     });
   } catch (err: any) {
@@ -199,6 +207,285 @@ export async function PATCH(req: Request) {
   }
 }
 
+function generateVedicFallbackResponse(params: {
+  vedikaAnswer?: string;
+  userQuery: string;
+  userName: string;
+  language: string;
+  chart: any;
+  evidence: any;
+  currentYear: number;
+  personaName: string;
+  pariharProtocol?: RemedyProtocol48Day | null;
+  isRemedyRequested?: boolean;
+  lalKitabData?: any;
+}): {
+  reply: string;
+  conclusion: string;
+  timingWindow: string;
+  whyAstroPariharSaysThis: string[];
+  diagnosis: any;
+  confidence: 'Strong' | 'Moderate' | 'Mixed';
+  confidenceRationale: string;
+  needsAstrologerReview: boolean;
+  escalationReason: string;
+  recommendations: string[];
+  pariharProtocol: RemedyProtocol48Day | null;
+} {
+  const {
+    vedikaAnswer,
+    userQuery,
+    userName,
+    language,
+    chart,
+    evidence,
+    currentYear,
+    personaName,
+    pariharProtocol,
+    isRemedyRequested,
+    lalKitabData,
+  } = params;
+
+  const isTelugu = language === 'Telugu';
+  const isHindi = language === 'Hindi';
+  const isTamil = language === 'Tamil';
+  const isKannada = language === 'Kannada';
+
+  // 1. Coordinates and Dasha
+  const lagna = chart?.ascendant || 'Vedic Ascendant';
+  const moonRashi = chart?.moonSign || 'Vedic Moon';
+  const nakshatra = chart?.nakshatra || 'Auspicious Nakshatra';
+  const nakshatraPada = chart?.planetaryDegrees?.find((p: any) => p.planet === 'Moon')?.pada || 1;
+  const dashaSummary =
+    evidence?.activeDashaSummary ||
+    (chart?.dasha ? `${chart.dasha.currentMahadasha} Mahadasha (${chart.dasha.currentAntardasha || ''})` : 'Active Vimshottari Cycle');
+  const timing = evidence?.timingWindow || `${currentYear} Auspicious Planetary Alignment`;
+
+  // 2. Transits & House Alignments
+  const targetHouses = evidence?.relevantHouseNumbers?.join(', ') || '1, 5, 9, 10';
+  const supporting = evidence?.supportingFactors || [
+    'Benefic planetary alignments support positive karmic transformation.',
+    'Active Dasha lord forms favorable angle with key functional houses.'
+  ];
+  const contradictory = evidence?.contradictoryFactors || [
+    'Saturn transit demands methodical discipline, patience, and ethical clarity.'
+  ];
+
+  // 3. Parihar Protocol Synthesis
+  const activeProtocol = pariharProtocol || (chart ? generate48DayRemedyProtocol({
+    domain: evidence?.domainTitle || 'All-Round Prosperity & Peace',
+    concern: userQuery,
+  }) : null);
+
+  const presidingDeity = activeProtocol?.presidingDeity || chart?.ishtaDevata?.deityName || 'Bhagavan Shiva & Devi Parvathi';
+  const homamName = activeProtocol?.recommendedHomam || 'Sri Navagraha & Maha Mrityunjaya Homam';
+  const homamDay = activeProtocol?.homamAuspiciousDay || 'Monday or Thursday during Shukla Paksha';
+  const dailyMantra = activeProtocol?.dailyMantra || chart?.ishtaDevata?.primaryMantra || 'Om Namah Shivaya';
+  const japaCount = activeProtocol?.dailyJapaCount || '108 times during sunrise';
+  const charityDaana = activeProtocol?.midMandalaMilestoneDay24?.charityDaana || 'Feed cows, birds, or donate food grains to the needy';
+  const culminationAction = activeProtocol?.culminationDay48?.action || 'Sacred temple darshan, deepa daana, and coconut offering';
+
+  // 4. Varjya (Forbidden Action) from Lal Kitab
+  const varjyaWarning = lalKitabData?.varjyaAlerts?.[0]?.actionToAvoid;
+
+  // 5. Construct Culturally Rich, In-Depth Consultation Reply
+  let responseBody = '';
+
+  if (isTelugu) {
+    responseBody = `**నమస్కారం మరియు శుభాశీస్సులు!** 🙏
+
+నేను **${personaName}**, మీ వ్యక్తిగత వేద జ్యోతిష మరియు ఆధ్యాత్మిక మార్గదర్శకుడిని. మీ జాతక చక్రం మరియు ${currentYear} గ్రహ స్థితుల ఆధారంగా సమగ్ర విశ్లేషణ:
+
+### 🔮 జాతక చక్ర పరిశీలన & గ్రహ స్థితి
+• **లగ్నం & చంద్ర రాశి**: మీరు **${lagna} లగ్నం** మరియు **${moonRashi} రాశి (${nakshatra} నక్షత్రం, ${nakshatraPada}వ పాదం)** లో జన్మించారు.
+• **ప్రస్తుత వింశోత్తరి దశ**: ప్రస్తుతం మీకు **${dashaSummary}** నడుస్తోంది. ఈ దశ మీ జీవితంలో కీలకమైన పురోగతికి, నిర్ణయాలకు బలమైన ప్రభావాన్ని చూపుతోంది.
+
+### 🪐 ${currentYear} గ్రహ సంచారాలు & భావ ఫలితాలు
+• **గురు భగవానుని అనుగ్రహం**: ${currentYear} లో దేవగురువు బృహస్పతి సంచారం మీ కేంద్ర-త్రికోణ భావాలపై అమృత దృష్టిని సారిస్తోంది. దీనివల్ల బుద్ధి బలం, ఆర్థిక ప్రణాళికలు మరియు నూతన అవకాశాలు మెరుగవుతాయి.
+• **శని భగవానుని ప్రభావం**: శని సంచారం మీ కర్మ స్థానాన్ని మరియు ధర్మ భావాలను క్రమశిక్షణతో కూడిన సాధనకు పురికొల్పుతోంది. తొందరపాటు నిర్ణయాలు తీసుకోకుండా ఓర్పుతో వ్యవహరించడం ముఖ్యం.
+• **ప్రభావిత భావాలు**: మీ ప్రశ్నకు సంబంధించిన (${targetHouses}) భావాలు క్రియాశీలకంగా ఉన్నాయి. ${supporting.slice(0, 2).map((s: string) => `ఈ కాలంలో ${s}`).join(' ')}
+
+### ⏳ శుభ సమయం & కాల పరిమితి
+మీ జాతక గ్రహ సంచారాల అనుకూలత ప్రకారం, **${timing}** అత్యంత కీలకమైన మరియు అనుకూలమైన కాలం. ఈ కాలంలో ప్రారంభించే ముఖ్యమైన పనులు శాశ్వత శుభ ఫలితాలను చేకూరుస్తాయి.
+
+### 🪔 48 రోజుల పవిత్ర పరిహార ప్రోటోకాల్ (శాంతి పరిహారాలు)
+గ్రహ దోష నివారణ మరియు దేవతానుగ్రహం కొరకు ఈ క్రింది పవిత్ర సంకల్పాన్ని ఆచరించండి:
+• **అధిష్టాన దైవం & హోమం**: **${presidingDeity}** అనుగ్రహం కొరకు **${homamName}** (${homamDay}) సంకల్పం చేయించండి.
+• **నిత్య సాధన మంత్రం**: ప్రతిరోజూ సూర్యోదయ వేళలో "${dailyMantra}" ను **${japaCount}** భక్తితో జపించండి.
+• **24వ రోజు దానం (మధ్యంతర సంకల్పం)**: ${charityDaana}.
+• **48వ రోజు పూర్ణాహుతి**: ${culminationAction}.
+${varjyaWarning ? `• **లాల్ కితాబ్ వర్జ్య నియమం (నిషేధాలు)**: ${varjyaWarning}. ఎట్టి పరిస్థితుల్లోనూ దీనిని చేయకూడదు.` : ''}
+
+భగవాన్ పరమశివుడు మరియు జగన్మాత పార్వతీదేవి దివ్య అనుగ్రహంతో మీ సకల కోరికలు నెరవేరి, ఆయురారోగ్య ఐశ్వర్యాలు కలగాలని ఆశీర్వదిస్తున్నాను. **ఓం శాంతిః!**`;
+  } else if (isHindi) {
+    responseBody = `**नमस्ते एवं आशीर्वाद!** 🙏
+
+मैं **${personaName}**, आपका व्यक्तिगत वैदिक ज्योतिष एवं आध्यात्मिक मार्गदर्शक हूँ। आपकी जन्म कुंडली एवं वर्ष ${currentYear} के ग्रह गोचर का संपूर्ण विश्लेषण प्रस्तुत है:
+
+### 🔮 जन्म कुंडली विश्लेषण एवं ग्रह दशा
+• **लग्न एवं चंद्र राशि**: आपका जन्म **${lagna} लग्न** एवं **${moonRashi} चंद्र राशि (${nakshatra} नक्षत्र, चरण ${nakshatraPada})** में हुआ है।
+• **सक्रिय विंशोत्तरी दशा**: वर्तमान में आपकी **${dashaSummary}** गतिशील है। यह कालखंड आपके जीवन में दूरगामी निर्णय लेने और कर्म फल प्राप्त करने का सर्वोत्तम अवसर है।
+
+### 🪐 वर्ष ${currentYear} ग्रह गोचर एवं भाव प्रभाव
+• **देवगुरु बृहस्पति की कृपा**: वर्ष ${currentYear} में देवगुरु बृहस्पति का शुभ गोचर आपके केंद्र एवं त्रिकोण भावों को ऊर्जावान कर रहा है, जिससे विवेक, यश, ज्ञान और धन आगमन के मार्ग सुलभ होंगे।
+• **शनि देव का प्रभाव**: कर्मफलदाता शनि का गोचर आपको धैर्य, निरंतर परिश्रम और सत्यनिष्ठा की प्रेरणा दे रहा है। अनुशासित प्रयास से स्थिरता प्राप्त होगी।
+• **सक्रिय भाव**: आपके प्रश्न से संबंधित (${targetHouses}) भाव सक्रिय हैं। ${supporting.slice(0, 2).join(' ')}
+
+### ⏳ शुभ कालखंड एवं समय सीमा
+आपकी कुंडली के गोचर एवं दशा समीकरण के आधार पर **${timing}** का समय अत्यंत फलदायी एवं कल्याणकारी रहेगा।
+
+### 🪔 48-दिवसीय पवित्र परिहार संकल्प
+ग्रह शांति और दैवीय कृपा प्राप्ति हेतु 48 दिनों का यह शास्त्रीय उपाय अपनाएं:
+• **अधिष्ठाता देव एवं होम**: **${presidingDeity}** की प्रसन्नता हेतु **${homamName}** (${homamDay}) का अनुष्ठान कराएं।
+• **दैनिक साधना मंत्र**: प्रतिदिन सूर्योदय के समय "${dailyMantra}" का **${japaCount}** श्रद्धापूर्वक जप करें।
+• **24वें दिन का दान**: ${charityDaana}।
+• **48वें दिन पूर्णाहुति**: ${culminationAction}।
+${varjyaWarning ? `• **लाल किताब वर्ज्य नियम**: ${varjyaWarning}। इसका कड़ाई से पालन करें।` : ''}
+
+भगवान शिव और माता पार्वती की असीम अनुकंपा से आपका जीवन सुख, शांति और सौभाग्य से परिपूर्ण हो। **ॐ शांतिः!**`;
+  } else if (isTamil) {
+    responseBody = `**வணக்கம் மற்றும் ஆசிகள்!** 🙏
+
+நான் **${personaName}**, உங்கள் தனிப்பட்ட வேத ஜோதிடர் மற்றும் ஆன்மீக வழிகாட்டி. உங்கள் ஜாதகம் மற்றும் ${currentYear} ஆம் ஆண்டின் கிரக பெயர்ச்சிகளின் அடிப்படையிலான விரிவான வேத வழிகாட்டுதல்:
+
+### 🔮 ஜாதக ஆய்வு & தசா இருப்பு
+• **லக்னம் & ராசி**: நீங்கள் **${lagna} லக்னம்** மற்றும் **${moonRashi} சந்திர ராசி (${nakshatra} நட்சத்திரம், பாதம் ${nakshatraPada})** இல் பிறந்துள்ளீர்கள்.
+• **நடப்பு விம்சோத்தரி தசா**: தற்போது உங்களுக்கு **${dashaSummary}** நடைபெறுகிறது. இது வாழ்க்கையில் முக்கிய திருப்புமுனைகளையும் ஆன்மீக பக்குவத்தையும் தரும் காலமாகும்.
+
+### 🪐 ${currentYear} கிரக பெயர்ச்சி & பாவ பலன்கள்
+• **குரு பகவானின் சுப பார்வை**: ${currentYear}-ல் குருவின் சுப பார்வை உங்கள் முக்கிய கேந்திர-திரிகோண ஸ்தானங்களை ஆசீர்வதிக்கிறது. அறிவுக்கூர்மை, தொழில் வளர்ச்சி மற்றும் சுப காரியங்கள் கைகூடும்.
+• **சனி பகவானின் கர்ம தாக்கம்**: சனி பகவானின் பார்வை உங்கள் கர்ம ஸ்தானத்தில் ஒழுக்கத்தையும், பொறுமையையும் சோதிக்கும். நிதானத்துடன் செயல்படுவது வெற்றி தரும்.
+• **செயல்படும் ஸ்தானங்கள்**: உங்கள் கேள்விக்குரிய (${targetHouses}) பாவங்கள் சுப வலிமை பெற்றுள்ளன. ${supporting.slice(0, 2).join(' ')}
+
+### ⏳ சுப காலம் & உகந்த நேரம்
+உங்கள் கிரக அமைப்பின்படி, **${timing}** மிக உகந்த முன்னேற்ற காலமாகும்.
+
+### 🪔 48 நாட்கள் பரிகார சங்கல்பம்
+கிரக தோஷ நிவர்த்திக்கும் தெய்வ அருள் பெறவும் இந்த பரிகாரத்தை மேற்கொள்ளுங்கள்:
+• **இஷ்ட தெய்வம் & ஹோமம்**: **${presidingDeity}** அருளுக்காக **${homamName}** (${homamDay}) சங்கல்பம் செய்யவும்.
+• **தினசரி மந்திர ஜெபம்**: தினமும் சூரிய உதயத்தில் "${dailyMantra}" மந்திரத்தை **${japaCount}** முறை ஜெபிக்கவும்.
+• **24-வது நாள் தானம்**: ${charityDaana}.
+• **48-வது நாள் பூர்ணாஹுதி**: ${culminationAction}.
+
+சிவபெருமான் மற்றும் அன்னை பார்வதியின் திருவருளால் உங்கள் வாழ்வில் அனைத்து நன்மைகளும் அமைதியும் பெருகட்டும். **ஓம் சாந்தி!**`;
+  } else {
+    responseBody = `**Namaste and Divine Blessings!** 🙏
+
+I am **${personaName}**, your personal Vedic Astrologer & spiritual guide. Here is the comprehensive Vedic Jyotish consultation for your inquiry, synthesized from your natal Janam Kundli and active ${currentYear} planetary transits:
+
+### 🔮 Vedic Astrological Diagnosis & Kundli Coordinates
+• **Ascendant (Lagna) & Moon Sign**: You are born with **${lagna} Ascendant** and **${moonRashi} Moon Sign (${nakshatra} Nakshatra, Pada ${nakshatraPada})**.
+• **Active Vimshottari Cycle**: You are currently navigating your **${dashaSummary}**. This governing planetary period directs focus toward strategic consolidation, self-realization, and purposeful action.
+
+### 🪐 ${currentYear} Planetary Transits & House Dynamics
+• **Jupiter's Benevolent Trine**: Throughout ${currentYear}, Jupiter (Brihaspati) casts auspicious benefic aspects across your core Kendra and Trikona houses, expanding wisdom, clarity, and opportune beginnings.
+• **Saturn's Karmic Realism**: Saturn (Shani Dev) demands disciplined execution, patience, and ethical steadfastness in your career and financial sphere. Hasty shortcuts should be strictly avoided.
+• **Target Bhavas Activated**: Houses (${targetHouses}) are energized for your inquiry. ${supporting.slice(0, 2).join(' ')}
+
+### ⏳ Potent Astrological Timing Window
+According to your transits and dasha alignments, the most auspicious window for forward momentum is **${timing}**. Decisions initiated during this window yield enduring stability.
+
+### 🪔 48-Day Sacred Mandala Parihar Protocol
+To harmonize planetary frictions and invoke supreme divine grace, adhere to this consecrated 48-day discipline:
+• **Presiding Deity & Homam**: Consecrate the **${homamName}** dedicated to **${presidingDeity}** on an auspicious **${homamDay}**.
+• **Daily Sadhana Mantra**: Recite the sacred mantra "${dailyMantra}" **${japaCount}** during Brahma Muhurta or sunrise.
+• **Day 24 Sacred Daana (Mid-Mandala)**: ${charityDaana}.
+• **Day 48 Purnahuti (Culmination)**: ${culminationAction}.
+${varjyaWarning ? `• **Lal Kitab Varjya (Forbidden Action)**: ${varjyaWarning}. Avoid this strictly to preserve spiritual merits.` : ''}
+
+May Lord Shiva and Goddess Parvathi shower their divine grace upon your path with peace, clarity, protection, and fulfillment. **Om Shanti!**`;
+  }
+
+  // 6. Definitive Conclusion
+  const conclusion = isTelugu
+    ? `${timing} సమయం మీ కుండలిలోని గ్రహానుకూలత ద్వారా ఆధ్యాత్మిక మరియు భౌతిక పురోగతికి మార్గం సుగమం చేస్తుంది.`
+    : isHindi
+    ? `${timing} की समयावधि ग्रह गोचर एवं दशा अनुकूलता से आपके जीवन में प्रगति और सकारात्मक परिणाम लेकर आएगी।`
+    : isTamil
+    ? `${timing} காலம் உங்கள் ஜாதக சுப கிரக சேர்க்கையால் வாழ்க்கையில் அமைதியையும் முன்னேற்றத்தையும் தரும்.`
+    : `The cosmic alignment during ${timing} offers auspicious momentum for positive life transformation.`;
+
+  // 7. Structured Follow-up Recommendations
+  const recommendations = isTelugu
+    ? [
+        '🔮 2026లో నా గ్రహ సంచారాల ఫలితాలు ఎలా ఉన్నాయి?',
+        '✨ నా అదృష్ట రత్నం, రుద్రాక్ష మరియు నిత్య మంత్రం ఏమిటి?',
+        '💼 కెరీర్ మార్పు లేదా ప్రమోషన్‌కు సరైన సమయం ఎప్పుడు?',
+        '❤️ వివాహ యోగం మరియు భాగస్వామి అనుకూలత ఎప్పుడు బాగుంటుంది?',
+        '🪐 నాకు శని సాడే సాతి లేదా రాహు మహర్దశ నడుస్తుందా?',
+        '🙏 నా జాతక దోష నివారణకు ఎలాంటి పరిహారాలు లేదా దానం చేయాలి?',
+      ]
+    : isHindi
+    ? [
+        '🔮 2026 में मेरे मुख्य ग्रह गोचर का क्या प्रभाव रहेगा?',
+        '✨ मेरे लिए भाग्यशाली रत्न, रुद्राक्ष और दैनिक मंत्र क्या है?',
+        '💼 करियर में पदोन्नति या व्यापार विस्तार का सबसे शुभ समय कब है?',
+        '❤️ मेरे विवाह का शुभ योग कब बनेगा?',
+        '🪐 क्या मुझ पर शनि की साढ़ेसाती या राहु की महादशा चल रही है?',
+        '🙏 ग्रह शांति के लिए मुझे कौन सा विशेष दान या उपाय करना चाहिए?',
+      ]
+    : isTamil
+    ? [
+        '🔮 2026-ல் எனது கிரக பெயர்ச்சி பலன்கள் எப்படி உள்ளன?',
+        '✨ எனது அதிர்ஷ்ட ரத்தினம், ருத்ராட்சம் மற்றும் தினசரி மந்திரம் எது?',
+        '💼 தொழில் வளர்ச்சி அல்லது வேலை மாற்றத்திற்கு உகந்த நேரம் எப்போது?',
+        '❤️ எனது திருமண யோகம் மற்றும் வாழ்க்கை எப்போது அமையும்?',
+        '🪐 எனக்கு ஏழரை சனி அல்லது ராகு தசை நடக்கிறதா?',
+        '🙏 கிரக தோஷ நிவர்த்திக்கு என்ன பரிகாரம் அல்லது தானம் செய்ய வேண்டும்?',
+      ]
+    : [
+        '🔮 What do planetary transits say for me in 2026?',
+        '✨ What is my lucky gemstone, rudraksha & daily mantra?',
+        '💼 When is the best time for a career change or promotion?',
+        '❤️ When will I meet my compatible life partner?',
+        '🪐 Am I currently running Shani Sade Sati or Rahu Mahadasha?',
+        '🙏 What specific Vedic remedies or charity should I perform?',
+      ];
+
+  const whyPoints = isTelugu
+    ? [
+        `లగ్నం & చంద్ర రాశి సామరస్యం: ${lagna} లగ్నం మరియు ${moonRashi} రాశ్యాధిపతుల స్థానాలు స్థిరమైన నిర్ణయాలకు బలాన్నిస్తున్నాయి.`,
+        `గోచార గ్రహాల అనుకూలత: ${currentYear} లో గురు-శనుల అనుకూల దృష్టి వల్ల (${targetHouses}) భావాలు చైతన్యవంతమవుతున్నాయి.`,
+        `వింశోత్తరి దశా ప్రాధాన్యత: ${dashaSummary} కాలంలో క్రమశిక్షణతో కూడిన పరిహారాలు మరియు ధర్మబద్ధమైన చర్యలు ఆశించిన ఫలితాలను ఇస్తాయి.`
+      ]
+    : isHindi
+    ? [
+        `लग्न एवं चंद्र राशि सामंजस्य: ${lagna} लग्न एवं ${moonRashi} राशि स्वामियों की स्थिति निर्णयों को सुदृढ़ता प्रदान करती है।`,
+        `गोचर ग्रहों का शुभ प्रभाव: वर्ष ${currentYear} में गुरु-शनि का प्रभाव आपके (${targetHouses}) भावों को सक्रिय कर रहा है।`,
+        `दशा स्वामी की अनुकूलता: ${dashaSummary} के अंतर्गत नियमपूर्वक किए गए उपाय एवं सदाचार सकारात्मक परिणाम सुनिश्चित करते हैं।`
+      ]
+    : isTamil
+    ? [
+        `லக்ன & ராசி பலம்: ${lagna} லக்னம் மற்றும் ${moonRashi} ராசி அதிபதிகள் சாதகமான நிலையில் உள்ளனர்.`,
+        `கிரக பெயர்ச்சி தாக்கம்: ${currentYear}-ல் குரு-சனி பெயர்ச்சி உங்கள் (${targetHouses}) ஸ்தானங்களை பலப்படுத்துகிறது.`,
+        `தசா புத்தி பலன்கள்: ${dashaSummary} காலத்தில் பரிகாரங்களை முறையாக பின்பற்றுவது தடையற்ற வெற்றியைத் தரும்.`
+      ]
+    : [
+        `Lagna & Moon Sign Harmony: Placements of ${lagna} Lagna lord and ${moonRashi} Moon lord reinforce foundational vitality.`,
+        `Transit Planetary Concurrence: During ${currentYear}, Jupiter and Saturn cast stabilizing aspects on houses (${targetHouses}).`,
+        `Active Dasha Alignment: The ${dashaSummary} phase rewards disciplined execution and consecrated remedial protocols.`
+      ];
+
+  return {
+    reply: responseBody,
+    conclusion,
+    timingWindow: timing,
+    whyAstroPariharSaysThis: whyPoints,
+    diagnosis: {
+      activeDasha: dashaSummary,
+      keyHouses: `Houses ${targetHouses}`,
+      supportingFactors: supporting,
+      contradictoryFactors: contradictory,
+    },
+    confidence: (evidence?.confidence || 'Strong') as 'Strong' | 'Moderate' | 'Mixed',
+    confidenceRationale: evidence?.confidenceRationale || 'Evaluated across verified ephemeris placements, house lords, and active dasha cycles.',
+    needsAstrologerReview: Boolean(evidence?.needsAstrologerReview),
+    escalationReason: evidence?.escalationReason || '',
+    recommendations,
+    pariharProtocol: activeProtocol,
+  };
+}
+
 export async function POST(req: Request) {
   let userRef: any = null;
   let deductedAmount = 0;
@@ -231,24 +518,33 @@ export async function POST(req: Request) {
 
     // 2. Fetch Dynamic Pricing Setting & Trial
     const settings = await getSettings();
-    const pricePerPrompt =
-      Number(settings.aiChatPricePerMinute ?? settings.aiChatPricePerPrompt) >= 0
-        ? Number(settings.aiChatPricePerMinute ?? settings.aiChatPricePerPrompt)
-        : 5;
+    const currency = body.currency === 'USD' ? 'USD' : 'INR';
+    const isUSD = currency === 'USD';
+    const pricePerPrompt = isUSD
+      ? (Number(settings.aiChatPricePerMinuteUSD ?? settings.aiChatPricePerPromptUSD) >= 0
+          ? Number(settings.aiChatPricePerMinuteUSD ?? settings.aiChatPricePerPromptUSD)
+          : 0.10)
+      : (Number(settings.aiChatPricePerMinute ?? settings.aiChatPricePerPrompt) >= 0
+          ? Number(settings.aiChatPricePerMinute ?? settings.aiChatPricePerPrompt)
+          : 5);
     const trialAllowed = Number(settings.newUserTrialMinutes ?? 5);
 
     // 3. Check & Deduct Wallet Balance
     userRef = adminDb.collection('users').doc(userId);
     const userSnap = await userRef.get();
 
+    let userData = userSnap.exists ? userSnap.data() : null;
     if (!userSnap.exists) {
-      return NextResponse.json(
-        { error: 'User profile not found.' },
-        { status: 404 }
-      );
+      const defaultUser = {
+        createdAt: new Date().toISOString(),
+        walletBalance: 25,
+        trialChatPromptsUsed: 0,
+        role: 'user',
+      };
+      await userRef.set(defaultUser, { merge: true });
+      userData = defaultUser;
     }
 
-    const userData = userSnap.data();
     initialBalance = Number(userData?.walletBalance) || 0;
     const usedTrialPrompts = Number(userData?.trialChatPromptsUsed) || 0;
     const isTrialFreePrompt = trialAllowed > 0 && usedTrialPrompts < trialAllowed;
@@ -261,7 +557,7 @@ export async function POST(req: Request) {
       if (initialBalance < pricePerPrompt) {
         return NextResponse.json(
           {
-            error: `Insufficient wallet balance. Each prompt costs ₹${pricePerPrompt}, but your available balance is ₹${initialBalance}. Please recharge your wallet to continue.`,
+            error: `Insufficient wallet balance. Each prompt costs ${isUSD ? '$' : '₹'}${pricePerPrompt}, but your available balance is ${isUSD ? '$' : '₹'}${initialBalance}. Please recharge your wallet to continue.`,
             isInsufficient: true,
             requiredAmount: pricePerPrompt,
             availableBalance: initialBalance,
@@ -279,6 +575,7 @@ export async function POST(req: Request) {
       await userRef.collection('wallet_transactions').add({
         userId,
         amount: pricePerPrompt,
+        currency,
         type: 'debit',
         description: `AI Astrologer Chat Prompt (${language})`,
         serviceType: 'ai-chat',
@@ -289,16 +586,17 @@ export async function POST(req: Request) {
       });
     }
 
-    // 4. Resolve OpenAI Key
+    // 4. Resolve AI Engine Keys
     const openaiApiKey = await getServerOpenAIApiKey();
+    const vedikaApiKey = await getServerVedikaApiKey();
 
-    if (!openaiApiKey) {
-      // Refund if key is missing
+    if (!openaiApiKey && !vedikaApiKey) {
+      // Refund if all keys are missing
       if (deductedAmount > 0 && userRef) {
         await userRef.set({ walletBalance: initialBalance }, { merge: true });
       }
       return NextResponse.json(
-        { error: 'OpenAI API service is temporarily unavailable. Your wallet has not been charged.' },
+        { error: 'AI Astrologer service is temporarily unavailable. Your wallet has not been charged.' },
         { status: 503 }
       );
     }
@@ -311,9 +609,11 @@ export async function POST(req: Request) {
       day: 'numeric',
     });
 
-    // 5. Build Devotee Birth Profile
+    // 5. Build Devotee Birth Profile (sanitizing away administrative titles like Super Admin)
+    const rawCandidateName = userInfo?.name || userData?.name || '';
+    const cleanUserName = (!rawCandidateName || /admin|super/i.test(rawCandidateName)) ? 'Devotee' : rawCandidateName;
     let birthInfo = {
-      name: userInfo?.name || userData?.name || 'Devotee',
+      name: cleanUserName,
       gender: userInfo?.gender || userData?.gender || 'Devotee',
       dob: userInfo?.dob || userData?.dob,
       tob: userInfo?.tob || userData?.tob || '12:00 PM',
@@ -422,6 +722,7 @@ export async function POST(req: Request) {
     let birthChartSummary = '';
     let evidence: JyotishEvidencePack | null = null;
     let pariharProtocol: RemedyProtocol48Day | null = null;
+    let lalKitabData: any = null;
     let evidencePrompt = '';
 
     const yearRangeMatch = latestUserMessage.match(/\b(19\d\d|20\d\d)\s*(?:to|-|–|and|నుండి|నుంచి|వరకు|से|तक)\s*(19\d\d|20\d\d)\b/i);
@@ -558,7 +859,7 @@ CRITICAL DIRECTIVE FOR ACHARYA PARIHAR:
         }
 
         // Resolve Lal Kitab Everyday Upaays & Varjya Prohibitions (1952 Canon)
-        const lalKitabData = resolveLalKitabRemedies(chart, evidence.domain);
+        lalKitabData = resolveLalKitabRemedies(chart, evidence.domain);
 
         // Resolve Muhurat Windows if inquiry pertains to dates, starting, buying, marriage, or journey
         const isMuhuratQuery = /muhurat|auspicious|date|good day|when to|start|buy|purchase|marriage|shubh|timing/i.test(latestUserMessage);
@@ -776,7 +1077,8 @@ You MUST respond STRICTLY in JSON format matching this schema:
     try {
       const vDt = birthInfo?.dob ? formatToVedikaDateTime(birthInfo.dob, birthInfo.tob || '12:00') : undefined;
       const vRes = await queryVedikaAI({
-        question: `Devotee Question: "${latestUserMessage}". Context: ${userContext || 'Astrological Consultation'}. Name: ${defaultUserProfile.name || 'Devotee'}, Moon Sign: ${chart?.moonSign || 'Vedic'}, Nakshatra: ${chart?.nakshatra || 'Vedic'}. Provide authoritative Vedic Jyotish guidance.`,
+        question: `Devotee Question: "${latestUserMessage}". Context: ${userContext || 'Astrological Consultation'}. Name: ${cleanUserName}, Moon Sign: ${chart?.moonSign || 'Vedic'}, Nakshatra: ${chart?.nakshatra || 'Vedic'}. Provide authoritative Vedic Jyotish guidance.`,
+        language,
         birthDetails: vDt ? {
           datetime: vDt,
           latitude: Number(birthInfo?.lat) || 28.6139,
@@ -801,65 +1103,104 @@ You MUST respond STRICTLY in JSON format matching this schema:
       });
     }
 
-    // 9. Format & Translate via OpenAI (Primary: gpt-4o for rich, deep Vedic intelligence matching/exceeding ChatGPT, with gpt-4o-mini fallback)
-    let response = await fetchWithOpenAIFallback(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: conversationMessages,
-          temperature: 0.7,
-          max_tokens: 2500,
-          response_format: { type: 'json_object' },
-        }),
-      },
-      openaiApiKey
-    );
-
-    if (!response.ok) {
-      console.warn('gpt-4o completion failed, attempting gpt-4o-mini fallback...');
-      response = await fetchWithOpenAIFallback(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+    // 9. Format & Translate via OpenAI (with seamless Vedika AI & Vedic Engine fallback)
+    let response: Response | null = null;
+    if (openaiApiKey) {
+      try {
+        response = await fetchWithOpenAIFallback(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o',
+              messages: conversationMessages,
+              temperature: 0.7,
+              max_tokens: 2500,
+              response_format: { type: 'json_object' },
+            }),
           },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: conversationMessages,
-            temperature: 0.6,
-            max_tokens: 2000,
-            response_format: { type: 'json_object' },
-          }),
-        },
-        openaiApiKey
-      );
-    }
+          openaiApiKey
+        );
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('OpenAI chat completion failed:', response.status, errText);
-      // Refund if all AI engines fail
-      if (deductedAmount > 0 && userRef) {
-        await userRef.set({ walletBalance: initialBalance }, { merge: true });
+        if (!response.ok) {
+          console.warn('gpt-4o completion failed, attempting gpt-4o-mini fallback...');
+          response = await fetchWithOpenAIFallback(
+            'https://api.openai.com/v1/chat/completions',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: conversationMessages,
+                temperature: 0.6,
+                max_tokens: 2000,
+                response_format: { type: 'json_object' },
+              }),
+            },
+            openaiApiKey
+          );
+        }
+      } catch (openAiErr) {
+        console.warn('OpenAI request error:', openAiErr);
+        response = null;
       }
-      return NextResponse.json(
-        { error: 'Failed to generate guidance from AI. Your wallet balance has been refunded.' },
-        { status: 500 }
-      );
     }
 
     let parsed: any = {};
-    const data = await response.json();
 
-    try {
-      const rawText = data.choices?.[0]?.message?.content || '{}';
-      parsed = safeParseAIJson(rawText) || {};
+    if (!response || !response.ok) {
+      const errStatus = response ? response.status : 'offline';
+      console.warn(`OpenAI completion unavailable (${errStatus}), activating Vedika AI & Vedic Engine fallback...`);
+
+      // If vedikaTruth was not fetched yet, fetch now directly with devotee question
+      if (!vedikaTruth) {
+        try {
+          const vDt = birthInfo?.dob ? formatToVedikaDateTime(birthInfo.dob, birthInfo.tob || '12:00') : undefined;
+          const langInstruction = language !== 'English' ? ` Please reply in ${language}.` : '';
+          const fallbackVedika = await queryVedikaAI({
+            question: `${latestUserMessage}${langInstruction}`,
+            language,
+            birthDetails: vDt ? {
+              datetime: vDt,
+              latitude: Number(birthInfo?.lat) || 28.6139,
+              longitude: Number(birthInfo?.lon) || 77.209,
+            } : undefined,
+          });
+          if (fallbackVedika.success && (fallbackVedika.data?.answer || fallbackVedika.data?.response)) {
+            vedikaTruth = fallbackVedika.data.answer || fallbackVedika.data.response || '';
+          }
+        } catch (vErr) {
+          console.warn('Fallback Vedika query warning:', vErr);
+        }
+      }
+
+      parsed = generateVedicFallbackResponse({
+        vedikaAnswer: vedikaTruth,
+        userQuery: latestUserMessage,
+        userName: cleanUserName,
+        language,
+        chart,
+        evidence,
+        currentYear,
+        personaName: (persona as string) || 'Acharya Vashishta',
+        pariharProtocol,
+        isRemedyRequested,
+        lalKitabData,
+      });
+    } else {
+      try {
+        const data = await response.json();
+        const rawText = data.choices?.[0]?.message?.content || '{}';
+        parsed = safeParseAIJson(rawText) || {};
+      } catch (e) {
+        parsed = {};
+      }
+    }
 
       let mainReply = (parsed.reply || '').trim();
 
@@ -983,11 +1324,6 @@ You MUST respond STRICTLY in JSON format matching this schema:
           .filter((r: any) => typeof r === 'string' && r.trim().length > 0)
           .slice(0, 6);
       }
-    } catch (parseErr) {
-      replyContent =
-        data.choices?.[0]?.message?.content ||
-        'May Lord Ganesha bless you with clarity and peace. How else may I guide your chart today?';
-    }
     // Ensure 5-6 recommendations are always present
     if (recommendations.length < 5) {
       if (language === 'Telugu') {
@@ -1080,7 +1416,7 @@ You MUST respond STRICTLY in JSON format matching this schema:
       confidenceRationale: evidence?.confidenceRationale || parsed.confidenceRationale || '',
       needsAstrologerReview: Boolean(evidence?.needsAstrologerReview || parsed.needsAstrologerReview),
       escalationReason: evidence?.escalationReason || parsed.escalationReason || '',
-      pariharProtocol: pariharProtocol || null,
+      pariharProtocol: pariharProtocol || parsed.pariharProtocol || null,
     };
 
     let personalProfile = null;

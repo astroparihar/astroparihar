@@ -121,6 +121,7 @@ export default function AdminAIPrompts() {
   const [testError, setTestError] = useState<string | null>(null);
 
   const [chatPrice, setChatPrice] = useState<number>(5);
+  const [chatPriceUSD, setChatPriceUSD] = useState<number>(0.10);
   const [savingPrice, setSavingPrice] = useState<boolean>(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -143,6 +144,9 @@ export default function AdminAIPrompts() {
         const pData = await priceRes.json();
         if (pData?.pricePerPrompt !== undefined) {
           setChatPrice(Number(pData.pricePerPrompt));
+        }
+        if (pData?.pricePerPromptUSD !== undefined) {
+          setChatPriceUSD(Number(pData.pricePerPromptUSD));
         }
       }
     } catch (err) {
@@ -206,8 +210,13 @@ export default function AdminAIPrompts() {
     setErrorMessage(null);
     try {
       const { updateSettings } = await import('@/lib/settings');
-      await updateSettings({ aiChatPricePerPrompt: chatPrice, aiChatPricePerMinute: chatPrice });
-      setSuccessMessage(`AI Chat Price successfully updated to ₹${chatPrice} per prompt / minute!`);
+      await updateSettings({
+        aiChatPricePerPrompt: chatPrice,
+        aiChatPricePerMinute: chatPrice,
+        aiChatPricePerPromptUSD: chatPriceUSD,
+        aiChatPricePerMinuteUSD: chatPriceUSD,
+      });
+      setSuccessMessage(`AI Chat Price successfully updated to ₹${chatPrice} ($${chatPriceUSD.toFixed(2)}) per prompt / minute!`);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to update AI chat price');
     } finally {
@@ -303,25 +312,46 @@ export default function AdminAIPrompts() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 pl-10 sm:pl-0">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-[#713B32]">
-              ₹
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={chatPrice}
-              onChange={(e) => setChatPrice(Math.max(0, Number(e.target.value) || 0))}
-              className="w-24 pl-7 pr-3 py-2 rounded-xl bg-white border border-[#E5D9C8] text-sm font-extrabold text-[#292522] focus:ring-2 focus:ring-[#B88A44] outline-none shadow-xs"
-            />
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0 pl-10 sm:pl-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-bold text-[#713B32] uppercase">🇮🇳 INR:</span>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-extrabold text-[#713B32]">
+                ₹
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={chatPrice}
+                onChange={(e) => setChatPrice(Math.max(0, Number(e.target.value) || 0))}
+                className="w-20 pl-6 pr-2 py-1.5 rounded-xl bg-white border border-[#E5D9C8] text-sm font-extrabold text-[#292522] focus:ring-2 focus:ring-[#B88A44] outline-none shadow-xs"
+              />
+            </div>
           </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-bold text-[#C9952B] uppercase">🌐 USD:</span>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-extrabold text-[#C9952B]">
+                $
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={chatPriceUSD}
+                onChange={(e) => setChatPriceUSD(Math.max(0, Number(e.target.value) || 0))}
+                className="w-20 pl-6 pr-2 py-1.5 rounded-xl bg-white border border-[#E5D9C8] text-sm font-extrabold text-[#292522] focus:ring-2 focus:ring-[#B88A44] outline-none shadow-xs"
+              />
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={handleUpdateChatPrice}
             disabled={savingPrice}
-            className="px-4 py-2 rounded-xl bg-[#713B32] hover:bg-[#552B24] text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-[#713B32] hover:bg-[#552B24] text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5 ml-1"
           >
             {savingPrice ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
             <span>{savingPrice ? 'Saving...' : 'Set Price'}</span>

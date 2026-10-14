@@ -265,7 +265,8 @@ Respond ONLY with a valid JSON object matching this schema:
     // 3. Save Summary, Full Transcript, and Complete the Session in Firestore
     const finalDuration = Math.max(durationSeconds, 60);
     const finalBilledMinutes = Math.ceil(finalDuration / 60);
-    const finalTotalAmount = finalBilledMinutes * (sessionData?.pricePerMin || 20);
+    const ratePerMin = sessionData?.pricePerMin || (sessionData?.currency === 'USD' ? 0.15 : 7);
+    const finalTotalAmount = Number((finalBilledMinutes * ratePerMin).toFixed(2));
 
     await sessionRef.update({
       status:

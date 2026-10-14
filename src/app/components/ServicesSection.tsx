@@ -92,7 +92,7 @@ export function RemediesSection({ content }: RemediesSectionProps) {
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-[#EDE4D5] text-[#713B32] border border-[#E5D9C8] shadow-sm">
             {content?.tagline || 'ASHTA-DIGBANDHAN MANDALA'}
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#292522]">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#292522] tracking-normal leading-tight">
             {content?.title || 'Sacred Ashta-Digbandhan'}{' '}
             <span className="text-gradient-gold">
               {content?.titleHighlight || 'Vedic Remedies'}
@@ -197,7 +197,7 @@ export function ComprehensiveServicesSection({
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-[#EDE4D5] text-[#713B32] border border-[#E5D9C8]">
             {comprehensiveSection?.tagline || 'ASTROPARIHAR SERVICES'}
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#292522]">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#292522] tracking-normal leading-tight">
             {comprehensiveSection?.title || 'Our Comprehensive'}{' '}
             <span className="text-gradient-gold">
               {comprehensiveSection?.titleHighlight || 'Vedic Services & Guides'}

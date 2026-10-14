@@ -189,7 +189,7 @@ export default function AICallRoomPage() {
           setSession({
             astrologerName: 'Swami Ji',
             primaryDiscipline: 'Vedic Jyotish',
-            pricePerMin: 20,
+            pricePerMin: 7,
             language: fallbackLang,
             status: 'active',
             birthDetails: {
@@ -212,7 +212,7 @@ export default function AICallRoomPage() {
         setSession({
           astrologerName: 'Swami Ji',
           primaryDiscipline: 'Vedic Jyotish',
-          pricePerMin: 20,
+          pricePerMin: 7,
           language: fallbackLang,
           status: 'active',
           birthDetails: {
@@ -564,7 +564,7 @@ export default function AICallRoomPage() {
           setCurrentBalance(data.remainingBalance);
           setBilledMinutes(data.billedMinutes);
 
-          const pricePerMin = session?.pricePerMin || 20;
+          const pricePerMin = session?.pricePerMin || (session?.currency === 'USD' ? 0.15 : 7);
           if (data.remainingBalance < pricePerMin * 2) {
             setLowBalanceAlert(true);
             toast.warning(
@@ -792,7 +792,7 @@ export default function AICallRoomPage() {
             primaryDiscipline: session?.primaryDiscipline,
             date: new Date().toLocaleDateString('en-GB'),
             duration: `${Math.ceil(Math.max(durationSeconds, 60) / 60)} mins`,
-            billedAmount: (session?.pricePerMin || 20) * Math.ceil(Math.max(durationSeconds, 60) / 60),
+            billedAmount: (session?.pricePerMin || (session?.currency === 'USD' ? 0.15 : 7)) * Math.ceil(Math.max(durationSeconds, 60) / 60),
             status: 'completed',
             summary: data.summary,
             transcript: messages,
@@ -921,7 +921,7 @@ export default function AICallRoomPage() {
           <span className="text-[#3D352A]">|</span>
           <div className="text-xs text-[#D4C3A3]">
             Billed: <span className="font-bold text-[#FFFDFC]">{billedMinutes} min</span> (
-            {formatPrice((session?.pricePerMin || 20) * billedMinutes)})
+            {formatPrice((session?.pricePerMin || (session?.currency === 'USD' ? 0.15 : 7)) * billedMinutes)})
           </div>
         </div>
 

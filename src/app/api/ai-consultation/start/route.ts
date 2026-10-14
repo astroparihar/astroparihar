@@ -30,7 +30,11 @@ export async function POST(req: Request) {
 
     // Dynamic Pricing & Trial settings
     const pricing = await getPricingSettings();
-    const defaultVoiceRate = pricing.aiVoicePricePerMinute || 7;
+    const currency = body.currency === 'USD' ? 'USD' : 'INR';
+    const isUSD = currency === 'USD';
+    const pricePerMin = isUSD
+      ? (pricing.aiVoicePricePerMinuteUSD || 0.15)
+      : (pricing.aiVoicePricePerMinute || 7);
     const trialAllowedMinutes = pricing.newUserTrialMinutes ?? 5;
 
     // 1. Fetch Astrologer Data (From Firestore or fallback defaults)
@@ -48,11 +52,6 @@ export async function POST(req: Request) {
       astrologer =
         DEFAULT_AI_ASTROLOGERS.find((a) => a.id === astrologerId) || DEFAULT_AI_ASTROLOGERS[0];
     }
-
-    // Rate: use dynamic platform voice rate (default ₹7/min) or custom astrologer override if set and != 20
-    const pricePerMin = (astrologer.pricePerMin && astrologer.pricePerMin !== 20) 
-      ? astrologer.pricePerMin 
-      : defaultVoiceRate;
 
     // 2. Validate Customer Wallet Balance via Transaction
     const sessionId = `ai_sess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
@@ -147,7 +146,7 @@ export async function POST(req: Request) {
       } else {
         if (currentBalance < pricePerMin) {
           throw new Error(
-            `Insufficient wallet balance. Minimum ₹${pricePerMin} required to start consultation.`
+            `Insufficient wallet balance. Minimum ${isUSD ? '$' : '₹'}${pricePerMin} required to start consultation.`
           );
         }
 
@@ -167,6 +166,7 @@ export async function POST(req: Request) {
           description: `AI Consultation (1 min) with ${astrologer?.name}`,
           sessionId: sessionId,
           astrologerId: astrologer?.id,
+          currency,
         });
       }
 
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
         voiceId: astrologer?.voiceId || (astrologer?.voiceGender === 'female' ? 'nova' : 'onyx'),
         language,
         pricePerMin,
-        currency: 'INR',
+        currency,
         birthDetails,
         astroContext,
         startTime: new Date().toISOString(),

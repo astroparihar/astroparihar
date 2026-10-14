@@ -68,7 +68,7 @@ export default function TestimonialsSection() {
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-[#EDE4D5] text-[#713B32] border border-[#E5D9C8] mb-4">
             Seeker Reviews
           </span>
-          <h2 className="text-4xl lg:text-5xl font-bold text-[#292522] mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#292522] mb-4 tracking-normal leading-tight">
             What Our <span className="text-gradient-gold">Community Says</span>
           </h2>
           <p className="text-[#6B5E55] font-medium">

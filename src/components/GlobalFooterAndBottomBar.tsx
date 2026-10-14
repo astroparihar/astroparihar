@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, PhoneCall, Sparkles, FileText, Bot, Cpu } from 'lucide-react';
 import LandingFooter from '@/app/components/LandingFooter';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function GlobalFooterAndBottomBar() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   // Exclude bottom bar and footer from admin, astrologer dashboard, active call rooms, and AI platform dashboards
   const isExcluded =
@@ -45,32 +47,32 @@ export default function GlobalFooterAndBottomBar() {
 
   const navItems = [
     {
-      label: 'Home',
+      label: t('bar.home', 'Home'),
       href: '/',
       icon: Home,
       isActive: pathname === '/',
     },
     {
-      label: 'AI Expert',
+      label: t('bar.aiExpert', 'AI Expert'),
       href: '/talk-to-ai-astrologer',
       icon: Bot,
       isActive: pathname?.startsWith('/talk-to-ai-astrologer'),
       showLiveDot: true,
     },
     {
-      label: 'Talk to Astro',
+      label: t('bar.talkToAstro', 'Talk to Astro'),
       href: '/talk-to-astrologer',
       icon: PhoneCall,
       isActive: pathname?.startsWith('/talk-to-astrologer') || pathname?.startsWith('/astrologer/'),
     },
     {
-      label: 'Remedies',
+      label: t('bar.remedies', 'Remedies'),
       href: '/remedies',
       icon: Sparkles,
       isActive: pathname?.startsWith('/remedies'),
     },
     {
-      label: 'My Reports',
+      label: t('bar.myReports', 'My Reports'),
       href: '/my-reports',
       icon: FileText,
       isActive: pathname?.startsWith('/my-reports'),
@@ -99,7 +101,7 @@ export default function GlobalFooterAndBottomBar() {
       {/* 2. Modern Sticky Mobile Bottom Navigation Bar */}
       <nav
         aria-label="Mobile Navigation"
-        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-[#FFFDFC]/95 backdrop-blur-xl border-t border-[#E5D9C8] shadow-[0_-8px_30px_rgba(53,36,51,0.08)] pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1"
+        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-[#FFFDFC]/95 backdrop-blur-xl border-t border-[#E5D9C8] shadow-[0_-8px_30px_rgba(53,36,51,0.08)] pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1 notranslate"
       >
         <div className="max-w-md mx-auto grid grid-cols-6 items-center px-1">
           {navItems.map((item) => {

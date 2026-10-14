@@ -51,7 +51,7 @@ export default function PariharaPlanPromoBanner({ className = '', source = 'reme
               <span className="text-xs text-white/70">· Personalized to Janam Kundli & Dasha</span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-normal leading-tight flex items-center gap-2.5">
               <Flame className="text-[#F6D075] shrink-0" size={28} />
               <span>{title}</span>
             </h3>

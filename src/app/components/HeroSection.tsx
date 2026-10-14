@@ -57,7 +57,7 @@ export default function HeroSection({ content }: HeroSectionProps) {
             >
               {/* Headline */}
               <div className="space-y-4">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight hero-text-glow max-w-xl">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-5xl font-bold text-white tracking-normal leading-tight hero-text-glow max-w-xl">
                   {content?.headline1 !== undefined ? content.headline1 : 'Discover Your'}
                   {content?.headline2 && content.headline2.trim() ? (
                     <span className="block text-gradient-gold">
@@ -79,10 +79,10 @@ export default function HeroSection({ content }: HeroSectionProps) {
               </div>
 
               {/* CTAs */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
                 <Link
                   href="/talk-to-ai-astrologer"
-                  className="group flex items-center gap-2 px-6 py-3.5 rounded-xl font-bold gold-gradient-bg text-white hover:opacity-95 transition-all duration-200 gold-shadow animate-pulse-gold transform hover:-translate-y-0.5"
+                  className="group flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm md:text-base gold-gradient-bg text-white hover:opacity-95 transition-all duration-200 gold-shadow animate-pulse-gold transform hover:-translate-y-0.5 whitespace-nowrap shrink-0"
                 >
                   <Bot size={18} className="animate-pulse" />
                   {content?.primaryBtnText || 'AI Expert Astrologer'}
@@ -90,14 +90,14 @@ export default function HeroSection({ content }: HeroSectionProps) {
                 </Link>
                 <Link
                   href="/talk-to-astrologer"
-                  className="group flex items-center gap-2 px-6 py-3.5 rounded-xl font-bold bg-[#FFFDFC]/10 backdrop-blur-md border border-[#D8B66A]/40 text-white hover:border-[#D8B66A] hover:text-[#D8B66A] transition-all duration-200"
+                  className="group flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm md:text-base bg-[#FFFDFC]/10 backdrop-blur-md border border-[#D8B66A]/40 text-white hover:border-[#D8B66A] hover:text-[#D8B66A] transition-all duration-200 whitespace-nowrap shrink-0"
                 >
                   <Play size={16} />
                   {content?.secondaryBtnText || 'Talk to Astrologer'}
                 </Link>
                 <Link
                   href="/#services"
-                  className="group flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold border border-white/20 text-white/90 hover:bg-white/10 transition-all duration-200"
+                  className="group flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl font-semibold text-xs sm:text-sm border border-white/20 text-white/90 hover:bg-white/10 transition-all duration-200 whitespace-nowrap shrink-0"
                 >
                   ✦ Explore Remedies
                   <ArrowRight

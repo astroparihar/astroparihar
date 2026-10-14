@@ -45,7 +45,7 @@ export default function FeaturedAIAstrologers() {
                 <Zap size={12} className="text-emerald-600" /> Zero Wait Time
               </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#292522] tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#292522] tracking-normal leading-tight">
               Talk to <span className="text-gradient-gold">AI Expert Astrologers</span>
             </h2>
             <p className="text-xs sm:text-sm text-[#6B5E55] font-medium mt-1 max-w-2xl leading-relaxed">
@@ -145,7 +145,7 @@ export default function FeaturedAIAstrologers() {
                   <div>
                     <span className="text-[10px] text-[#6B5E55] font-semibold block leading-none">Rate</span>
                     <span className="text-sm font-bold text-[#713B32]">
-                      {formatPrice(astro.pricePerMin && astro.pricePerMin !== 20 ? astro.pricePerMin : 7)}<span className="text-[11px] font-normal text-[#6B5E55]">/min</span>
+                      {formatPrice(astro.pricePerMin && astro.pricePerMin !== 20 ? astro.pricePerMin : 7, astro.pricePerMinUSD || 0.15)}<span className="text-[11px] font-normal text-[#6B5E55]">/min</span>
                     </span>
                   </div>
 

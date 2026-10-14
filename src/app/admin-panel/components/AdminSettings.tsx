@@ -75,6 +75,9 @@ export default function AdminSettings() {
         aiChatPricePerMinute: data.aiChatPricePerMinute ?? data.aiChatPricePerPrompt ?? 5,
         aiChatPricePerPrompt: data.aiChatPricePerPrompt ?? data.aiChatPricePerMinute ?? 5,
         aiVoicePricePerMinute: data.aiVoicePricePerMinute ?? 7,
+        aiChatPricePerMinuteUSD: data.aiChatPricePerMinuteUSD ?? data.aiChatPricePerPromptUSD ?? 0.10,
+        aiChatPricePerPromptUSD: data.aiChatPricePerPromptUSD ?? data.aiChatPricePerMinuteUSD ?? 0.10,
+        aiVoicePricePerMinuteUSD: data.aiVoicePricePerMinuteUSD ?? 0.15,
         aiSessionPackages:
           data.aiSessionPackages && data.aiSessionPackages.length > 0
             ? data.aiSessionPackages
@@ -116,6 +119,9 @@ export default function AdminSettings() {
       aiChatPricePerMinute: 5,
       aiChatPricePerPrompt: 5,
       aiVoicePricePerMinute: 7,
+      aiChatPricePerMinuteUSD: 0.10,
+      aiChatPricePerPromptUSD: 0.10,
+      aiVoicePricePerMinuteUSD: 0.15,
       aiSessionPackages: DEFAULT_AI_SESSION_PACKAGES,
       humanAstrologerMinRate: 15,
       humanAstrologerMaxRate: 100,
@@ -126,7 +132,7 @@ export default function AdminSettings() {
         'Comprehensive 8-fold Vedic remedial blueprint with personalized Mantras, Yantras, Homas, Gemstones, Rudraksha, Vastu and Temple remedies based on your Janam Kundli.',
       pariharaPlanEnabled: true,
     });
-    toast.info('Restored preset plan values (New-user 5m free, Chat ₹5, Voice ₹7, Sessions ₹69/₹129/₹249, Parihara Plan ₹499). Click Save to apply.');
+    toast.info('Restored preset plan values (India: Chat ₹5/min, Call ₹7/min; Abroad: Chat $0.10/min, Call $0.15/min; Trial 5m free). Click Save to apply.');
   };
 
   const updatePackage = (index: number, patch: Partial<AISessionPackage>) => {
@@ -325,97 +331,197 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          {/* Section 2: AI Astrologer Per-Minute Realtime Rates */}
+          {/* Section 2: AI Astrologer Fixed Consultation Rates (India & Abroad) */}
           <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
             <div className="flex items-center gap-3 pb-3 border-b border-border">
               <div className="p-2.5 bg-accent/10 text-accent rounded-xl">
                 <PhoneCall size={20} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-foreground">AI Astrologer Per-Minute Rates (Live Chat & Voice)</h3>
+                <h3 className="text-base font-bold text-foreground">AI Astrologer Fixed Consultation Rates (Chat & Call)</h3>
                 <p className="text-xs text-muted-foreground">
-                  Base per-minute rates deducted from the user's wallet during AI conversations.
+                  Global fixed per-minute consultation rates for all AI Astrologers in India (₹ INR) and Abroad ($ USD).
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* AI Chat Rate */}
-              <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare size={16} className="text-accent" />
-                    <label className="text-sm font-bold text-foreground">AI Astrologer — Chat</label>
-                  </div>
-                  <span className="text-xs px-2 py-0.5 rounded bg-accent/10 text-accent font-mono font-semibold">
-                    ₹{settings.aiChatPricePerMinute ?? 5}/min
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Cost per minute (or prompt) for text chatting with Acharya Parihar.
-                </p>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-accent">₹</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={settings.aiChatPricePerMinute ?? 5}
-                    onChange={(e) => {
-                      const val = Math.max(0, Number(e.target.value) || 0);
-                      setSettings({
-                        ...settings,
-                        aiChatPricePerMinute: val,
-                        aiChatPricePerPrompt: val,
-                      });
-                    }}
-                    className="w-full pl-8 pr-16 py-2.5 rounded-xl bg-background border border-border text-foreground font-bold text-sm focus:ring-2 focus:ring-accent"
-                  />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
-                    / minute
-                  </span>
-                </div>
-                <span className="text-[11px] text-muted-foreground block">
-                  Specified standard: <strong>₹5/min</strong>.
+            {/* India Rates (INR ₹) */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-accent bg-accent/10 px-2 py-0.5 rounded-md">
+                  🇮🇳 India Rates (INR ₹)
                 </span>
+                <span className="text-xs text-muted-foreground">Applies to users in India</span>
               </div>
 
-              {/* AI Voice Call Rate */}
-              <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PhoneCall size={16} className="text-amber-500" />
-                    <label className="text-sm font-bold text-foreground">AI Astrologer — Voice</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* AI Chat Rate - INR */}
+                <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare size={16} className="text-accent" />
+                      <label className="text-sm font-bold text-foreground">AI Chat Consultation (India)</label>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded bg-accent/10 text-accent font-mono font-semibold">
+                      ₹{settings.aiChatPricePerMinute ?? 5}/min
+                    </span>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-mono font-semibold">
-                    ₹{settings.aiVoicePricePerMinute ?? 7}/min
+                  <p className="text-xs text-muted-foreground">
+                    Fixed per-minute (or prompt) fee for text chat consultation in India.
+                  </p>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-accent">₹</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={settings.aiChatPricePerMinute ?? 5}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        setSettings({
+                          ...settings,
+                          aiChatPricePerMinute: val,
+                          aiChatPricePerPrompt: val,
+                        });
+                      }}
+                      className="w-full pl-8 pr-16 py-2.5 rounded-xl bg-background border border-border text-foreground font-bold text-sm focus:ring-2 focus:ring-accent"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+                      / minute
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    Specified standard: <strong>₹5/min</strong>.
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Per-minute live voice call fee for 1-on-1 audio consultation with AI Astrologers.
-                </p>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-500">₹</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={settings.aiVoicePricePerMinute ?? 7}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        aiVoicePricePerMinute: Math.max(0, Number(e.target.value) || 0),
-                      })
-                    }
-                    className="w-full pl-8 pr-16 py-2.5 rounded-xl bg-background border border-border text-foreground font-bold text-sm focus:ring-2 focus:ring-amber-500"
-                  />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
-                    / minute
+
+                {/* AI Voice Call Rate - INR */}
+                <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PhoneCall size={16} className="text-amber-500" />
+                      <label className="text-sm font-bold text-foreground">AI Call Consultation (India)</label>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-mono font-semibold">
+                      ₹{settings.aiVoicePricePerMinute ?? 7}/min
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Fixed per-minute voice call fee for 1-on-1 audio consultation with AI Astrologers in India.
+                  </p>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-500">₹</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={settings.aiVoicePricePerMinute ?? 7}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          aiVoicePricePerMinute: Math.max(0, Number(e.target.value) || 0),
+                        })
+                      }
+                      className="w-full pl-8 pr-16 py-2.5 rounded-xl bg-background border border-border text-foreground font-bold text-sm focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+                      / minute
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    Specified standard: <strong>₹7/min</strong>.
                   </span>
                 </div>
-                <span className="text-[11px] text-muted-foreground block">
-                  Specified standard: <strong>₹7/min</strong>.
+              </div>
+            </div>
+
+            {/* Abroad Rates (USD $) */}
+            <div className="space-y-3 pt-3 border-t border-border/60">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                  🌐 Abroad Rates (USD $)
                 </span>
+                <span className="text-xs text-muted-foreground">Applies to international users outside India</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* AI Chat Rate - USD */}
+                <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare size={16} className="text-blue-500" />
+                      <label className="text-sm font-bold text-foreground">AI Chat Consultation (Abroad)</label>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-mono font-semibold">
+                      ${(settings.aiChatPricePerMinuteUSD ?? 0.10).toFixed(2)}/min
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Fixed per-minute (or prompt) fee for text chat consultation for international devotees.
+                  </p>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-500">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={settings.aiChatPricePerMinuteUSD ?? 0.10}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        setSettings({
+                          ...settings,
+                          aiChatPricePerMinuteUSD: val,
+                          aiChatPricePerPromptUSD: val,
+                        });
+                      }}
+                      className="w-full pl-8 pr-16 py-2.5 rounded-xl bg-background border border-border text-foreground font-bold text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+                      / minute
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    Specified standard: <strong>$0.10/min</strong>.
+                  </span>
+                </div>
+
+                {/* AI Voice Call Rate - USD */}
+                <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PhoneCall size={16} className="text-emerald-500" />
+                      <label className="text-sm font-bold text-foreground">AI Call Consultation (Abroad)</label>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-mono font-semibold">
+                      ${(settings.aiVoicePricePerMinuteUSD ?? 0.15).toFixed(2)}/min
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Fixed per-minute voice call fee for 1-on-1 audio consultation for international devotees.
+                  </p>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-500">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={settings.aiVoicePricePerMinuteUSD ?? 0.15}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          aiVoicePricePerMinuteUSD: Math.max(0, Number(e.target.value) || 0),
+                        })
+                      }
+                      className="w-full pl-8 pr-16 py-2.5 rounded-xl bg-background border border-border text-foreground font-bold text-sm focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+                      / minute
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    Specified standard: <strong>$0.15/min</strong>.
+                  </span>
+                </div>
               </div>
             </div>
           </div>

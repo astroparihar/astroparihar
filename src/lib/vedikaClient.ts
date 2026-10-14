@@ -236,9 +236,22 @@ export async function queryVedikaAI(params: {
     timezone?: string;
   };
   conversationContext?: any;
+  language?: string;
 }) {
+  const langCode =
+    params.language === 'Telugu' || params.language === 'te'
+      ? 'te'
+      : params.language === 'Hindi' || params.language === 'hi'
+      ? 'hi'
+      : params.language === 'Tamil' || params.language === 'ta'
+      ? 'ta'
+      : params.language === 'Kannada' || params.language === 'kn'
+      ? 'kn'
+      : 'en';
+
   const payload: any = {
     question: params.question,
+    language: langCode,
   };
 
   const now = new Date();

@@ -67,6 +67,12 @@ export default function AdminAIAstrologersTable() {
   const [showDiscModal, setShowDiscModal] = useState(false);
   const [editingDisc, setEditingDisc] = useState<AIDiscipline | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [pricing, setPricing] = useState<any>({
+    aiChatPricePerMinute: 5,
+    aiVoicePricePerMinute: 7,
+    aiChatPricePerMinuteUSD: 0.10,
+    aiVoicePricePerMinuteUSD: 0.15,
+  });
 
   // Centered Confirmation Modals
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
@@ -84,6 +90,7 @@ export default function AdminAIAstrologersTable() {
       if (data.astrologers) setAstrologers(data.astrologers);
       if (data.disciplines) setDisciplines(data.disciplines);
       if (data.analytics) setAnalytics(data.analytics);
+      if (data.pricing) setPricing(data.pricing);
     } catch (err) {
       console.warn('Fallback to defaults:', err);
       setAstrologers(DEFAULT_AI_ASTROLOGERS);
@@ -550,6 +557,34 @@ export default function AdminAIAstrologersTable() {
         </div>
       </div>
 
+      {/* Global Fixed Consultation Pricing Banner */}
+      <div className="bg-gradient-to-r from-[#C9952B]/10 via-[#C9952B]/5 to-transparent border border-[#C9952B]/30 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-[#C9952B]/20 text-[#C9952B] rounded-xl shrink-0">
+            <Sparkles size={20} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-bold text-foreground">Global Fixed AI Consultation Pricing</h4>
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+                Controlled in Settings
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              All AI astrologers use fixed platform consultation rates for India (₹) and Abroad ($).
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 flex-wrap self-start md:self-auto shrink-0">
+          <div className="px-3 py-1.5 rounded-xl bg-card border border-border text-xs font-mono font-bold text-foreground">
+            🇮🇳 Chat: <span className="text-accent">₹{pricing?.aiChatPricePerMinute ?? 5}/min</span> • Call: <span className="text-amber-500">₹{pricing?.aiVoicePricePerMinute ?? 7}/min</span>
+          </div>
+          <div className="px-3 py-1.5 rounded-xl bg-card border border-border text-xs font-mono font-bold text-foreground">
+            🌐 Chat: <span className="text-blue-500">${(pricing?.aiChatPricePerMinuteUSD ?? 0.10).toFixed(2)}/min</span> • Call: <span className="text-emerald-500">${(pricing?.aiVoicePricePerMinuteUSD ?? 0.15).toFixed(2)}/min</span>
+          </div>
+        </div>
+      </div>
+
       {/* Sub-Tab Navigation */}
       <div className="flex items-center gap-3 border-b border-border">
         <button
@@ -676,7 +711,7 @@ export default function AdminAIAstrologersTable() {
                   <th className="p-4">Discipline</th>
                   <th className="p-4">Languages</th>
                   <th className="p-4">Voice / Model</th>
-                  <th className="p-4">Price/min</th>
+                  <th className="p-4">Rate (Call / Chat)</th>
                   <th className="p-4">Availability</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Actions</th>
@@ -742,8 +777,16 @@ export default function AdminAIAstrologersTable() {
                             {astro.voiceId} ({astro.voiceGender})
                           </span>
                         </td>
-                        <td className="p-4 font-bold text-[#C9952B]">
-                          ₹{astro.pricePerMin}/min
+                        <td className="p-4">
+                          <div className="text-xs font-bold text-[#C9952B] whitespace-nowrap">
+                            📞 ₹{pricing?.aiVoicePricePerMinute ?? 7}/min
+                            <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                              (${(pricing?.aiVoicePricePerMinuteUSD ?? 0.15).toFixed(2)})
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground whitespace-nowrap mt-0.5">
+                            💬 ₹{pricing?.aiChatPricePerMinute ?? 5}/min (${(pricing?.aiChatPricePerMinuteUSD ?? 0.10).toFixed(2)})
+                          </div>
                         </td>
 
                         {/* Availability Selector (Online / Busy / Offline) */}

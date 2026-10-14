@@ -23,9 +23,12 @@ export interface GlobalSettings {
 
   // Fully Dynamic Pricing Configuration
   newUserTrialMinutes?: number; // Default 5 minutes FREE
-  aiChatPricePerMinute?: number; // Default ₹5/min
+  aiChatPricePerMinute?: number; // Default ₹5/min (India)
   aiChatPricePerPrompt?: number; // Default ₹5 per prompt (compatible)
-  aiVoicePricePerMinute?: number; // Default ₹7/min
+  aiVoicePricePerMinute?: number; // Default ₹7/min (India)
+  aiChatPricePerMinuteUSD?: number; // Default $0.10/min (Abroad)
+  aiChatPricePerPromptUSD?: number; // Default $0.10 per prompt (Abroad)
+  aiVoicePricePerMinuteUSD?: number; // Default $0.15/min (Abroad)
   aiSessionPackages?: AISessionPackage[]; // 15m @ ₹69, 30m @ ₹129, 60m @ ₹249
   humanAstrologerMinRate?: number; // Default ₹15/min
   humanAstrologerMaxRate?: number; // Default ₹100/min
@@ -86,6 +89,9 @@ const defaultSettings: GlobalSettings = {
   aiChatPricePerMinute: 5,
   aiChatPricePerPrompt: 5,
   aiVoicePricePerMinute: 7,
+  aiChatPricePerMinuteUSD: 0.10,
+  aiChatPricePerPromptUSD: 0.10,
+  aiVoicePricePerMinuteUSD: 0.15,
   aiSessionPackages: DEFAULT_AI_SESSION_PACKAGES,
   humanAstrologerMinRate: 15,
   humanAstrologerMaxRate: 100,
@@ -159,6 +165,9 @@ export async function getPricingSettings() {
     aiChatPricePerMinute: settings.aiChatPricePerMinute ?? settings.aiChatPricePerPrompt ?? 5,
     aiChatPricePerPrompt: settings.aiChatPricePerPrompt ?? settings.aiChatPricePerMinute ?? 5,
     aiVoicePricePerMinute: settings.aiVoicePricePerMinute ?? 7,
+    aiChatPricePerMinuteUSD: settings.aiChatPricePerMinuteUSD ?? settings.aiChatPricePerPromptUSD ?? 0.10,
+    aiChatPricePerPromptUSD: settings.aiChatPricePerPromptUSD ?? settings.aiChatPricePerMinuteUSD ?? 0.10,
+    aiVoicePricePerMinuteUSD: settings.aiVoicePricePerMinuteUSD ?? 0.15,
     aiSessionPackages: settings.aiSessionPackages && settings.aiSessionPackages.length > 0 
       ? settings.aiSessionPackages 
       : DEFAULT_AI_SESSION_PACKAGES,
