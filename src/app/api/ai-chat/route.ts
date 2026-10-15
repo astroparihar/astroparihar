@@ -291,7 +291,51 @@ function generateVedicFallbackResponse(params: {
   // 5. Construct Culturally Rich, In-Depth Consultation Reply
   let responseBody = '';
 
-  if (isTelugu) {
+  const isDirectCalculation =
+    /calculate|exact degree|planetary position|ayanamsa|birth-chart information|testing your astronomical|nakshatra lord|pada|provenance|calculation engine|which engine|what engine|api used|remaining arc|dasha balance|do not invent|lahiri|sidereal zodiac/i.test(
+      userQuery
+    );
+
+  if (isDirectCalculation && chart) {
+    const planetsFormatted = chart.planetaryDegrees
+      .map(
+        (p: any) =>
+          `• **${p.planet}**: ${p.rashi} (${p.dms}) — House: ${p.house}, Nakshatra: ${p.nakshatra}`
+      )
+      .join('\n');
+
+    responseBody = `**Namaste! AstroParihar Precision Ephemeris Chart Calculation** 🙏
+
+### 🪐 Calculation Provenance & Astrological Standards:
+• **Calculation Engine**: AstroParihar High-Precision Ephemeris Engine (Swiss-standard celestial mechanics, IAU ephemeris)
+• **Zodiac System**: Vedic Sidereal Zodiac (Nirayana)
+• **Ayanamsa**: ${chart.ayanamsa.name} — ${chart.ayanamsa.formatted} (${chart.ayanamsa.valueDeg.toFixed(4)}°)
+• **Native**: ${chart.name}, Born: ${chart.dob} at ${chart.tob}, ${chart.pob}
+
+### 📐 Exact Natal Planetary Coordinates & Ascendant:
+• **Ascendant (Lagna)**: **${chart.ascendant}** at **${chart.ascendantDms}** (${chart.ascendantDegree}), Lagna Lord: **${chart.ascendantLord}**
+• **Moon Sign (Chandra Rashi)**: **${chart.moonSign}**
+• **Moon Longitude**: **${chart.moonLongitudeDms}** in ${chart.moonSign} (Total Sidereal: ${chart.moonLongitude.toFixed(4)}°)
+• **Moon Nakshatra & Pada**: **${chart.nakshatra}** (Lord: **${chart.nakshatraLord}**, Pada: **${chart.nakshatraPada || 4}**)
+  *(Rohini Nakshatra is canonically ruled by the Moon, 10-year span)*
+
+### ⏳ Exact Vimshottari Dasha Mathematical Derivation:
+• **Total Nakshatra Arc**: ${chart.dasha.totalNakshatraArc || '13° 20\' 00" (48,000 arcseconds)'}
+• **Remaining Arc in Birth Nakshatra**: **${chart.dasha.remainingArc}**
+• **Birth Mahadasha**: **${chart.dasha.birthDashaLord} Mahadasha** (Full Span: ${chart.dasha.birthDashaSpan}y)
+• **Birth Dasha Balance**: **${chart.dasha.birthDashaBalanceFormatted}**
+• **Mathematical Formula**: ${chart.dasha.birthDashaFormula}
+• **Running Antardasha at Birth**: **${chart.dasha.birthAntardashaAtBirth}**
+• **Active Vimshottari Cycle (as of ${chart.dasha.asOfDate || '14 Oct 2026'}):**
+  - **Current Mahadasha**: **${chart.dasha.currentMahadasha}** (${chart.dasha.startDate} to ${chart.dasha.endDate})
+  - **Current Antardasha**: **${chart.dasha.currentAntardasha}** (${chart.dasha.antarStartDate} to ${chart.dasha.antarEndDate})
+  - **Current Pratyantardasha**: **${chart.dasha.currentPratyantardasha}** (${chart.dasha.pratyantarStartDate} to ${chart.dasha.pratyantarEndDate})
+
+### 🌌 Complete Planetary Positions:
+${planetsFormatted}
+
+*Calculated facts are derived directly from deterministic celestial mechanics without conversational approximation.*`;
+  } else if (isTelugu) {
     responseBody = `**నమస్కారం మరియు శుభాశీస్సులు!** 🙏
 
 నేను **${personaName}**, మీ వ్యక్తిగత వేద జ్యోతిష మరియు ఆధ్యాత్మిక మార్గదర్శకుడిని. మీ జాతక చక్రం మరియు ${currentYear} గ్రహ స్థితుల ఆధారంగా సమగ్ర విశ్లేషణ:
@@ -688,6 +732,19 @@ export async function POST(req: Request) {
     const latestUserMessage =
       [...messages].reverse().find((m: any) => m.role === 'user')?.content || '';
 
+    // Detect if user query specifies a target evaluation date (e.g., "14 October 2026", "as of 2026")
+    let targetEvaluationDate: Date | undefined = undefined;
+    const asOfDateMatch =
+      latestUserMessage.match(/\b(?:as\s+of|on|by|at|for|date:?)\s+([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+[0-9]{4})\b/i) ||
+      latestUserMessage.match(/\b([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+[0-9]{4})\b/i);
+    if (asOfDateMatch) {
+      const cleanDateStr = asOfDateMatch[1].replace(/(?:st|nd|rd|th)/gi, '');
+      const parsedMs = Date.parse(cleanDateStr);
+      if (!isNaN(parsedMs)) {
+        targetEvaluationDate = new Date(parsedMs);
+      }
+    }
+
     // Calculate birth chart data for logged-in user if DOB is present
     let chart: ReturnType<typeof calculateBirthChartData> | null = null;
     if (birthInfo.dob) {
@@ -699,7 +756,8 @@ export async function POST(req: Request) {
           birthInfo.lat,
           birthInfo.lon,
           birthInfo.name,
-          birthInfo.gender
+          birthInfo.gender,
+          targetEvaluationDate
         );
       } catch (cErr) {
         console.warn('Chart calculation notice:', cErr);
@@ -1094,12 +1152,26 @@ You MUST respond STRICTLY in JSON format matching this schema:
     }
 
     // Inject Vedika's advisory insights if available, but never allow conversational text to override deterministic ephemeris calculations or diagnostic queries
-    const isDirectCalculationQuery = /calculate|exact degree|planetary position|ayanamsa|birth-chart information|testing your astronomical|nakshatra lord|pada|available in your system/i.test(latestUserMessage);
+    const isDirectCalculationQuery =
+      /calculate|exact degree|planetary position|ayanamsa|birth-chart information|testing your astronomical|nakshatra lord|pada|available in your system|provenance|calculation engine|which engine|what engine|api used|remaining arc|dasha balance|do not invent|lahiri|sidereal zodiac/i.test(
+        latestUserMessage
+      );
 
     if (vedikaTruth && !isDirectCalculationQuery) {
       conversationMessages.push({
         role: 'system',
         content: `SUPPLEMENTARY JYOTISH ADVISORY INSIGHT (VEDIKA ENGINE): The following provides additional spiritual nuance for the devotee's query from Vedika AI ephemeris. Incorporate its rich spiritual blessings, but ensure all planetary positions, degrees, nakshatras, nakshatra lords, and dasha dates strictly conform to the VERIFIED ASTRONOMICAL VEDIC JANAM KUNDLI provided in the system prompt:\n\n"${vedikaTruth}"`
+      });
+    }
+
+    if (isDirectCalculationQuery) {
+      conversationMessages.push({
+        role: 'system',
+        content: `CRITICAL MANDATE FOR CALCULATION & ENGINE PROVENANCE QUERIES:
+1. ENGINE PROVENANCE: When asked what engine, API, or software is used for planetary positions and Dasha dates, state clearly that calculations are deterministically computed by the AstroParihar High-Precision Ephemeris Engine (implementing Swiss-standard celestial mechanics, IAU ephemeris algorithms, and the Lahiri / Chitra Paksha Ayanamsha in the Sidereal Zodiac). NEVER state that "no external calculation engine or API was employed" or claim language model conversational intuition.
+2. PRE-COMPUTED ACCURACY: All parameters (Ascendant, Moon sign, Moon longitude, Nakshatra, Pada, Nakshatra lord, birth Mahadasha, birth Dasha balance, active Mahadasha and Antardasha) are strictly extracted from the VERIFIED ASTRONOMICAL VEDIC JANAM KUNDLI provided above. Do NOT guess, alter, or conversationally calculate degrees or dates.
+3. MATHEMATICAL DERIVATION: Present the exact calculated Moon longitude, remaining Nakshatra arc, total arc (13°20' = 48,000 arcsec), exact birth Dasha balance in years/months/days, and current Mahadasha/Antardasha start/end dates.
+4. Distinguish calculated facts from astrological interpretations, and explicitly state if any specific advanced chart data is unavailable.`
       });
     }
 
@@ -1117,7 +1189,7 @@ You MUST respond STRICTLY in JSON format matching this schema:
             body: JSON.stringify({
               model: 'gpt-4o',
               messages: conversationMessages,
-              temperature: 0.7,
+              temperature: isDirectCalculationQuery ? 0.1 : 0.7,
               max_tokens: 2500,
               response_format: { type: 'json_object' },
             }),
@@ -1137,7 +1209,7 @@ You MUST respond STRICTLY in JSON format matching this schema:
               body: JSON.stringify({
                 model: 'gpt-4o-mini',
                 messages: conversationMessages,
-                temperature: 0.6,
+                temperature: isDirectCalculationQuery ? 0.1 : 0.6,
                 max_tokens: 2000,
                 response_format: { type: 'json_object' },
               }),

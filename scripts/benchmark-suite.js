@@ -75,6 +75,24 @@ function runAllBenchmarks() {
   assert(nativeChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001.7: Active Mahadasha in 2026 is Saturn', 'Saturn Mahadasha', nativeChart.dasha.currentMahadasha);
   assert(Array.isArray(nativeChart.d10Houses) && nativeChart.d10Houses.length === 12, 'AP-0001.8: D10 Dasamsa Chart provided', 12, nativeChart.d10Houses.length);
 
+  // Audit Native (1968-05-28, 05:05 AM IST, Chennai, target: 2026-10-14)
+  const auditChart = calculateBirthChartData(
+    '1968-05-28',
+    '05:05 AM',
+    'Chennai',
+    '13.0827',
+    '80.2707',
+    'Audit Native',
+    'Male',
+    new Date('2026-10-14T00:00:00Z')
+  );
+  assert(auditChart.ascendant.includes('Taurus'), 'AP-0001.9: 5:05 AM Ascendant is Taurus (Vrishabha)', 'Taurus', auditChart.ascendant);
+  assert(auditChart.ascendantDms.startsWith('03° 10\''), 'AP-0001.10: 5:05 AM Ascendant degree ~03° 10\'', '03° 10\'', auditChart.ascendantDms);
+  assert(auditChart.dasha.birthDashaBalanceYears >= 2.04 && auditChart.dasha.birthDashaBalanceYears <= 2.06, 'AP-0001.11: 5:05 AM Birth Dasha balance is ~2.050y', '~2.050y', auditChart.dasha.birthDashaBalanceYears.toFixed(4));
+  assert(auditChart.dasha.birthAntardashaAtBirth.includes('Venus'), 'AP-0001.12: Active Antardasha at birth is Venus Antardasha', 'Venus', auditChart.dasha.birthAntardashaAtBirth);
+  assert(auditChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001.13: Active Mahadasha on 14 Oct 2026 is Saturn Mahadasha', 'Saturn Mahadasha', auditChart.dasha.currentMahadasha);
+  assert(auditChart.dasha.currentAntardasha.includes('Rahu'), 'AP-0001.14: Active Antardasha on 14 Oct 2026 is Rahu Antardasha', 'Rahu Antardasha', auditChart.dasha.currentAntardasha);
+
   // -------------------------------------------------------------------------
   // AP-0002: Marriage & Compatibility (Ashtakoot Gun Milan)
   // -------------------------------------------------------------------------

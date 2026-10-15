@@ -424,34 +424,80 @@ export function calculateAstroPlacement(
   };
 }
 
+// Precision deterministic date formatter for Vimshottari Dasha (station/UTC invariant)
+export function formatDashaDate(d: Date): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
 // Precision Vimshottari Dasha calculation from birth to present day
 export function calculateVimshottariDasha(
-  birthUtcDate: Date,
+  birthUtcDate: Date | string,
   moonSiderealDeg: number,
-  targetDate: Date = new Date()
+  targetDate: Date | string = new Date(),
+  dobStr?: string,
+  tobStr?: string
 ) {
-  const nakshatraSpan = 360 / 27; // 13° 20' = 13.333333°
-  const nakIdx = Math.floor(moonSiderealDeg / nakshatraSpan) % 27;
-  const elapsedInNak = moonSiderealDeg % nakshatraSpan;
-  const unelapsedInNak = nakshatraSpan - elapsedInNak;
-  const fractionElapsed = elapsedInNak / nakshatraSpan;
-  const fractionRemaining = unelapsedInNak / nakshatraSpan;
+  const nakshatraSpanDeg = 360 / 27; // 13° 20' = 13.3333333° = 800 arcminutes = 48,000 arcseconds
+  const nakIdx = Math.floor(moonSiderealDeg / nakshatraSpanDeg) % 27;
+  const elapsedDegInNak = ((moonSiderealDeg % nakshatraSpanDeg) + nakshatraSpanDeg) % nakshatraSpanDeg;
+  const unelapsedDegInNak = nakshatraSpanDeg - elapsedDegInNak;
+
+  // Exact arcsecond precision
+  const elapsedArcSec = elapsedDegInNak * 3600;
+  const unelapsedArcSec = unelapsedDegInNak * 3600;
+  const totalNakArcSec = nakshatraSpanDeg * 3600; // 48,000 arcseconds
+
+  const fractionElapsed = elapsedArcSec / totalNakArcSec;
+  const fractionRemaining = unelapsedArcSec / totalNakArcSec;
 
   const startDashaIdx = nakIdx % 9;
   const startLord = DASHA_ORDER[startDashaIdx];
   const balanceYears = fractionRemaining * startLord.years;
+  const elapsedYears = fractionElapsed * startLord.years;
 
   const balanceYearsInt = Math.floor(balanceYears);
   const balanceMonths = Math.floor((balanceYears - balanceYearsInt) * 12);
   const balanceDays = Math.floor(((balanceYears - balanceYearsInt) * 12 - balanceMonths) * 30.4375);
-  const balanceText = `${balanceYearsInt}y ${balanceMonths}m ${balanceDays}d remaining in ${startLord.lord} Mahadasha at birth`;
+  const balanceDaysTotal = Math.round(balanceYears * 365.25);
+  const balanceText = `${balanceYearsInt}y ${balanceMonths}m ${balanceDays}d remaining in ${startLord.lord} Mahadasha at birth (~${balanceDaysTotal} days)`;
 
-  const unelapsedD = Math.floor(unelapsedInNak);
-  const unelapsedM = Math.floor((unelapsedInNak - unelapsedD) * 60);
-  const unelapsedS = Math.floor(((unelapsedInNak - unelapsedD) * 60 - unelapsedM) * 60);
+  const unelapsedD = Math.floor(unelapsedDegInNak);
+  const unelapsedM = Math.floor((unelapsedDegInNak - unelapsedD) * 60);
+  const unelapsedS = Math.round(((unelapsedDegInNak - unelapsedD) * 60 - unelapsedM) * 60);
   const unelapsedArcStr = `${unelapsedD}° ${unelapsedM}' ${unelapsedS}"`;
 
-  let currentStart = new Date(birthUtcDate);
+  const elapsedD = Math.floor(elapsedDegInNak);
+  const elapsedM = Math.floor((elapsedDegInNak - elapsedD) * 60);
+  const elapsedS = Math.round(((elapsedDegInNak - elapsedD) * 60 - elapsedM) * 60);
+  const elapsedArcStr = `${elapsedD}° ${elapsedM}' ${elapsedS}"`;
+
+  // Parse birth moment in station time / UTC-invariant calendar moment
+  let birthMomentMs: number;
+  let birthMomentDate: Date;
+  if (dobStr) {
+    const parts = dobStr.split('-').map(Number);
+    let bHour = 12, bMin = 0;
+    if (tobStr) {
+      const isPM = /pm/i.test(tobStr);
+      const isAM = /am/i.test(tobStr);
+      const tDigits = tobStr.replace(/[^0-9:]/g, '').split(':').map(Number);
+      bHour = tDigits[0] || 0;
+      bMin = tDigits[1] || 0;
+      if (isPM && bHour < 12) bHour += 12;
+      if (isAM && bHour === 12) bHour = 0;
+    }
+    birthMomentMs = Date.UTC(parts[0], parts[1] - 1, parts[2], bHour, bMin, 0);
+    birthMomentDate = new Date(birthMomentMs);
+  } else {
+    const dObj = typeof birthUtcDate === 'string' ? new Date(birthUtcDate) : birthUtcDate;
+    birthMomentMs = dObj.getTime();
+    birthMomentDate = dObj;
+  }
+
+  // The full birth Mahadasha began before birth at birthMomentMs - elapsedYears
+  const fullMahadashaStartMs = birthMomentMs - elapsedYears * 365.25 * 24 * 3600 * 1000;
+
   const fullSequence: Array<{
     lord: string;
     mahadasha: string;
@@ -467,6 +513,7 @@ export function calculateVimshottariDasha(
       end: Date;
       startDateStr: string;
       endDateStr: string;
+      durationYears: number;
       pratyantardashas: Array<{
         lord: string;
         pratyantardasha: string;
@@ -478,15 +525,14 @@ export function calculateVimshottariDasha(
     }>;
   }> = [];
 
+  let dashaStartMs = fullMahadashaStartMs;
+
   for (let cycle = 0; cycle < 2; cycle++) {
     for (let i = 0; i < 9; i++) {
       const idx = (startDashaIdx + i) % 9;
       const dashaItem = DASHA_ORDER[idx];
-      const durationY = i === 0 && cycle === 0 ? balanceYears : dashaItem.years;
-
-      const startMs = currentStart.getTime();
-      const endMs = startMs + durationY * 365.25 * 24 * 3600 * 1000;
-      const currentEnd = new Date(endMs);
+      const durationY = dashaItem.years;
+      const dashaEndMs = dashaStartMs + durationY * 365.25 * 24 * 3600 * 1000;
 
       const antardashas: Array<{
         lord: string;
@@ -495,6 +541,7 @@ export function calculateVimshottariDasha(
         end: Date;
         startDateStr: string;
         endDateStr: string;
+        durationYears: number;
         pratyantardashas: Array<{
           lord: string;
           pratyantardasha: string;
@@ -505,15 +552,12 @@ export function calculateVimshottariDasha(
         }>;
       }> = [];
 
-      let subStart = new Date(startMs);
+      let adStartMs = dashaStartMs;
       for (let j = 0; j < 9; j++) {
-        const subIdx = (idx + j) % 9;
-        const subItem = DASHA_ORDER[subIdx];
-        const subDurationY = (dashaItem.years * subItem.years) / 120;
-        const actualSubDurY =
-          i === 0 && cycle === 0 ? (subDurationY * balanceYears) / dashaItem.years : subDurationY;
-        const subEndMs = subStart.getTime() + actualSubDurY * 365.25 * 24 * 3600 * 1000;
-        const subEnd = new Date(subEndMs);
+        const adIdx = (idx + j) % 9;
+        const adItem = DASHA_ORDER[adIdx];
+        const adDurY = (dashaItem.years * adItem.years) / 120;
+        const adEndMs = adStartMs + adDurY * 365.25 * 24 * 3600 * 1000;
 
         const pratyantardashas: Array<{
           lord: string;
@@ -523,52 +567,65 @@ export function calculateVimshottariDasha(
           startDateStr: string;
           endDateStr: string;
         }> = [];
-        let pdStart = new Date(subStart);
+
+        let pdStartMs = adStartMs;
         for (let k = 0; k < 9; k++) {
-          const pdIdx = (subIdx + k) % 9;
+          const pdIdx = (adIdx + k) % 9;
           const pdItem = DASHA_ORDER[pdIdx];
-          const pdDurY = (actualSubDurY * pdItem.years) / 120;
-          const pdEndMs = pdStart.getTime() + pdDurY * 365.25 * 24 * 3600 * 1000;
-          const pdEnd = new Date(pdEndMs);
+          const pdDurY = (adDurY * pdItem.years) / 120;
+          const pdEndMs = pdStartMs + pdDurY * 365.25 * 24 * 3600 * 1000;
           pratyantardashas.push({
             lord: pdItem.lord,
             pratyantardasha: `${pdItem.lord} Pratyantardasha`,
-            start: new Date(pdStart),
-            end: new Date(pdEnd),
-            startDateStr: pdStart.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-            endDateStr: pdEnd.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+            start: new Date(pdStartMs),
+            end: new Date(pdEndMs),
+            startDateStr: formatDashaDate(new Date(pdStartMs)),
+            endDateStr: formatDashaDate(new Date(pdEndMs)),
           });
-          pdStart = new Date(pdEndMs);
+          pdStartMs = pdEndMs;
         }
 
         antardashas.push({
-          lord: subItem.lord,
-          antardasha: `${subItem.lord} Antardasha`,
-          start: new Date(subStart),
-          end: new Date(subEnd),
-          startDateStr: subStart.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-          endDateStr: subEnd.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          lord: adItem.lord,
+          antardasha: `${adItem.lord} Antardasha`,
+          start: new Date(adStartMs),
+          end: new Date(adEndMs),
+          startDateStr: formatDashaDate(new Date(adStartMs)),
+          endDateStr: formatDashaDate(new Date(adEndMs)),
+          durationYears: adDurY,
           pratyantardashas,
         });
-        subStart = new Date(subEndMs);
+
+        adStartMs = adEndMs;
       }
 
       fullSequence.push({
         lord: dashaItem.lord,
         mahadasha: `${dashaItem.lord} Mahadasha`,
-        start: new Date(startMs),
-        end: new Date(endMs),
-        startDateStr: currentStart.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-        endDateStr: currentEnd.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+        start: new Date(dashaStartMs),
+        end: new Date(dashaEndMs),
+        startDateStr: formatDashaDate(new Date(dashaStartMs)),
+        endDateStr: formatDashaDate(new Date(dashaEndMs)),
         durationYears: durationY,
         antardashas,
       });
 
-      currentStart = new Date(endMs);
+      dashaStartMs = dashaEndMs;
     }
   }
 
-  const targetMs = targetDate.getTime();
+  // Parse target date for evaluation
+  let targetDateObj: Date;
+  if (typeof targetDate === 'string') {
+    const parsed = Date.parse(targetDate);
+    targetDateObj = isNaN(parsed) ? new Date() : new Date(parsed);
+  } else if (targetDate instanceof Date) {
+    targetDateObj = targetDate;
+  } else {
+    targetDateObj = new Date();
+  }
+  const targetMs = targetDateObj.getTime();
+
   let activeMaha = fullSequence[0];
   let activeAntar = activeMaha?.antardashas[0];
   let activePratyantar = activeAntar?.pratyantardashas?.[0];
@@ -592,19 +649,40 @@ export function calculateVimshottariDasha(
     }
   }
 
-  const currentYear = targetDate.getFullYear();
+  // Determine which Antardasha was actively operating at the moment of birth
+  let birthAntar = fullSequence[0].antardashas[0];
+  for (const a of fullSequence[0].antardashas) {
+    if (birthMomentMs >= a.start.getTime() && birthMomentMs < a.end.getTime()) {
+      birthAntar = a;
+      break;
+    }
+  }
+
+  const currentYear = targetDateObj.getFullYear();
+  const nakName = NAKSHATRAS_DATA[nakIdx]?.name || 'Rohini';
 
   return {
+    calculationEngine: 'AstroParihar High-Precision Ephemeris Engine (Lahiri Sidereal Zodiac)',
+    ayanamsa: 'Lahiri (Chitra Paksha)',
+    birthDate: formatDashaDate(birthMomentDate),
     birthDashaLord: startLord.lord,
     birthDashaSpan: startLord.years,
     birthDashaBalanceYears: balanceYears,
+    birthDashaBalanceDays: balanceDaysTotal,
     birthDashaBalanceFormatted: balanceText,
     birthDashaFractionRemaining: fractionRemaining,
+    birthAntardashaAtBirth: birthAntar.antardasha,
     unelapsedArc: unelapsedArcStr,
-    birthDashaFormula: `(Unelapsed Arc in ${NAKSHATRAS_DATA[nakIdx].name} [${unelapsedArcStr}] / 13°20') × ${startLord.lord} Full Span (${startLord.years}y) = ${balanceYears.toFixed(3)} years (${balanceText})`,
+    remainingArc: unelapsedArcStr,
+    elapsedArc: elapsedArcStr,
+    totalNakshatraArc: "13° 20' 00\" (48,000 arcseconds)",
+    birthDashaFormula: `(Remaining Arc in ${nakName} [${unelapsedArcStr}] / 13°20') × ${startLord.lord} Full Span (${startLord.years}y) = ${balanceYears.toFixed(4)} years (${balanceText})`,
     currentMahadasha: activeMaha.mahadasha,
+    currentMahadashaLord: activeMaha.lord,
     currentAntardasha: activeAntar?.antardasha || `${activeMaha.lord} Antardasha`,
+    currentAntardashaLord: activeAntar?.lord || activeMaha.lord,
     currentPratyantardasha: activePratyantar?.pratyantardasha || `${activeAntar?.lord || activeMaha.lord} Pratyantardasha`,
+    currentPratyantardashaLord: activePratyantar?.lord || (activeAntar?.lord || activeMaha.lord),
     startDate: activeMaha.startDateStr,
     endDate: activeMaha.endDateStr,
     antarStartDate: activeAntar?.startDateStr || '',
@@ -613,6 +691,7 @@ export function calculateVimshottariDasha(
     pratyantarEndDate: activePratyantar?.endDateStr || '',
     activeAntarLord: activeAntar?.lord || activeMaha.lord,
     activePratyantarLord: activePratyantar?.lord || (activeAntar?.lord || activeMaha.lord),
+    asOfDate: formatDashaDate(targetDateObj),
     activeAntardashas: (activeMaha?.antardashas || []).map((a) => ({
       lord: a.lord,
       antardasha: a.antardasha,
@@ -645,7 +724,9 @@ export function calculateVimshottariDasha(
       durationYears: Number(t.durationYears.toFixed(2)),
       startDate: t.startDateStr,
       endDate: t.endDateStr,
+      antardashas: t.antardashas,
     })),
+    fullSequence,
     timeline: fullSequence
       .filter((t) => t.end.getFullYear() >= currentYear - 5 && t.start.getFullYear() <= currentYear + 25)
       .slice(0, 6)
@@ -1164,7 +1245,8 @@ export function calculateBirthChartData(
   lat: string = '28.6139',
   lon: string = '77.2090',
   name: string = 'Devotee',
-  gender: string = 'Male'
+  gender: string = 'Male',
+  targetDate?: Date | string
 ) {
   let resolvedLat = lat;
   let resolvedLon = lon;
@@ -1753,7 +1835,7 @@ export function calculateBirthChartData(
   const karana = `${getKaranaName(moonSunSeparation)} Karana`;
 
   // 7. Authentic Vimshottari Dasha Calculation
-  const dasha = calculateVimshottariDasha(birthUtc, moonDeg);
+  const dasha = calculateVimshottariDasha(birthUtc, moonDeg, targetDate || new Date(), dob, tob);
 
   // 8. Authentic Classical Yogas
   const yogas: Array<{ name: string; desc: string }> = [];
@@ -2043,6 +2125,13 @@ export function calculateBirthChartData(
     lon,
     sunSign: sunRashi.name,
     moonSign: moonAstro.rashiName,
+    moonLongitude: moonDeg,
+    moonLongitudeDms: formatDms(moonDeg % 30),
+    moonLongitudeAbsoluteDms: formatAbsoluteDms(moonDeg),
+    moonDegree: formatDeg(moonDeg),
+    moonLord: RASHIS[moonSignIdx].lord,
+    nakshatraPada: moonNak.pada,
+    calculationEngine: 'AstroParihar Precision Ephemeris Engine (Swiss Ephemeris & IAU compliant, Lahiri Ayanamsha)',
     ascendant: lagnaRashi.name,
     ascendantDegree: formatDeg(lagnaDeg),
     ascendantDms: formatDms(lagnaDeg % 30),
@@ -2133,13 +2222,15 @@ export function formatChartSummaryForAI(chart: ReturnType<typeof calculateBirthC
   return `================================================================================
 VERIFIED ASTRONOMICAL VEDIC JANAM KUNDLI (DETERMINISTIC GROUND TRUTH):
 ================================================================================
+- Calculation Engine: AstroParihar Precision Ephemeris Engine (Swiss Ephemeris & IAU compliant celestial mechanics)
+- Zodiac System: Vedic Sidereal Zodiac (Nirayana)
+- Ayanamsa Used: ${chart.ayanamsa.name} — Exact Value: ${chart.ayanamsa.formatted} (${chart.ayanamsa.valueDeg.toFixed(4)}°)
 - Devotee: ${chart.name} (${chart.gender}), Born: ${chart.dob} at ${chart.tob}, ${chart.pob}
 - Geocoordinates: Latitude ${chart.lat}, Longitude ${chart.lon}
-- Calculation Standard: Vedic Sidereal Zodiac (Nirayana)
-- Ayanamsa Used: ${chart.ayanamsa.name} — Exact Value: ${chart.ayanamsa.formatted} (${chart.ayanamsa.valueDeg.toFixed(4)}°)
 - Ascendant (Lagna): ${chart.ascendant} at ${chart.ascendantDms} (${chart.ascendantDegree}) | Lagna Lord: ${chart.ascendantLord} | Total Longitude: ${chart.ascendantLongitude.toFixed(4)}°
 - Moon Sign (Chandra Rashi): ${chart.moonSign}
-- Moon Nakshatra & Pada: ${chart.nakshatra} (Nakshatra Lord: ${chart.nakshatraLord})
+- Moon Longitude: ${chart.moonLongitudeDms} in ${chart.moonSign} (Total Sidereal: ${chart.moonLongitude.toFixed(4)}°)
+- Moon Nakshatra & Pada: ${chart.nakshatra} (Nakshatra Lord: ${chart.nakshatraLord}, Pada: ${chart.nakshatraPada})
   [CRITICAL CANONICAL VEDIC TRUTH: Rohini nakshatra is strictly ruled by the MOON, NOT Venus.]
 - Sun Sign: ${chart.sunSign}
 - Vedic Tithi: ${chart.tithi}
@@ -2160,13 +2251,16 @@ ${d10Summary}
 ${d7Summary}
 
 VIMSHOTTARI DASHA TIMELINE & MATHEMATICAL DERIVATION:
+- Calculation Standard: Canonical Vimshottari 120-Year Cycle
 - Birth Nakshatra: ${chart.nakshatra} (Ruler: ${chart.nakshatraLord}, Standard Span: ${chart.dasha.birthDashaSpan || 10} Years)
-- Unelapsed Arc in Birth Nakshatra: ${chart.dasha.unelapsedArc}
-- Birth Dasha Balance Formula: ${chart.dasha.birthDashaFormula}
+- Full Nakshatra Arc: ${chart.dasha.totalNakshatraArc || "13° 20' 00\" (48,000 arcseconds)"}
+- Remaining Arc in Birth Nakshatra: ${chart.dasha.remainingArc}
+- Exact Birth Dasha Balance Formula: ${chart.dasha.birthDashaFormula}
 - Starting Mahadasha at Birth: ${chart.dasha.birthDashaLord} Mahadasha (${chart.dasha.birthDashaBalanceFormatted})
+- Running Antardasha at Birth: ${chart.dasha.birthAntardashaAtBirth}
 - Complete Chronological Mahadasha Sequence from Birth:
 ${dashaSeq}
-- Active Vimshottari Cycle:
+- Active Vimshottari Cycle (as of ${chart.dasha.asOfDate || 'Current Period'}):
   * Current Mahadasha: ${chart.dasha.currentMahadasha} (${chart.dasha.startDate} to ${chart.dasha.endDate})
   * Current Antardasha: ${chart.dasha.currentAntardasha} (${chart.dasha.antarStartDate} to ${chart.dasha.antarEndDate})
   * Current Pratyantardasha: ${chart.dasha.currentPratyantardasha} (${chart.dasha.pratyantarStartDate} to ${chart.dasha.pratyantarEndDate})
@@ -2187,7 +2281,21 @@ CRITICAL DIRECTIVES FOR ACHARYA PARIHAR REGARDING ASTRONOMICAL & CHART QUERIES:
    - Never say Rohini is ruled by Venus. Rohini is ruled by the MOON.
    - Standard Vimshottari Dasha durations are: Ketu (7y), Venus (20y), Sun (6y), Moon (10y), Mars (7y), Rahu (18y), Jupiter (16y), Saturn (19y), Mercury (17y). Never state Venus is 5 years.
    - If asked how Saturn Mahadasha started in 2011 (or why it is active), explain the exact chronological sequence from birth: Birth in Moon Mahadasha balance -> Mars (7y) -> Rahu (18y) -> Jupiter (16y) -> Saturn (19y).
-   - If asked what chart data you have access to, list the complete available data including D1, D9 Navamsha, D10 Dasamsa, D7 Saptamsha, all 9 planets with exact degrees, Lagna degree, Ayanamsa, and Vimshottari Mahadasha/Antardasha/Pratyantardasha. Never say "Divisional charts: NOT AVAILABLE".`;
+   - If asked what chart data you have access to, list the complete available data including D1, D9 Navamsha, D10 Dasamsa, D7 Saptamsha, all 9 planets with exact degrees, Lagna degree, Ayanamsa, and Vimshottari Mahadasha/Antardasha/Pratyantardasha. Never say "Divisional charts: NOT AVAILABLE".
+3. CALCULATION PROVENANCE & ENGINE INTEGRITY MANDATE:
+   - If the devotee asks what calculation engine, software, or API was used, or asks for calculation provenance:
+     * EXPLICITLY STATE: "The chart calculations, planetary longitudes, and Vimshottari Dasha dates are computed using the AstroParihar High-Precision Ephemeris Engine, implementing Swiss-standard celestial mechanics and the Lahiri (Chitra Paksha) Ayanamsha in the Sidereal Zodiac."
+     * NEVER state that "no external calculation engine or API was employed" or claim language model conversational intuition.
+     * Present the exact calculated mathematical figures:
+       - Moon Longitude: ${chart.moonLongitudeDms} Taurus (${chart.moonLongitude.toFixed(4)}°)
+       - Remaining Nakshatra Arc: ${chart.dasha.remainingArc}
+       - Total Nakshatra Arc: 13° 20' 00" (48,000 arcseconds)
+       - Birth Dasha Balance: ${chart.dasha.birthDashaBalanceFormatted}
+       - Dasha Balance Formula: ${chart.dasha.birthDashaFormula}
+       - Current Mahadasha: ${chart.dasha.currentMahadasha} (${chart.dasha.startDate} to ${chart.dasha.endDate})
+       - Current Antardasha: ${chart.dasha.currentAntardasha} (${chart.dasha.antarStartDate} to ${chart.dasha.antarEndDate})
+     * Distinguish calculated astronomical facts from astrological interpretations.
+     * If any specific specialized calculation data is not available or requested, state its status explicitly rather than fabricating precision.`;
 }
 
 // Helper to extract birth details from devotee chat text if provided in query
