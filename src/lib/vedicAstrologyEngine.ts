@@ -472,28 +472,10 @@ export function calculateVimshottariDasha(
   const elapsedS = Math.round(((elapsedDegInNak - elapsedD) * 60 - elapsedM) * 60);
   const elapsedArcStr = `${elapsedD}° ${elapsedM}' ${elapsedS}"`;
 
-  // Parse birth moment in station time / UTC-invariant calendar moment
-  let birthMomentMs: number;
-  let birthMomentDate: Date;
-  if (dobStr) {
-    const parts = dobStr.split('-').map(Number);
-    let bHour = 12, bMin = 0;
-    if (tobStr) {
-      const isPM = /pm/i.test(tobStr);
-      const isAM = /am/i.test(tobStr);
-      const tDigits = tobStr.replace(/[^0-9:]/g, '').split(':').map(Number);
-      bHour = tDigits[0] || 0;
-      bMin = tDigits[1] || 0;
-      if (isPM && bHour < 12) bHour += 12;
-      if (isAM && bHour === 12) bHour = 0;
-    }
-    birthMomentMs = Date.UTC(parts[0], parts[1] - 1, parts[2], bHour, bMin, 0);
-    birthMomentDate = new Date(birthMomentMs);
-  } else {
-    const dObj = typeof birthUtcDate === 'string' ? new Date(birthUtcDate) : birthUtcDate;
-    birthMomentMs = dObj.getTime();
-    birthMomentDate = dObj;
-  }
+  // Parse birth moment in true UTC
+  const dObj = typeof birthUtcDate === 'string' ? new Date(birthUtcDate) : birthUtcDate;
+  const birthMomentMs = dObj.getTime();
+  const birthMomentDate = dObj;
 
   // The full birth Mahadasha began before birth at birthMomentMs - elapsedYears
   const fullMahadashaStartMs = birthMomentMs - elapsedYears * 365.25 * 24 * 3600 * 1000;
@@ -1912,10 +1894,55 @@ export function calculateBirthChartData(
   }
 
   // 9. Classical Doshas
+  const getOrdinal = (n: number) => {
+    if (n === 1) return '1st';
+    if (n === 2) return '2nd';
+    if (n === 3) return '3rd';
+    return `${n}th`;
+  };
+
+  // Dynamic Kaal Sarp Dosha evaluation
+  // Check whether all 7 classical planets lie on one side of the Rahu-Ketu axis
+  const sevenPlanetsDeg = [sunDeg, moonDeg, marsDeg, mercuryDeg, jupiterDeg, venusDeg, saturnDeg];
+  let inRahuToKetu = 0;
+  let inKetuToRahu = 0;
+  for (const pDeg of sevenPlanetsDeg) {
+    const relFromRahu = ((pDeg - rahuDeg + 360) % 360);
+    if (relFromRahu > 0.001 && relFromRahu < 179.999) {
+      inRahuToKetu++;
+    } else if (relFromRahu > 180.001 && relFromRahu < 359.999) {
+      inKetuToRahu++;
+    } else {
+      // Conjunction on axis
+      inRahuToKetu++;
+      inKetuToRahu++;
+    }
+  }
+
+  const rahuHouse = getHouseNumber(rahuSignIdx);
+  const KAAL_SARP_TYPES: Record<number, string> = {
+    1: 'Anant Kaal Sarp Dosha',
+    2: 'Kulik Kaal Sarp Dosha',
+    3: 'Vasuki Kaal Sarp Dosha',
+    4: 'Shankhapal Kaal Sarp Dosha',
+    5: 'Padma Kaal Sarp Dosha',
+    6: 'Maha Padma Kaal Sarp Dosha',
+    7: 'Takshak Kaal Sarp Dosha',
+    8: 'Karkotak Kaal Sarp Dosha',
+    9: 'Shankhachur Kaal Sarp Dosha',
+    10: 'Ghatak Kaal Sarp Dosha',
+    11: 'Vishdhar Kaal Sarp Dosha',
+    12: 'Sheshnag Kaal Sarp Dosha',
+  };
+
+  const isFullKaalSarp = inRahuToKetu === 7 || inKetuToRahu === 7;
+  const isPartialKaalSarp = !isFullKaalSarp && (inRahuToKetu === 6 || inKetuToRahu === 6);
+  const kaalSarpName = KAAL_SARP_TYPES[rahuHouse] || 'Kaal Sarp Dosha';
+
   const doshas = [
     {
       name: 'Mangal Dosha (Kuja Dosha)',
-      status: isManglik ? `Active (${marsHouse}th House Mars)` : 'Absent',
+      status: isManglik ? `Active (${getOrdinal(marsHouse)} House Mars)` : 'Absent',
       cancelled: !isManglik,
       remedy: isManglik
         ? 'Chant Hanuman Chalisa on Tuesdays, light a mustard oil or sesame lamp, and offer red flowers.'
@@ -1923,9 +1950,15 @@ export function calculateBirthChartData(
     },
     {
       name: 'Kaal Sarp Dosha',
-      status: 'Absent',
-      cancelled: true,
-      remedy: 'Planets are distributed harmoniously across the cosmic quadrants.',
+      status: isFullKaalSarp
+        ? `Active (${kaalSarpName} - ${getOrdinal(rahuHouse)} House Rahu)`
+        : isPartialKaalSarp
+        ? `Partial (Anshik ${kaalSarpName})`
+        : 'Absent',
+      cancelled: !isFullKaalSarp && !isPartialKaalSarp,
+      remedy: isFullKaalSarp || isPartialKaalSarp
+        ? 'Perform regular Maha Mrityunjaya Mantra japa, worship Lord Shiva with Bilva leaves and milk abhishekam, and offer prayers to Nag Devata.'
+        : 'Planets are distributed harmoniously across the cosmic quadrants.',
     },
   ];
 

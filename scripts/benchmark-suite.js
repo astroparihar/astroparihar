@@ -75,23 +75,42 @@ function runAllBenchmarks() {
   assert(nativeChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001.7: Active Mahadasha in 2026 is Saturn', 'Saturn Mahadasha', nativeChart.dasha.currentMahadasha);
   assert(Array.isArray(nativeChart.d10Houses) && nativeChart.d10Houses.length === 12, 'AP-0001.8: D10 Dasamsa Chart provided', 12, nativeChart.d10Houses.length);
 
-  // Audit Native (1968-05-28, 05:05 AM IST, Chennai, target: 2026-10-14)
+  // Audit Benchmark Native (1968-05-28, 05:05 AM IST, Chennai, target: 2026-10-16)
   const auditChart = calculateBirthChartData(
     '1968-05-28',
     '05:05 AM',
     'Chennai',
     '13.0827',
     '80.2707',
-    'Audit Native',
+    'Audit Benchmark Native',
     'Male',
-    new Date('2026-10-14T00:00:00Z')
+    new Date('2026-10-16T00:00:00Z')
   );
   assert(auditChart.ascendant.includes('Taurus'), 'AP-0001.9: 5:05 AM Ascendant is Taurus (Vrishabha)', 'Taurus', auditChart.ascendant);
   assert(auditChart.ascendantDms.startsWith('03° 10\''), 'AP-0001.10: 5:05 AM Ascendant degree ~03° 10\'', '03° 10\'', auditChart.ascendantDms);
-  assert(auditChart.dasha.birthDashaBalanceYears >= 2.04 && auditChart.dasha.birthDashaBalanceYears <= 2.06, 'AP-0001.11: 5:05 AM Birth Dasha balance is ~2.050y', '~2.050y', auditChart.dasha.birthDashaBalanceYears.toFixed(4));
-  assert(auditChart.dasha.birthAntardashaAtBirth.includes('Venus'), 'AP-0001.12: Active Antardasha at birth is Venus Antardasha', 'Venus', auditChart.dasha.birthAntardashaAtBirth);
-  assert(auditChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001.13: Active Mahadasha on 14 Oct 2026 is Saturn Mahadasha', 'Saturn Mahadasha', auditChart.dasha.currentMahadasha);
-  assert(auditChart.dasha.currentAntardasha.includes('Rahu'), 'AP-0001.14: Active Antardasha on 14 Oct 2026 is Rahu Antardasha', 'Rahu Antardasha', auditChart.dasha.currentAntardasha);
+  assert(auditChart.ascendantNakshatra === 'Krittika' && auditChart.ascendantPada === 2, 'AP-0001.11: 5:05 AM Ascendant Nakshatra is Krittika (Pada 2)', 'Krittika (Pada 2)', `${auditChart.ascendantNakshatra} (Pada ${auditChart.ascendantPada})`);
+  assert(auditChart.dasha.birthDashaBalanceYears >= 2.049 && auditChart.dasha.birthDashaBalanceYears <= 2.051, 'AP-0001.12: 5:05 AM Birth Dasha balance is 2.050y (2y 0m 18d)', '~2.050y', auditChart.dasha.birthDashaBalanceYears.toFixed(4));
+  assert(auditChart.dasha.birthAntardashaAtBirth.includes('Venus'), 'AP-0001.13: Active Antardasha at birth is Venus Antardasha', 'Venus', auditChart.dasha.birthAntardashaAtBirth);
+  assert(auditChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001.14: Active Mahadasha on 16 Oct 2026 is Saturn Mahadasha', 'Saturn Mahadasha', auditChart.dasha.currentMahadasha);
+  assert(auditChart.dasha.currentAntardasha.includes('Rahu'), 'AP-0001.15: Active Antardasha on 16 Oct 2026 is Rahu Antardasha', 'Rahu Antardasha', auditChart.dasha.currentAntardasha);
+  assert(auditChart.dasha.currentPratyantardasha.includes('Ketu'), 'AP-0001.16: Active Pratyantardasha on 16 Oct 2026 is Ketu Pratyantardasha', 'Ketu Pratyantardasha', auditChart.dasha.currentPratyantardasha);
+
+  const auditPMap = {};
+  auditChart.planetaryDegrees.forEach((p) => { auditPMap[p.name] = p; });
+  assert(auditPMap['Sun']?.rashi.includes('Taurus') && auditPMap['Sun']?.dms.startsWith('13° 17\''), 'AP-0001.17: Sun is Taurus ~13° 17\'', '13° 17\'', auditPMap['Sun']?.dms);
+  assert(auditPMap['Moon']?.rashi.includes('Taurus') && auditPMap['Moon']?.dms.startsWith('20° 35\''), 'AP-0001.18: Moon is Taurus ~20° 36\' (Rohini Pada 4)', '20° 35\'', auditPMap['Moon']?.dms);
+  assert(auditPMap['Mars']?.rashi.includes('Taurus') && auditPMap['Mars']?.dms.startsWith('20° 05\''), 'AP-0001.19: Mars is Taurus ~20° 05\'', '20° 05\'', auditPMap['Mars']?.dms);
+  assert(auditPMap['Mercury']?.rashi.includes('Gemini') && auditPMap['Mercury']?.dms.startsWith('05° 21\''), 'AP-0001.20: Mercury is Gemini ~05° 21\'', '05° 21\'', auditPMap['Mercury']?.dms);
+  assert(auditPMap['Jupiter']?.rashi.includes('Leo') && auditPMap['Jupiter']?.dms.startsWith('04° 19\''), 'AP-0001.21: Jupiter is Leo ~04° 19\'', '04° 19\'', auditPMap['Jupiter']?.dms);
+  assert(auditPMap['Venus']?.rashi.includes('Taurus') && auditPMap['Venus']?.dms.startsWith('06° 55\''), 'AP-0001.22: Venus is Taurus ~06° 55\'', '06° 55\'', auditPMap['Venus']?.dms);
+  assert(auditPMap['Saturn']?.rashi.includes('Pisces') && auditPMap['Saturn']?.dms.startsWith('28° 10\''), 'AP-0001.23: Saturn is Pisces ~28° 10\'', '28° 10\'', auditPMap['Saturn']?.dms);
+  assert(auditPMap['Rahu']?.rashi.includes('Pisces') && auditPMap['Rahu']?.dms.startsWith('22° 44\''), 'AP-0001.24: Rahu (Mean Node) is Pisces ~22° 44\'', '22° 44\'', auditPMap['Rahu']?.dms);
+  assert(auditPMap['Ketu']?.rashi.includes('Virgo') && auditPMap['Ketu']?.dms.startsWith('22° 44\''), 'AP-0001.25: Ketu (Mean Node) is Virgo ~22° 44\'', '22° 44\'', auditPMap['Ketu']?.dms);
+
+  const kaalSarpDosha = auditChart.doshas.find((d) => d.name.includes('Kaal Sarp'));
+  assert(kaalSarpDosha?.status.includes('Active (Vishdhar Kaal Sarp Dosha'), 'AP-0001.26: Kaal Sarp Dosha accurately detected as Active (Vishdhar Kaal Sarp Dosha)', 'Active', kaalSarpDosha?.status);
+  const mangalDosha = auditChart.doshas.find((d) => d.name.includes('Mangal'));
+  assert(mangalDosha?.status.includes('Active (1st House Mars)'), 'AP-0001.27: Mangal Dosha formatted with correct ordinal (1st House Mars)', 'Active (1st House Mars)', mangalDosha?.status);
 
   // -------------------------------------------------------------------------
   // AP-0002: Marriage & Compatibility (Ashtakoot Gun Milan)
