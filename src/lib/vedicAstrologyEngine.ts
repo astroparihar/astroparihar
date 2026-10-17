@@ -1476,6 +1476,7 @@ export function calculateBirthChartData(
   const isManglikFromMoon = [1, 4, 7, 8, 12].includes(((marsSignIdx - moonSignIdx + 12) % 12) + 1);
   const isManglik = isManglikFromLagna || isManglikFromMoon;
 
+  const lagnaNak = getPlanetNakshatra(lagnaDeg);
   const sunNak = getPlanetNakshatra(sunDeg);
   const moonNak = getPlanetNakshatra(moonDeg);
   const marsNak = getPlanetNakshatra(marsDeg);
@@ -1637,6 +1638,7 @@ export function calculateBirthChartData(
     {
       planet: 'Rahu',
       name: 'Rahu',
+      nodeType: 'Mean Node',
       rashi: RASHIS[rahuSignIdx].name,
       signNumber: RASHIS[rahuSignIdx].signNumber,
       degree: formatDeg(rahuDeg),
@@ -1658,6 +1660,7 @@ export function calculateBirthChartData(
     {
       planet: 'Ketu',
       name: 'Ketu',
+      nodeType: 'Mean Node',
       rashi: RASHIS[ketuSignIdx].name,
       signNumber: RASHIS[ketuSignIdx].signNumber,
       degree: formatDeg(ketuDeg),
@@ -2138,6 +2141,10 @@ export function calculateBirthChartData(
     ascendantLongitude: lagnaDeg,
     ascendantLord: lagnaRashi.lord,
     ascendantSignNumber: lagnaRashi.signNumber,
+    ascendantNakshatra: lagnaNak.nakshatraName,
+    ascendantPada: lagnaNak.pada,
+    ascendantNakshatraLord: lagnaNak.nakshatraLord,
+    ascendantNakshatraFormatted: lagnaNak.formatted,
     ayanamsa: {
       name: 'Lahiri (Chitra Paksha)',
       valueDeg: ayanamsha,

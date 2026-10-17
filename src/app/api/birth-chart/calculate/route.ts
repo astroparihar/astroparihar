@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         ayanamsaStandard: 'Lahiri (Chitra Paksha)',
         zodiacSystem: 'Vedic Sidereal Zodiac (Nirayana)',
         dashaSystem: 'Canonical Vimshottari 120-Year Parashari Cycle',
+        lunarNodeMethod: 'Mean Node (Canonical Parashari Standard)',
       },
       input: {
         name,
@@ -64,6 +65,9 @@ export async function POST(req: NextRequest) {
         degreeDms: chart.ascendantDms,
         totalLongitudeDeg: chart.ascendantLongitude,
         lord: chart.ascendantLord,
+        nakshatra: chart.ascendantNakshatra,
+        pada: chart.ascendantPada,
+        nakshatraLord: chart.ascendantNakshatraLord,
       },
       moon: {
         sign: chart.moonSign,
@@ -155,6 +159,7 @@ export async function GET(req: NextRequest) {
       ayanamsaStandard: 'Lahiri (Chitra Paksha)',
       zodiacSystem: 'Vedic Sidereal Zodiac (Nirayana)',
       dashaSystem: 'Canonical Vimshottari 120-Year Parashari Cycle',
+      lunarNodeMethod: 'Mean Node (Canonical Parashari Standard)',
     },
     input: {
       dob,
@@ -170,6 +175,9 @@ export async function GET(req: NextRequest) {
       degreeDms: chart.ascendantDms,
       totalLongitudeDeg: chart.ascendantLongitude,
       lord: chart.ascendantLord,
+      nakshatra: chart.ascendantNakshatra,
+      pada: chart.ascendantPada,
+      nakshatraLord: chart.ascendantNakshatraLord,
     },
     moon: {
       sign: chart.moonSign,
