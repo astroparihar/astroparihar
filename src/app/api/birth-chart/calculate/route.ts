@@ -104,6 +104,8 @@ export async function POST(req: NextRequest) {
           endDate: chart.dasha.pratyantarEndDate,
         },
         chronologicalMahadashas: chart.dasha.chronologicalSequence,
+        activeMahadashaAntardashas: chart.dasha.activeAntardashas,
+        activeAntardashaPratyantardashas: chart.dasha.activePratyantardashas,
       },
       planetaryPositions: chart.planetaryDegrees,
       divisionalCharts: {
@@ -208,6 +210,8 @@ export async function GET(req: NextRequest) {
         endDate: chart.dasha.pratyantarEndDate,
       },
       chronologicalMahadashas: chart.dasha.chronologicalSequence,
+      activeMahadashaAntardashas: chart.dasha.activeAntardashas,
+      activeAntardashaPratyantardashas: chart.dasha.activePratyantardashas,
     },
     planetaryPositions: chart.planetaryDegrees,
   });
