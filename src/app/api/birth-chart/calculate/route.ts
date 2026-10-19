@@ -79,6 +79,9 @@ export async function POST(req: NextRequest) {
       },
       vimshottariDasha: {
         birthDate: chart.dasha.birthDate,
+        birthDateLocal: chart.dasha.birthDateLocal,
+        birthDateUtc: chart.dasha.birthDateUtc,
+        birthTimeEpochMs: chart.dasha.birthTimeEpochMs,
         birthMahadashaLord: chart.dasha.birthDashaLord,
         birthMahadashaSpanYears: chart.dasha.birthDashaSpan,
         remainingNakshatraArc: chart.dasha.remainingArc,
@@ -189,6 +192,9 @@ export async function GET(req: NextRequest) {
     },
     vimshottariDasha: {
       birthDate: chart.dasha.birthDate,
+      birthDateLocal: chart.dasha.birthDateLocal,
+      birthDateUtc: chart.dasha.birthDateUtc,
+      birthTimeEpochMs: chart.dasha.birthTimeEpochMs,
       birthMahadashaLord: chart.dasha.birthDashaLord,
       birthMahadashaSpanYears: chart.dasha.birthDashaSpan,
       remainingNakshatraArc: chart.dasha.remainingArc,

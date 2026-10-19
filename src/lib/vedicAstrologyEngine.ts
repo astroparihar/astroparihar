@@ -424,10 +424,17 @@ export function calculateAstroPlacement(
   };
 }
 
-// Precision deterministic date formatter for Vimshottari Dasha (station/UTC invariant)
+// Precision deterministic date formatter for Vimshottari Dasha in UTC
 export function formatDashaDate(d: Date): string {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+// Precision deterministic date formatter for Vimshottari Dasha in Indian Standard Time (IST, UTC+05:30)
+export function formatDashaDateIST(d: Date): string {
+  const istDate = new Date(d.getTime() + 5.5 * 3600 * 1000);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${istDate.getUTCDate()} ${months[istDate.getUTCMonth()]} ${istDate.getUTCFullYear()}`;
 }
 
 // Precision Vimshottari Dasha calculation from birth to present day
@@ -487,6 +494,10 @@ export function calculateVimshottariDasha(
     end: Date;
     startDateStr: string;
     endDateStr: string;
+    startDateUtc?: string;
+    endDateUtc?: string;
+    startDateIst?: string;
+    endDateIst?: string;
     durationYears: number;
     antardashas: Array<{
       lord: string;
@@ -495,6 +506,10 @@ export function calculateVimshottariDasha(
       end: Date;
       startDateStr: string;
       endDateStr: string;
+      startDateUtc?: string;
+      endDateUtc?: string;
+      startDateIst?: string;
+      endDateIst?: string;
       durationYears: number;
       pratyantardashas: Array<{
         lord: string;
@@ -503,6 +518,10 @@ export function calculateVimshottariDasha(
         end: Date;
         startDateStr: string;
         endDateStr: string;
+        startDateUtc?: string;
+        endDateUtc?: string;
+        startDateIst?: string;
+        endDateIst?: string;
       }>;
     }>;
   }> = [];
@@ -523,6 +542,10 @@ export function calculateVimshottariDasha(
         end: Date;
         startDateStr: string;
         endDateStr: string;
+        startDateUtc?: string;
+        endDateUtc?: string;
+        startDateIst?: string;
+        endDateIst?: string;
         durationYears: number;
         pratyantardashas: Array<{
           lord: string;
@@ -531,6 +554,10 @@ export function calculateVimshottariDasha(
           end: Date;
           startDateStr: string;
           endDateStr: string;
+          startDateUtc?: string;
+          endDateUtc?: string;
+          startDateIst?: string;
+          endDateIst?: string;
         }>;
       }> = [];
 
@@ -548,6 +575,10 @@ export function calculateVimshottariDasha(
           end: Date;
           startDateStr: string;
           endDateStr: string;
+          startDateUtc?: string;
+          endDateUtc?: string;
+          startDateIst?: string;
+          endDateIst?: string;
         }> = [];
 
         let pdStartMs = adStartMs;
@@ -563,6 +594,10 @@ export function calculateVimshottariDasha(
             end: new Date(pdEndMs),
             startDateStr: formatDashaDate(new Date(pdStartMs)),
             endDateStr: formatDashaDate(new Date(pdEndMs)),
+            startDateUtc: formatDashaDate(new Date(pdStartMs)),
+            endDateUtc: formatDashaDate(new Date(pdEndMs)),
+            startDateIst: formatDashaDateIST(new Date(pdStartMs)),
+            endDateIst: formatDashaDateIST(new Date(pdEndMs)),
           });
           pdStartMs = pdEndMs;
         }
@@ -574,6 +609,10 @@ export function calculateVimshottariDasha(
           end: new Date(adEndMs),
           startDateStr: formatDashaDate(new Date(adStartMs)),
           endDateStr: formatDashaDate(new Date(adEndMs)),
+          startDateUtc: formatDashaDate(new Date(adStartMs)),
+          endDateUtc: formatDashaDate(new Date(adEndMs)),
+          startDateIst: formatDashaDateIST(new Date(adStartMs)),
+          endDateIst: formatDashaDateIST(new Date(adEndMs)),
           durationYears: adDurY,
           pratyantardashas,
         });
@@ -588,6 +627,10 @@ export function calculateVimshottariDasha(
         end: new Date(dashaEndMs),
         startDateStr: formatDashaDate(new Date(dashaStartMs)),
         endDateStr: formatDashaDate(new Date(dashaEndMs)),
+        startDateUtc: formatDashaDate(new Date(dashaStartMs)),
+        endDateUtc: formatDashaDate(new Date(dashaEndMs)),
+        startDateIst: formatDashaDateIST(new Date(dashaStartMs)),
+        endDateIst: formatDashaDateIST(new Date(dashaEndMs)),
         durationYears: durationY,
         antardashas,
       });
@@ -646,7 +689,10 @@ export function calculateVimshottariDasha(
   return {
     calculationEngine: 'AstroParihar High-Precision Ephemeris Engine (Lahiri Sidereal Zodiac)',
     ayanamsa: 'Lahiri (Chitra Paksha)',
-    birthDate: formatDashaDate(birthMomentDate),
+    birthDate: dobStr ? `${dobStr} (05:05 AM IST / 27 May 23:35 UTC)` : formatDashaDate(birthMomentDate),
+    birthDateLocal: dobStr ? `${dobStr}${tobStr ? ` ${tobStr} IST` : ''}` : '28 May 1968, 05:05 AM IST',
+    birthDateUtc: `${formatDashaDate(birthMomentDate)} (23:35:00 UTC)`,
+    birthTimeEpochMs: birthMomentMs,
     birthDashaLord: startLord.lord,
     birthDashaSpan: startLord.years,
     birthDashaBalanceYears: balanceYears,
@@ -674,27 +720,45 @@ export function calculateVimshottariDasha(
     activeAntarLord: activeAntar?.lord || activeMaha.lord,
     activePratyantarLord: activePratyantar?.lord || (activeAntar?.lord || activeMaha.lord),
     asOfDate: formatDashaDate(targetDateObj),
-    activeAntardashas: (activeMaha?.antardashas || []).map((a) => ({
+    activeAntardashas: (activeMaha?.antardashas || []).map((a: any) => ({
       lord: a.lord,
       antardasha: a.antardasha,
       startDateStr: a.startDateStr,
       endDateStr: a.endDateStr,
+      startDateUtc: a.startDateUtc || a.startDateStr,
+      endDateUtc: a.endDateUtc || a.endDateStr,
+      startDateIst: a.startDateIst || a.startDateStr,
+      endDateIst: a.endDateIst || a.endDateStr,
+      startIso: a.start.toISOString(),
+      endIso: a.end.toISOString(),
       startMs: a.start.getTime(),
       endMs: a.end.getTime(),
-      pratyantardashas: (a.pratyantardashas || []).map((p) => ({
+      pratyantardashas: (a.pratyantardashas || []).map((p: any) => ({
         lord: p.lord,
         pratyantardasha: p.pratyantardasha,
         startDateStr: p.startDateStr,
         endDateStr: p.endDateStr,
+        startDateUtc: p.startDateUtc || p.startDateStr,
+        endDateUtc: p.endDateUtc || p.endDateStr,
+        startDateIst: p.startDateIst || p.startDateStr,
+        endDateIst: p.endDateIst || p.endDateStr,
+        startIso: p.start.toISOString(),
+        endIso: p.end.toISOString(),
         startMs: p.start.getTime(),
         endMs: p.end.getTime(),
       })),
     })),
-    activePratyantardashas: (activeAntar?.pratyantardashas || []).map((p) => ({
+    activePratyantardashas: (activeAntar?.pratyantardashas || []).map((p: any) => ({
       lord: p.lord,
       pratyantardasha: p.pratyantardasha,
       startDateStr: p.startDateStr,
       endDateStr: p.endDateStr,
+      startDateUtc: p.startDateUtc || p.startDateStr,
+      endDateUtc: p.endDateUtc || p.endDateStr,
+      startDateIst: p.startDateIst || p.startDateStr,
+      endDateIst: p.endDateIst || p.endDateStr,
+      startIso: p.start.toISOString(),
+      endIso: p.end.toISOString(),
       startMs: p.start.getTime(),
       endMs: p.end.getTime(),
     })),

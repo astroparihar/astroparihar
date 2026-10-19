@@ -63,19 +63,22 @@ function runAllBenchmarks() {
   );
 
   // -------------------------------------------------------------------------
-  // AP-0001: Historical Ephemeris & Astronomical Calculation Ground Truth
+  // AP-0001A: Legacy Development Baseline (28 May 1968, 04:44 AM IST, Chennai)
   // -------------------------------------------------------------------------
-  console.log('▶ TEST CASE AP-0001: Astronomical Ephemeris & Lahiri Calculation');
-  assert(nativeChart.ayanamsa.name.includes('Lahiri'), 'AP-0001.1: Standard is Lahiri Ayanamsha', 'Lahiri', nativeChart.ayanamsa.name);
-  assert(nativeChart.ayanamsa.formatted.startsWith('23° 24\''), 'AP-0001.2: Lahiri Ayanamsha ~23° 24\'', '23° 24\'', nativeChart.ayanamsa.formatted);
-  assert(nativeChart.ascendant.includes('Aries'), 'AP-0001.3: Ascendant is Aries', 'Aries', nativeChart.ascendant);
-  assert(nativeChart.ascendantDms.startsWith('27° 41\''), 'AP-0001.4: Ascendant degree is ~27° 41\'', '27° 41\'', nativeChart.ascendantDms);
-  assert(nativeChart.nakshatra === 'Rohini (Pada 4)', 'AP-0001.5: Moon Nakshatra is Rohini (Pada 4)', 'Rohini (Pada 4)', nativeChart.nakshatra);
-  assert(nativeChart.nakshatraLord === 'Moon', 'AP-0001.6: Rohini ruler is Moon (Zero hallucination)', 'Moon', nativeChart.nakshatraLord);
-  assert(nativeChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001.7: Active Mahadasha in 2026 is Saturn', 'Saturn Mahadasha', nativeChart.dasha.currentMahadasha);
-  assert(Array.isArray(nativeChart.d10Houses) && nativeChart.d10Houses.length === 12, 'AP-0001.8: D10 Dasamsa Chart provided', 12, nativeChart.d10Houses.length);
+  console.log('▶ TEST CASE AP-0001A: Legacy Development Baseline (04:44 AM IST, Aries Lagna 27° 41\')');
+  assert(nativeChart.ayanamsa.name.includes('Lahiri'), 'AP-0001A.1: Standard is Lahiri Ayanamsha', 'Lahiri', nativeChart.ayanamsa.name);
+  assert(nativeChart.ayanamsa.formatted.startsWith('23° 24\''), 'AP-0001A.2: Lahiri Ayanamsha ~23° 24\'', '23° 24\'', nativeChart.ayanamsa.formatted);
+  assert(nativeChart.ascendant.includes('Aries'), 'AP-0001A.3: 04:44 AM Ascendant is Aries (Mesha)', 'Aries', nativeChart.ascendant);
+  assert(nativeChart.ascendantDms.startsWith('27° 41\''), 'AP-0001A.4: 04:44 AM Ascendant degree is ~27° 41\'', '27° 41\'', nativeChart.ascendantDms);
+  assert(nativeChart.nakshatra === 'Rohini (Pada 4)', 'AP-0001A.5: Moon Nakshatra is Rohini (Pada 4)', 'Rohini (Pada 4)', nativeChart.nakshatra);
+  assert(nativeChart.nakshatraLord === 'Moon', 'AP-0001A.6: Rohini ruler is Moon (Zero hallucination)', 'Moon', nativeChart.nakshatraLord);
+  assert(nativeChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001A.7: Active Mahadasha in 2026 is Saturn', 'Saturn Mahadasha', nativeChart.dasha.currentMahadasha);
+  assert(Array.isArray(nativeChart.d10Houses) && nativeChart.d10Houses.length === 12, 'AP-0001A.8: D10 Dasamsa Chart provided', 12, nativeChart.d10Houses.length);
 
-  // Audit Benchmark Native (1968-05-28, 05:05 AM IST, Chennai, target: 2026-10-16)
+  // -------------------------------------------------------------------------
+  // AP-0001B: Official Audit Benchmark Native (28 May 1968, 05:05 AM IST, Chennai)
+  // -------------------------------------------------------------------------
+  console.log('▶ TEST CASE AP-0001B: Official Audit Benchmark Native (05:05 AM IST, Taurus Lagna 03° 10\')');
   const auditChart = calculateBirthChartData(
     '1968-05-28',
     '05:05 AM',
@@ -86,31 +89,32 @@ function runAllBenchmarks() {
     'Male',
     new Date('2026-10-16T00:00:00Z')
   );
-  assert(auditChart.ascendant.includes('Taurus'), 'AP-0001.9: 5:05 AM Ascendant is Taurus (Vrishabha)', 'Taurus', auditChart.ascendant);
-  assert(auditChart.ascendantDms.startsWith('03° 10\''), 'AP-0001.10: 5:05 AM Ascendant degree ~03° 10\'', '03° 10\'', auditChart.ascendantDms);
-  assert(auditChart.ascendantNakshatra === 'Krittika' && auditChart.ascendantPada === 2, 'AP-0001.11: 5:05 AM Ascendant Nakshatra is Krittika (Pada 2)', 'Krittika (Pada 2)', `${auditChart.ascendantNakshatra} (Pada ${auditChart.ascendantPada})`);
-  assert(auditChart.dasha.birthDashaBalanceYears >= 2.049 && auditChart.dasha.birthDashaBalanceYears <= 2.051, 'AP-0001.12: 5:05 AM Birth Dasha balance is 2.050y (2y 0m 18d)', '~2.050y', auditChart.dasha.birthDashaBalanceYears.toFixed(4));
-  assert(auditChart.dasha.birthAntardashaAtBirth.includes('Venus'), 'AP-0001.13: Active Antardasha at birth is Venus Antardasha', 'Venus', auditChart.dasha.birthAntardashaAtBirth);
-  assert(auditChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001.14: Active Mahadasha on 16 Oct 2026 is Saturn Mahadasha', 'Saturn Mahadasha', auditChart.dasha.currentMahadasha);
-  assert(auditChart.dasha.currentAntardasha.includes('Rahu'), 'AP-0001.15: Active Antardasha on 16 Oct 2026 is Rahu Antardasha', 'Rahu Antardasha', auditChart.dasha.currentAntardasha);
-  assert(auditChart.dasha.currentPratyantardasha.includes('Ketu'), 'AP-0001.16: Active Pratyantardasha on 16 Oct 2026 is Ketu Pratyantardasha', 'Ketu Pratyantardasha', auditChart.dasha.currentPratyantardasha);
+  assert(auditChart.ascendant.includes('Taurus'), 'AP-0001B.9: 05:05 AM Ascendant is Taurus (Vrishabha)', 'Taurus', auditChart.ascendant);
+  assert(auditChart.ascendantDms.startsWith('03° 10\''), 'AP-0001B.10: 05:05 AM Ascendant degree ~03° 10\'', '03° 10\'', auditChart.ascendantDms);
+  assert(Math.abs(auditChart.ascendantLongitude - 33.182438) < 0.005, 'AP-0001B.11: Numerical Lagna 33.1824° conforms within 0.005° (<18")', '33.1824°', auditChart.ascendantLongitude.toFixed(4) + '°');
+  assert(auditChart.ascendantNakshatra === 'Krittika' && auditChart.ascendantPada === 2, 'AP-0001B.12: 05:05 AM Ascendant Nakshatra is Krittika (Pada 2)', 'Krittika (Pada 2)', `${auditChart.ascendantNakshatra} (Pada ${auditChart.ascendantPada})`);
+  assert(auditChart.dasha.birthDashaBalanceYears >= 2.049 && auditChart.dasha.birthDashaBalanceYears <= 2.051, 'AP-0001B.13: 05:05 AM Birth Dasha balance is 2.050y (2y 0m 18d)', '~2.050y', auditChart.dasha.birthDashaBalanceYears.toFixed(4));
+  assert(auditChart.dasha.birthAntardashaAtBirth.includes('Venus'), 'AP-0001B.14: Active Antardasha at birth is Venus Antardasha', 'Venus', auditChart.dasha.birthAntardashaAtBirth);
+  assert(auditChart.dasha.currentMahadasha === 'Saturn Mahadasha', 'AP-0001B.15: Active Mahadasha on 16 Oct 2026 is Saturn Mahadasha', 'Saturn Mahadasha', auditChart.dasha.currentMahadasha);
+  assert(auditChart.dasha.currentAntardasha.includes('Rahu'), 'AP-0001B.16: Active Antardasha on 16 Oct 2026 is Rahu Antardasha', 'Rahu Antardasha', auditChart.dasha.currentAntardasha);
+  assert(auditChart.dasha.currentPratyantardasha.includes('Ketu'), 'AP-0001B.17: Active Pratyantardasha on 16 Oct 2026 is Ketu Pratyantardasha', 'Ketu Pratyantardasha', auditChart.dasha.currentPratyantardasha);
 
   const auditPMap = {};
   auditChart.planetaryDegrees.forEach((p) => { auditPMap[p.name] = p; });
-  assert(auditPMap['Sun']?.rashi.includes('Taurus') && auditPMap['Sun']?.dms.startsWith('13° 17\''), 'AP-0001.17: Sun is Taurus ~13° 17\'', '13° 17\'', auditPMap['Sun']?.dms);
-  assert(auditPMap['Moon']?.rashi.includes('Taurus') && auditPMap['Moon']?.dms.startsWith('20° 35\''), 'AP-0001.18: Moon is Taurus ~20° 36\' (Rohini Pada 4)', '20° 35\'', auditPMap['Moon']?.dms);
-  assert(auditPMap['Mars']?.rashi.includes('Taurus') && auditPMap['Mars']?.dms.startsWith('20° 05\''), 'AP-0001.19: Mars is Taurus ~20° 05\'', '20° 05\'', auditPMap['Mars']?.dms);
-  assert(auditPMap['Mercury']?.rashi.includes('Gemini') && auditPMap['Mercury']?.dms.startsWith('05° 21\''), 'AP-0001.20: Mercury is Gemini ~05° 21\'', '05° 21\'', auditPMap['Mercury']?.dms);
-  assert(auditPMap['Jupiter']?.rashi.includes('Leo') && auditPMap['Jupiter']?.dms.startsWith('04° 19\''), 'AP-0001.21: Jupiter is Leo ~04° 19\'', '04° 19\'', auditPMap['Jupiter']?.dms);
-  assert(auditPMap['Venus']?.rashi.includes('Taurus') && auditPMap['Venus']?.dms.startsWith('06° 55\''), 'AP-0001.22: Venus is Taurus ~06° 55\'', '06° 55\'', auditPMap['Venus']?.dms);
-  assert(auditPMap['Saturn']?.rashi.includes('Pisces') && auditPMap['Saturn']?.dms.startsWith('28° 10\''), 'AP-0001.23: Saturn is Pisces ~28° 10\'', '28° 10\'', auditPMap['Saturn']?.dms);
-  assert(auditPMap['Rahu']?.rashi.includes('Pisces') && auditPMap['Rahu']?.dms.startsWith('22° 44\''), 'AP-0001.24: Rahu (Mean Node) is Pisces ~22° 44\'', '22° 44\'', auditPMap['Rahu']?.dms);
-  assert(auditPMap['Ketu']?.rashi.includes('Virgo') && auditPMap['Ketu']?.dms.startsWith('22° 44\''), 'AP-0001.25: Ketu (Mean Node) is Virgo ~22° 44\'', '22° 44\'', auditPMap['Ketu']?.dms);
+  assert(auditPMap['Sun']?.rashi.includes('Taurus') && Math.abs(auditPMap['Sun'].longitude - 43.289865) < 0.005, 'AP-0001B.18: Sun: Taurus 13° 17\' (43.2899° ± 0.005°)', '43.2899°', auditPMap['Sun']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Moon']?.rashi.includes('Taurus') && Math.abs(auditPMap['Moon'].longitude - 50.599879) < 0.005, 'AP-0001B.19: Moon: Taurus 20° 36\' Rohini 4 (50.5999° ± 0.005°)', '50.5999°', auditPMap['Moon']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Mars']?.rashi.includes('Taurus') && Math.abs(auditPMap['Mars'].longitude - 50.097722) < 0.005, 'AP-0001B.20: Mars: Taurus 20° 05\' (50.0977° ± 0.005°)', '50.0977°', auditPMap['Mars']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Mercury']?.rashi.includes('Gemini') && Math.abs(auditPMap['Mercury'].longitude - 65.359295) < 0.005, 'AP-0001B.21: Mercury: Gemini 05° 21\' (65.3593° ± 0.005°)', '65.3593°', auditPMap['Mercury']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Jupiter']?.rashi.includes('Leo') && Math.abs(auditPMap['Jupiter'].longitude - 124.317124) < 0.005, 'AP-0001B.22: Jupiter: Leo 04° 19\' (124.3171° ± 0.005°)', '124.3171°', auditPMap['Jupiter']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Venus']?.rashi.includes('Taurus') && Math.abs(auditPMap['Venus'].longitude - 36.925462) < 0.005, 'AP-0001B.23: Venus: Taurus 06° 55\' (36.9255° ± 0.005°)', '36.9255°', auditPMap['Venus']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Saturn']?.rashi.includes('Pisces') && Math.abs(auditPMap['Saturn'].longitude - 358.176317) < 0.005, 'AP-0001B.24: Saturn: Pisces 28° 10\' (358.1763° ± 0.005°)', '358.1763°', auditPMap['Saturn']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Rahu']?.rashi.includes('Pisces') && Math.abs(auditPMap['Rahu'].longitude - 352.742867) < 0.005, 'AP-0001B.25: Rahu (Mean): Pisces 22° 44\' (352.7429° ± 0.005°)', '352.7429°', auditPMap['Rahu']?.longitude.toFixed(4) + '°');
+  assert(auditPMap['Ketu']?.rashi.includes('Virgo') && Math.abs(auditPMap['Ketu'].longitude - 172.742867) < 0.005, 'AP-0001B.26: Ketu (Mean): Virgo 22° 44\' (172.7429° ± 0.005°)', '172.7429°', auditPMap['Ketu']?.longitude.toFixed(4) + '°');
 
   const kaalSarpDosha = auditChart.doshas.find((d) => d.name.includes('Kaal Sarp'));
-  assert(kaalSarpDosha?.status.includes('Active (Vishdhar Kaal Sarp Dosha'), 'AP-0001.26: Kaal Sarp Dosha accurately detected as Active (Vishdhar Kaal Sarp Dosha)', 'Active', kaalSarpDosha?.status);
+  assert(kaalSarpDosha?.status.includes('Active (Vishdhar Kaal Sarp Dosha'), 'AP-0001B.27: Kaal Sarp Dosha accurately detected as Active (Vishdhar Kaal Sarp Dosha)', 'Active', kaalSarpDosha?.status);
   const mangalDosha = auditChart.doshas.find((d) => d.name.includes('Mangal'));
-  assert(mangalDosha?.status.includes('Active (1st House Mars)'), 'AP-0001.27: Mangal Dosha formatted with correct ordinal (1st House Mars)', 'Active (1st House Mars)', mangalDosha?.status);
+  assert(mangalDosha?.status.includes('Active (1st House Mars)'), 'AP-0001B.28: Mangal Dosha formatted with correct ordinal (1st House Mars)', 'Active (1st House Mars)', mangalDosha?.status);
 
   // -------------------------------------------------------------------------
   // AP-0002: Marriage & Compatibility (Ashtakoot Gun Milan)
