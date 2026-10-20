@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   calculateBirthChartData,
   resolveCityCoordinates,
-} from '@/lib/vedicAstrologyEngine';
+} from '../../../../lib/vedicAstrologyEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       name = 'Devotee',
       gender = 'Male',
       targetDate,
+      tzOffset,
     } = body;
 
     if (!dob) {
@@ -25,6 +26,41 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Missing required parameter: dob (YYYY-MM-DD)' },
         { status: 400 }
       );
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid date format. Expected YYYY-MM-DD' },
+        { status: 400 }
+      );
+    }
+
+    const [y, m, d] = dob.split('-').map(Number);
+    if (m < 1 || m > 12 || d < 1 || d > 31 || y < 100 || y > 3000) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid date values. Month must be 1-12, Day must be 1-31, Year must be valid.' },
+        { status: 400 }
+      );
+    }
+
+    if (lat !== undefined && lat !== null && lat !== '') {
+      const latVal = Number(lat);
+      if (isNaN(latVal) || latVal < -90 || latVal > 90) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid latitude. Must be a number between -90 and 90 degrees.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (lon !== undefined && lon !== null && lon !== '') {
+      const lonVal = Number(lon);
+      if (isNaN(lonVal) || lonVal < -180 || lonVal > 180) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid longitude. Must be a number between -180 and 180 degrees.' },
+          { status: 400 }
+        );
+      }
     }
 
     const resolved = resolveCityCoordinates(pob, lat, lon);
@@ -36,7 +72,8 @@ export async function POST(req: NextRequest) {
       resolved.lon,
       name,
       gender,
-      targetDate
+      targetDate,
+      tzOffset !== undefined ? Number(tzOffset) : undefined
     );
 
     return NextResponse.json({

@@ -291,7 +291,7 @@ export function resolveCityCoordinates(
 // ---------------- ASTRONOMICAL VEDIC CALCULATION HELPERS ----------------
 
 // Parse birth date/time into UTC Date object
-export function parseBirthDateTimeToUTC(dob: string, tob: string, lon?: number): Date {
+export function parseBirthDateTimeToUTC(dob: string, tob: string, lon?: number, tzOffsetHours?: number): Date {
   const [yearStr, monthStr, dayStr] = (dob || '1995-01-01').split('-').map(Number);
   const year = yearStr || 1995;
   const month = (monthStr ? monthStr - 1 : 0);
@@ -299,10 +299,22 @@ export function parseBirthDateTimeToUTC(dob: string, tob: string, lon?: number):
 
   let hours = 12;
   let minutes = 0;
+  let explicitTz = tzOffsetHours;
+
   if (tob) {
+    if (/utc|gmt|z$/i.test(tob)) {
+      explicitTz = 0;
+    }
+    const offsetMatch = tob.match(/([+-]\d{1,2}):?(\d{2})?/);
+    if (offsetMatch && explicitTz === undefined) {
+      const sign = offsetMatch[1].startsWith('-') ? -1 : 1;
+      const offH = Math.abs(parseInt(offsetMatch[1], 10));
+      const offM = offsetMatch[2] ? parseInt(offsetMatch[2], 10) : 0;
+      explicitTz = sign * (offH + offM / 60.0);
+    }
     const isPM = /pm/i.test(tob);
     const isAM = /am/i.test(tob);
-    const timeDigits = tob.replace(/[^0-9:]/g, '');
+    const timeDigits = tob.replace(/([+-]\d{1,2}:?\d{0,2}|utc|gmt|z)/gi, '').replace(/[^0-9:]/g, '');
     const parts = timeDigits.split(':').map(Number);
     hours = parts[0] || 0;
     minutes = parts[1] || 0;
@@ -310,9 +322,11 @@ export function parseBirthDateTimeToUTC(dob: string, tob: string, lon?: number):
     if (isAM && hours === 12) hours = 0;
   }
 
-  // Timezone offset: default to IST (+5.5 hours) unless geographic longitude indicates otherwise
+  // Timezone offset: default to IST (+5.5 hours) unless geographic longitude or explicit offset is provided
   let tzHours = 5.5;
-  if (lon !== undefined && !isNaN(lon)) {
+  if (explicitTz !== undefined) {
+    tzHours = explicitTz;
+  } else if (lon !== undefined && !isNaN(lon)) {
     if (lon < 65 || lon > 100) {
       tzHours = Math.round((lon / 15) * 2) / 2;
     }
@@ -1292,7 +1306,8 @@ export function calculateBirthChartData(
   lon: string = '77.2090',
   name: string = 'Devotee',
   gender: string = 'Male',
-  targetDate?: Date | string
+  targetDate?: Date | string,
+  tzOffsetHours?: number
 ) {
   let resolvedLat = lat;
   let resolvedLon = lon;
@@ -1311,7 +1326,7 @@ export function calculateBirthChartData(
   const latNum = parseFloat(resolvedLat || '28.6139') || 28.6139;
   const lonNum = parseFloat(resolvedLon || '77.2090') || 77.2090;
 
-  const birthUtc = parseBirthDateTimeToUTC(dob, tob, lonNum);
+  const birthUtc = parseBirthDateTimeToUTC(dob, tob, lonNum, tzOffsetHours);
   const time = Astronomy.MakeTime(birthUtc);
   const ayanamsha = getLahiriAyanamsha(time);
 

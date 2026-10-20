@@ -1,0 +1,2192 @@
+[
+  {
+    "id": "AP-0001",
+    "name": "Audit Benchmark Native (Chennai)",
+    "category": "Baseline Audit Chart",
+    "dob": "1968-05-28",
+    "tob": "05:05 AM",
+    "pob": "Chennai, India",
+    "lat": 13.0827,
+    "lon": 80.2707,
+    "tz": 5.5,
+    "julianDayUT": 2440004.482638889,
+    "ayanamsa": 23.41575929122348,
+    "ascendant": {
+      "longitude": 33.18494801774143,
+      "sign": "Taurus"
+    },
+    "moon": {
+      "longitude": 50.60133964819975,
+      "sign": "Taurus",
+      "nakshatra": "Rohini",
+      "pada": 4,
+      "dashaLord": "Moon",
+      "dashaSpanYears": 10,
+      "balanceYears": 2.048995263850191
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 43.29115554271657,
+        "speed": 0.959714021870265,
+        "sign": "Taurus"
+      },
+      "Moon": {
+        "longitude": 50.60133964819975,
+        "speed": 11.885873831869329,
+        "sign": "Taurus"
+      },
+      "Mars": {
+        "longitude": 50.09317799490664,
+        "speed": 0.6894251130702372,
+        "sign": "Taurus"
+      },
+      "Mercury": {
+        "longitude": 65.35534166223103,
+        "speed": 0.6974545868595757,
+        "sign": "Gemini"
+      },
+      "Jupiter": {
+        "longitude": 124.3173275418007,
+        "speed": 0.1010759361162441,
+        "sign": "Leo"
+      },
+      "Venus": {
+        "longitude": 36.92094498085927,
+        "speed": 1.2280916666734063,
+        "sign": "Taurus"
+      },
+      "Saturn": {
+        "longitude": 358.1747436916997,
+        "speed": 0.10127275277597252,
+        "sign": "Pisces"
+      },
+      "Rahu": {
+        "longitude": 352.74283860109847,
+        "speed": -0.05299206817932568,
+        "sign": "Pisces"
+      },
+      "Ketu": {
+        "longitude": 172.74283860109847,
+        "speed": -0.05299206817932568,
+        "sign": "Virgo"
+      }
+    }
+  },
+  {
+    "id": "AP-0002",
+    "name": "Indian Independence (New Delhi)",
+    "category": "Midnight Historical Chart",
+    "dob": "1947-08-15",
+    "tob": "12:00 AM",
+    "pob": "New Delhi, India",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "tz": 5.5,
+    "julianDayUT": 2432412.2708333335,
+    "ayanamsa": 23.125450974713242,
+    "ascendant": {
+      "longitude": 37.73227002311447,
+      "sign": "Taurus"
+    },
+    "moon": {
+      "longitude": 93.9835379917483,
+      "sign": "Cancer",
+      "nakshatra": "Pushya",
+      "pada": 1,
+      "dashaLord": "Saturn",
+      "dashaSpanYears": 19,
+      "balanceYears": 18.073458361758668
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 117.98902113092345,
+        "speed": 0.9608958709695378,
+        "sign": "Cancer"
+      },
+      "Moon": {
+        "longitude": 93.9835379917483,
+        "speed": 15.086581644356936,
+        "sign": "Cancer"
+      },
+      "Mars": {
+        "longitude": 67.4562286819934,
+        "speed": 0.6577306556184741,
+        "sign": "Gemini"
+      },
+      "Mercury": {
+        "longitude": 103.67427729022451,
+        "speed": 1.8047629983478968,
+        "sign": "Cancer"
+      },
+      "Jupiter": {
+        "longitude": 205.87770305511015,
+        "speed": 0.08535006438079956,
+        "sign": "Libra"
+      },
+      "Venus": {
+        "longitude": 112.5612060403805,
+        "speed": 1.2350366058622924,
+        "sign": "Cancer"
+      },
+      "Saturn": {
+        "longitude": 110.47301495282294,
+        "speed": 0.12780805716223073,
+        "sign": "Cancer"
+      },
+      "Rahu": {
+        "longitude": 35.06972472602197,
+        "speed": -0.05299202201726199,
+        "sign": "Taurus"
+      },
+      "Ketu": {
+        "longitude": 215.06972472602197,
+        "speed": -0.05299202201726199,
+        "sign": "Scorpio"
+      }
+    }
+  },
+  {
+    "id": "AP-0003",
+    "name": "Mahatma Gandhi (Porbandar)",
+    "category": "19th Century Historical",
+    "dob": "1869-10-02",
+    "tob": "07:11 AM",
+    "pob": "Porbandar, India",
+    "lat": 21.6417,
+    "lon": 69.6293,
+    "tz": 4.64195,
+    "julianDayUT": 2403972.6058908333,
+    "ayanamsa": 22.03822097622704,
+    "ascendant": {
+      "longitude": 184.3909162497182,
+      "sign": "Libra"
+    },
+    "moon": {
+      "longitude": 117.92799912133958,
+      "sign": "Cancer",
+      "nakshatra": "Ashlesha",
+      "pada": 4,
+      "dashaLord": "Mercury",
+      "dashaSpanYears": 17,
+      "balanceYears": 2.64180112029204
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 166.8928283464833,
+        "speed": 0.9853039460289521,
+        "sign": "Virgo"
+      },
+      "Moon": {
+        "longitude": 117.92799912133958,
+        "speed": 14.42846293099011,
+        "sign": "Cancer"
+      },
+      "Mars": {
+        "longitude": 206.365343543861,
+        "speed": 0.6977227601400016,
+        "sign": "Libra"
+      },
+      "Mercury": {
+        "longitude": 191.73512055580318,
+        "speed": 0.6186619077453946,
+        "sign": "Libra"
+      },
+      "Jupiter": {
+        "longitude": 28.138722851454727,
+        "speed": -0.07309663701552299,
+        "sign": "Aries"
+      },
+      "Venus": {
+        "longitude": 204.39875050718615,
+        "speed": 1.1939895990209544,
+        "sign": "Libra"
+      },
+      "Saturn": {
+        "longitude": 230.3278954400952,
+        "speed": 0.07242752540055093,
+        "sign": "Scorpio"
+      },
+      "Rahu": {
+        "longitude": 102.1472841922172,
+        "speed": -0.052992146685249146,
+        "sign": "Cancer"
+      },
+      "Ketu": {
+        "longitude": 282.14728419221717,
+        "speed": -0.052992146685249146,
+        "sign": "Capricorn"
+      }
+    }
+  },
+  {
+    "id": "AP-0004",
+    "name": "Sachin Tendulkar (Mumbai)",
+    "category": "West India - Venus Dasha",
+    "dob": "1973-04-24",
+    "tob": "04:00 PM",
+    "pob": "Mumbai, India",
+    "lat": 19.076,
+    "lon": 72.8777,
+    "tz": 5.5,
+    "julianDayUT": 2441796.9375,
+    "ayanamsa": 23.484302421157224,
+    "ascendant": {
+      "longitude": 149.58638026086507,
+      "sign": "Leo"
+    },
+    "moon": {
+      "longitude": 266.08533204667316,
+      "sign": "Sagittarius",
+      "nakshatra": "Purva Ashadha",
+      "pada": 4,
+      "dashaLord": "Venus",
+      "dashaSpanYears": 20,
+      "balanceYears": 0.8720019299902794
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 10.613342506435721,
+        "speed": 0.9737746078310945,
+        "sign": "Aries"
+      },
+      "Moon": {
+        "longitude": 266.08533204667316,
+        "speed": 11.924633403975752,
+        "sign": "Sagittarius"
+      },
+      "Mars": {
+        "longitude": 296.79100504440834,
+        "speed": 0.7095531596069341,
+        "sign": "Capricorn"
+      },
+      "Mercury": {
+        "longitude": 346.9119414810246,
+        "speed": 1.4994303068240813,
+        "sign": "Pisces"
+      },
+      "Jupiter": {
+        "longitude": 286.6075714694627,
+        "speed": 0.10750720714932985,
+        "sign": "Capricorn"
+      },
+      "Venus": {
+        "longitude": 14.411787413318878,
+        "speed": 1.23509855128362,
+        "sign": "Aries"
+      },
+      "Saturn": {
+        "longitude": 54.27255819438187,
+        "speed": 0.10621664227189648,
+        "sign": "Taurus"
+      },
+      "Rahu": {
+        "longitude": 257.75699723985986,
+        "speed": -0.052992030191856325,
+        "sign": "Sagittarius"
+      },
+      "Ketu": {
+        "longitude": 77.75699723985986,
+        "speed": -0.052992030191856325,
+        "sign": "Gemini"
+      }
+    }
+  },
+  {
+    "id": "AP-0005",
+    "name": "Roger Federer (Basel, Switzerland)",
+    "category": "Western Europe - Jupiter Dasha",
+    "dob": "1981-08-08",
+    "tob": "10:15 AM",
+    "pob": "Basel, Switzerland",
+    "lat": 47.5596,
+    "lon": 7.5886,
+    "tz": 2.0,
+    "julianDayUT": 2444824.84375,
+    "ayanamsa": 23.600092334754322,
+    "ascendant": {
+      "longitude": 154.99261926291578,
+      "sign": "Virgo"
+    },
+    "moon": {
+      "longitude": 207.9298893330845,
+      "sign": "Libra",
+      "nakshatra": "Vishakha",
+      "pada": 3,
+      "dashaLord": "Jupiter",
+      "dashaSpanYears": 16,
+      "balanceYears": 6.484132800298607
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 112.09461410536998,
+        "speed": 0.958591901282581,
+        "sign": "Cancer"
+      },
+      "Moon": {
+        "longitude": 207.9298893330845,
+        "speed": 11.877890700229063,
+        "sign": "Libra"
+      },
+      "Mars": {
+        "longitude": 80.39539957918853,
+        "speed": 0.657861522006601,
+        "sign": "Gemini"
+      },
+      "Mercury": {
+        "longitude": 110.00043671674193,
+        "speed": 2.0677866025624887,
+        "sign": "Cancer"
+      },
+      "Jupiter": {
+        "longitude": 163.71992532252105,
+        "speed": 0.16900312479514717,
+        "sign": "Virgo"
+      },
+      "Venus": {
+        "longitude": 144.16961217185946,
+        "speed": 1.199588426466926,
+        "sign": "Leo"
+      },
+      "Saturn": {
+        "longitude": 162.61292511162986,
+        "speed": 0.09237097132912929,
+        "sign": "Virgo"
+      },
+      "Rahu": {
+        "longitude": 97.3020848765547,
+        "speed": -0.05299203889600548,
+        "sign": "Cancer"
+      },
+      "Ketu": {
+        "longitude": 277.3020848765547,
+        "speed": -0.05299203889600548,
+        "sign": "Capricorn"
+      }
+    }
+  },
+  {
+    "id": "AP-0006",
+    "name": "Bill Gates (Seattle, USA)",
+    "category": "North America - West Coast",
+    "dob": "1955-10-28",
+    "tob": "09:15 PM",
+    "pob": "Seattle, USA",
+    "lat": 47.6062,
+    "lon": -122.3321,
+    "tz": -8.0,
+    "julianDayUT": 2435409.71875,
+    "ayanamsa": 23.240063159932333,
+    "ascendant": {
+      "longitude": 84.98085805825956,
+      "sign": "Gemini"
+    },
+    "moon": {
+      "longitude": 344.5655248892045,
+      "sign": "Pisces",
+      "nakshatra": "Uttara Bhadrapada",
+      "pada": 4,
+      "dashaLord": "Saturn",
+      "dashaSpanYears": 19,
+      "balanceYears": 2.9941270328836342
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 191.76419556774715,
+        "speed": 0.9984647971539473,
+        "sign": "Libra"
+      },
+      "Moon": {
+        "longitude": 344.5655248892045,
+        "speed": 14.017848159382831,
+        "sign": "Pisces"
+      },
+      "Mars": {
+        "longitude": 166.8541727105952,
+        "speed": 0.6423471746290691,
+        "sign": "Virgo"
+      },
+      "Mercury": {
+        "longitude": 173.325943269587,
+        "speed": 0.9775740141028335,
+        "sign": "Virgo"
+      },
+      "Jupiter": {
+        "longitude": 124.53563444359125,
+        "speed": 0.1385583067625687,
+        "sign": "Leo"
+      },
+      "Venus": {
+        "longitude": 206.94806044259388,
+        "speed": 1.2468627209600747,
+        "sign": "Libra"
+      },
+      "Saturn": {
+        "longitude": 208.34362821499968,
+        "speed": 0.11594792676217612,
+        "sign": "Libra"
+      },
+      "Rahu": {
+        "longitude": 236.22878994844575,
+        "speed": -0.052992047215261066,
+        "sign": "Scorpio"
+      },
+      "Ketu": {
+        "longitude": 56.22878994844575,
+        "speed": -0.052992047215261066,
+        "sign": "Taurus"
+      }
+    }
+  },
+  {
+    "id": "AP-0007",
+    "name": "Elon Musk (Pretoria, South Africa)",
+    "category": "Southern Hemisphere (-25.7° S)",
+    "dob": "1971-06-28",
+    "tob": "07:30 AM",
+    "pob": "Pretoria, South Africa",
+    "lat": -25.7479,
+    "lon": 28.2293,
+    "tz": 2.0,
+    "julianDayUT": 2441130.7291666665,
+    "ayanamsa": 23.458826569539667,
+    "ascendant": {
+      "longitude": 80.09270044965989,
+      "sign": "Gemini"
+    },
+    "moon": {
+      "longitude": 134.78032902318373,
+      "sign": "Leo",
+      "nakshatra": "Purva Phalguni",
+      "pada": 1,
+      "dashaLord": "Venus",
+      "dashaSpanYears": 20,
+      "balanceYears": 17.82950646522442
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 72.4284584047284,
+        "speed": 0.953660625900876,
+        "sign": "Gemini"
+      },
+      "Moon": {
+        "longitude": 134.78032902318373,
+        "speed": 12.002876342602743,
+        "sign": "Leo"
+      },
+      "Mars": {
+        "longitude": 297.4433278356082,
+        "speed": 0.15776078143306982,
+        "sign": "Capricorn"
+      },
+      "Mercury": {
+        "longitude": 80.60439686607354,
+        "speed": 2.080742508025538,
+        "sign": "Gemini"
+      },
+      "Jupiter": {
+        "longitude": 214.1857710719593,
+        "speed": -0.07700118090994505,
+        "sign": "Scorpio"
+      },
+      "Venus": {
+        "longitude": 55.934620300872055,
+        "speed": 1.2190621016673564,
+        "sign": "Taurus"
+      },
+      "Saturn": {
+        "longitude": 37.66044016955306,
+        "speed": 0.11417585908581,
+        "sign": "Taurus"
+      },
+      "Rahu": {
+        "longitude": 293.060735615359,
+        "speed": -0.052992081718468434,
+        "sign": "Capricorn"
+      },
+      "Ketu": {
+        "longitude": 113.06073561535902,
+        "speed": -0.052992081718468434,
+        "sign": "Cancer"
+      }
+    }
+  },
+  {
+    "id": "AP-0008",
+    "name": "Kolkata Winter Solstice (Kolkata)",
+    "category": "Gandanta Water-Fire Cusp",
+    "dob": "1984-12-22",
+    "tob": "03:00 AM",
+    "pob": "Kolkata, India",
+    "lat": 22.5726,
+    "lon": 88.3639,
+    "tz": 5.5,
+    "julianDayUT": 2446056.3958333335,
+    "ayanamsa": 23.64718922374749,
+    "ascendant": {
+      "longitude": 203.08844895497546,
+      "sign": "Libra"
+    },
+    "moon": {
+      "longitude": 238.9412066715392,
+      "sign": "Scorpio",
+      "nakshatra": "Jyeshtha",
+      "pada": 4,
+      "dashaLord": "Mercury",
+      "dashaSpanYears": 17,
+      "balanceYears": 1.3499614937875442
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 246.5741153298778,
+        "speed": 1.0189534951174248,
+        "sign": "Sagittarius"
+      },
+      "Moon": {
+        "longitude": 238.9412066715392,
+        "speed": 13.91977657685293,
+        "sign": "Scorpio"
+      },
+      "Mars": {
+        "longitude": 303.7726972047385,
+        "speed": 0.764206532411529,
+        "sign": "Aquarius"
+      },
+      "Mercury": {
+        "longitude": 231.51418067824045,
+        "speed": -0.48001535035571213,
+        "sign": "Scorpio"
+      },
+      "Jupiter": {
+        "longitude": 265.4911740209428,
+        "speed": 0.2273679802410879,
+        "sign": "Sagittarius"
+      },
+      "Venus": {
+        "longitude": 291.213946131828,
+        "speed": 1.1516568841637493,
+        "sign": "Capricorn"
+      },
+      "Saturn": {
+        "longitude": 210.0790677309755,
+        "speed": 0.10401775893054349,
+        "sign": "Scorpio"
+      },
+      "Rahu": {
+        "longitude": 32.03964187282049,
+        "speed": -0.05299203554004173,
+        "sign": "Taurus"
+      },
+      "Ketu": {
+        "longitude": 212.03964187282048,
+        "speed": -0.05299203554004173,
+        "sign": "Scorpio"
+      }
+    }
+  },
+  {
+    "id": "AP-0009",
+    "name": "London Midday (London, UK)",
+    "category": "High Latitude (51.5° N) Europe",
+    "dob": "1990-01-15",
+    "tob": "12:30 PM",
+    "pob": "London, UK",
+    "lat": 51.5074,
+    "lon": -0.1278,
+    "tz": 0.0,
+    "julianDayUT": 2447907.0208333335,
+    "ayanamsa": 23.71796194850816,
+    "ascendant": {
+      "longitude": 38.713595745042795,
+      "sign": "Taurus"
+    },
+    "moon": {
+      "longitude": 144.03951790948423,
+      "sign": "Leo",
+      "nakshatra": "Purva Phalguni",
+      "pada": 4,
+      "dashaLord": "Venus",
+      "dashaSpanYears": 20,
+      "balanceYears": 3.940723135773662
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 271.3780064493067,
+        "speed": 1.0182137114225998,
+        "sign": "Capricorn"
+      },
+      "Moon": {
+        "longitude": 144.03951790948423,
+        "speed": 12.4836293256761,
+        "sign": "Leo"
+      },
+      "Mars": {
+        "longitude": 236.2024689937804,
+        "speed": 0.7119428681032157,
+        "sign": "Scorpio"
+      },
+      "Mercury": {
+        "longitude": 257.60785931712945,
+        "speed": -0.7172501487564066,
+        "sign": "Sagittarius"
+      },
+      "Jupiter": {
+        "longitude": 69.64209143714842,
+        "speed": -0.11724542468134251,
+        "sign": "Gemini"
+      },
+      "Venus": {
+        "longitude": 276.95176402513215,
+        "speed": -0.5944463581500272,
+        "sign": "Capricorn"
+      },
+      "Saturn": {
+        "longitude": 263.59550511587787,
+        "speed": 0.11778491469123087,
+        "sign": "Sagittarius"
+      },
+      "Rahu": {
+        "longitude": 293.9712775277205,
+        "speed": -0.05299203904486906,
+        "sign": "Capricorn"
+      },
+      "Ketu": {
+        "longitude": 113.97127752772047,
+        "speed": -0.05299203904486906,
+        "sign": "Cancer"
+      }
+    }
+  },
+  {
+    "id": "AP-0010",
+    "name": "Tokyo Y2K Midnight (Tokyo, Japan)",
+    "category": "Millennial Rollover (East Asia)",
+    "dob": "2000-01-01",
+    "tob": "12:01 AM",
+    "pob": "Tokyo, Japan",
+    "lat": 35.6762,
+    "lon": 139.6503,
+    "tz": 9.0,
+    "julianDayUT": 2451544.125694583,
+    "ayanamsa": 23.857058916153846,
+    "ascendant": {
+      "longitude": 168.1840448563915,
+      "sign": "Virgo"
+    },
+    "moon": {
+      "longitude": 188.89679737351258,
+      "sign": "Libra",
+      "nakshatra": "Swati",
+      "pada": 1,
+      "dashaLord": "Rahu",
+      "dashaSpanYears": 18,
+      "balanceYears": 14.989323545758024
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 255.62447239527333,
+        "speed": 1.0193067371489917,
+        "sign": "Sagittarius"
+      },
+      "Moon": {
+        "longitude": 188.89679737351258,
+        "speed": 12.174746708955054,
+        "sign": "Libra"
+      },
+      "Mars": {
+        "longitude": 303.43195938177166,
+        "speed": 0.7756092812567192,
+        "sign": "Aquarius"
+      },
+      "Mercury": {
+        "longitude": 246.67744526047238,
+        "speed": 1.5516570381182655,
+        "sign": "Sagittarius"
+      },
+      "Jupiter": {
+        "longitude": 1.3654947937385629,
+        "speed": 0.03776858174727653,
+        "sign": "Aries"
+      },
+      "Venus": {
+        "longitude": 216.6559768802989,
+        "speed": 1.207992079086924,
+        "sign": "Scorpio"
+      },
+      "Saturn": {
+        "longitude": 16.560583478287956,
+        "speed": -0.021571227628820206,
+        "sign": "Aries"
+      },
+      "Rahu": {
+        "longitude": 101.23375477334069,
+        "speed": -0.052992019778000624,
+        "sign": "Cancer"
+      },
+      "Ketu": {
+        "longitude": 281.2337547733407,
+        "speed": -0.052992019778000624,
+        "sign": "Capricorn"
+      }
+    }
+  },
+  {
+    "id": "AP-0011",
+    "name": "Shah Rukh Khan (New Delhi)",
+    "category": "Mars Dasha - Dhanishta",
+    "dob": "1965-11-02",
+    "tob": "02:30 AM",
+    "pob": "New Delhi, India",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "tz": 5.5,
+    "julianDayUT": 2439066.375,
+    "ayanamsa": 23.37988682496041,
+    "ascendant": {
+      "longitude": 141.7915337709424,
+      "sign": "Leo"
+    },
+    "moon": {
+      "longitude": 291.5457815373206,
+      "sign": "Capricorn",
+      "nakshatra": "Shravana",
+      "pada": 4,
+      "dashaLord": "Moon",
+      "dashaSpanYears": 10,
+      "balanceYears": 1.3406638470095755
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 195.8572029438331,
+        "speed": 1.000965588684931,
+        "sign": "Libra"
+      },
+      "Moon": {
+        "longitude": 291.5457815373206,
+        "speed": 11.868888390055307,
+        "sign": "Capricorn"
+      },
+      "Mars": {
+        "longitude": 237.32523035497937,
+        "speed": 0.7415960533749504,
+        "sign": "Scorpio"
+      },
+      "Mercury": {
+        "longitude": 216.11515263328147,
+        "speed": 1.3522285925858937,
+        "sign": "Scorpio"
+      },
+      "Jupiter": {
+        "longitude": 67.65419831204383,
+        "speed": -0.043741477700401925,
+        "sign": "Gemini"
+      },
+      "Venus": {
+        "longitude": 242.4081424652847,
+        "speed": 1.0778193619809258,
+        "sign": "Sagittarius"
+      },
+      "Saturn": {
+        "longitude": 317.242866800163,
+        "speed": -0.021209354139819874,
+        "sign": "Aquarius"
+      },
+      "Rahu": {
+        "longitude": 42.455080129555725,
+        "speed": -0.052992037547475536,
+        "sign": "Taurus"
+      },
+      "Ketu": {
+        "longitude": 222.4550801295557,
+        "speed": -0.052992037547475536,
+        "sign": "Scorpio"
+      }
+    }
+  },
+  {
+    "id": "AP-0012",
+    "name": "Sydney Summer Sunrise (Sydney, Australia)",
+    "category": "Southern Hemisphere (-33.8° S)",
+    "dob": "1977-01-14",
+    "tob": "06:45 AM",
+    "pob": "Sydney, Australia",
+    "lat": -33.8688,
+    "lon": 151.2093,
+    "tz": 11.0,
+    "julianDayUT": 2443157.3229166665,
+    "ayanamsa": 23.536324285754915,
+    "ascendant": {
+      "longitude": 278.7005916423772,
+      "sign": "Capricorn"
+    },
+    "moon": {
+      "longitude": 192.93170905135614,
+      "sign": "Libra",
+      "nakshatra": "Swati",
+      "pada": 2,
+      "dashaLord": "Rahu",
+      "dashaSpanYears": 18,
+      "balanceYears": 9.542192780669227
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 269.9893657925274,
+        "speed": 1.0187254645828534,
+        "sign": "Sagittarius"
+      },
+      "Moon": {
+        "longitude": 192.93170905135614,
+        "speed": 14.141542439614659,
+        "sign": "Libra"
+      },
+      "Mars": {
+        "longitude": 256.07866676408486,
+        "speed": 0.7562253117205733,
+        "sign": "Sagittarius"
+      },
+      "Mercury": {
+        "longitude": 254.48277711081818,
+        "speed": -0.5398648514587344,
+        "sign": "Sagittarius"
+      },
+      "Jupiter": {
+        "longitude": 27.63915062669197,
+        "speed": -0.005715816087020096,
+        "sign": "Aries"
+      },
+      "Venus": {
+        "longitude": 316.65784519384107,
+        "speed": 1.078373610723305,
+        "sign": "Aquarius"
+      },
+      "Saturn": {
+        "longitude": 111.44296839523706,
+        "speed": -0.07292929256939547,
+        "sign": "Cancer"
+      },
+      "Rahu": {
+        "longitude": 185.6674032433789,
+        "speed": -0.05299201016220528,
+        "sign": "Libra"
+      },
+      "Ketu": {
+        "longitude": 5.667403243378885,
+        "speed": -0.05299201016220528,
+        "sign": "Aries"
+      }
+    }
+  },
+  {
+    "id": "AP-0013",
+    "name": "Singapore Summer Solstice (Singapore)",
+    "category": "Equatorial (1.35° N)",
+    "dob": "2010-06-21",
+    "tob": "08:00 PM",
+    "pob": "Singapore",
+    "lat": 1.3521,
+    "lon": 103.8198,
+    "tz": 8.0,
+    "julianDayUT": 2455369.0,
+    "ayanamsa": 24.003343482048308,
+    "ascendant": {
+      "longitude": 257.79301457693026,
+      "sign": "Sagittarius"
+    },
+    "moon": {
+      "longitude": 185.86386024300978,
+      "sign": "Libra",
+      "nakshatra": "Chitra",
+      "pada": 4,
+      "dashaLord": "Mars",
+      "dashaSpanYears": 7,
+      "balanceYears": 0.4214733724198688
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 66.01298269647249,
+        "speed": 0.954037706037561,
+        "sign": "Gemini"
+      },
+      "Moon": {
+        "longitude": 185.86386024300978,
+        "speed": 13.60984499915194,
+        "sign": "Libra"
+      },
+      "Mars": {
+        "longitude": 133.62601412705416,
+        "speed": 0.549918412967044,
+        "sign": "Leo"
+      },
+      "Mercury": {
+        "longitude": 57.520500725476865,
+        "speed": 2.110569790419242,
+        "sign": "Taurus"
+      },
+      "Jupiter": {
+        "longitude": 337.7790432892126,
+        "speed": 0.09764901814605033,
+        "sign": "Pisces"
+      },
+      "Venus": {
+        "longitude": 104.30153291001793,
+        "speed": 1.1596210619691303,
+        "sign": "Cancer"
+      },
+      "Saturn": {
+        "longitude": 154.2236047275532,
+        "speed": 0.036310246620287645,
+        "sign": "Virgo"
+      },
+      "Rahu": {
+        "longitude": 258.54599121348406,
+        "speed": -0.052992019142414956,
+        "sign": "Sagittarius"
+      },
+      "Ketu": {
+        "longitude": 78.54599121348406,
+        "speed": -0.052992019142414956,
+        "sign": "Gemini"
+      }
+    }
+  },
+  {
+    "id": "AP-0014",
+    "name": "Oslo Winter Solstice (Oslo, Norway)",
+    "category": "Extreme High Latitude (59.9° N)",
+    "dob": "1995-12-21",
+    "tob": "07:00 PM",
+    "pob": "Oslo, Norway",
+    "lat": 59.9139,
+    "lon": 10.7522,
+    "tz": 1.0,
+    "julianDayUT": 2450073.25,
+    "ayanamsa": 23.800806203224226,
+    "ascendant": {
+      "longitude": 107.21819907042024,
+      "sign": "Cancer"
+    },
+    "moon": {
+      "longitude": 240.6013357531988,
+      "sign": "Sagittarius",
+      "nakshatra": "Mula",
+      "pada": 1,
+      "dashaLord": "Ketu",
+      "dashaSpanYears": 7,
+      "balanceYears": 6.68429872957063
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 245.59105183544048,
+        "speed": 1.0188225605345373,
+        "sign": "Sagittarius"
+      },
+      "Moon": {
+        "longitude": 240.6013357531988,
+        "speed": 15.298182527425752,
+        "sign": "Sagittarius"
+      },
+      "Mars": {
+        "longitude": 262.4048639507943,
+        "speed": 0.7736626280862587,
+        "sign": "Sagittarius"
+      },
+      "Mercury": {
+        "longitude": 261.075183959171,
+        "speed": 1.5164042777319546,
+        "sign": "Sagittarius"
+      },
+      "Jupiter": {
+        "longitude": 243.34222148172609,
+        "speed": 0.22818775341600414,
+        "sign": "Sagittarius"
+      },
+      "Venus": {
+        "longitude": 276.1777052810914,
+        "speed": 1.235695771463647,
+        "sign": "Capricorn"
+      },
+      "Saturn": {
+        "longitude": 324.9807014984179,
+        "speed": 0.05168060650217293,
+        "sign": "Aquarius"
+      },
+      "Rahu": {
+        "longitude": 179.17842005905243,
+        "speed": -0.052992024998989105,
+        "sign": "Virgo"
+      },
+      "Ketu": {
+        "longitude": 359.1784200590524,
+        "speed": -0.052992024998989105,
+        "sign": "Pisces"
+      }
+    }
+  },
+  {
+    "id": "AP-0015",
+    "name": "London 1983 Victory (London, UK)",
+    "category": "Summer Twilight High Latitude",
+    "dob": "1983-06-25",
+    "tob": "06:30 PM",
+    "pob": "London, UK",
+    "lat": 51.5074,
+    "lon": -0.1278,
+    "tz": 1.0,
+    "julianDayUT": 2445511.2291666665,
+    "ayanamsa": 23.626340929681703,
+    "ascendant": {
+      "longitude": 216.63689377377926,
+      "sign": "Scorpio"
+    },
+    "moon": {
+      "longitude": 254.133402468525,
+      "sign": "Sagittarius",
+      "nakshatra": "Purva Ashadha",
+      "pada": 1,
+      "dashaLord": "Venus",
+      "dashaSpanYears": 20,
+      "balanceYears": 18.79989629721253
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 69.96862438284396,
+        "speed": 0.9533691800820178,
+        "sign": "Gemini"
+      },
+      "Moon": {
+        "longitude": 254.133402468525,
+        "speed": 12.070348482595408,
+        "sign": "Sagittarius"
+      },
+      "Mars": {
+        "longitude": 63.97147413462787,
+        "speed": 0.6776195695254561,
+        "sign": "Gemini"
+      },
+      "Mercury": {
+        "longitude": 54.350061289956564,
+        "speed": 1.8560697802670854,
+        "sign": "Taurus"
+      },
+      "Jupiter": {
+        "longitude": 219.0985460437364,
+        "speed": -0.09369962622931564,
+        "sign": "Scorpio"
+      },
+      "Venus": {
+        "longitude": 114.98333795471203,
+        "speed": 0.8742337464646334,
+        "sign": "Cancer"
+      },
+      "Saturn": {
+        "longitude": 184.12821125864153,
+        "speed": -0.009500863564363677,
+        "sign": "Libra"
+      },
+      "Rahu": {
+        "longitude": 60.92912878809245,
+        "speed": -0.05299205353088527,
+        "sign": "Gemini"
+      },
+      "Ketu": {
+        "longitude": 240.92912878809244,
+        "speed": -0.05299205353088527,
+        "sign": "Sagittarius"
+      }
+    }
+  },
+  {
+    "id": "AP-0016",
+    "name": "Indian Republic Day (New Delhi)",
+    "category": "Historical Foundation Chart",
+    "dob": "1950-01-26",
+    "tob": "10:18 AM",
+    "pob": "New Delhi, India",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "tz": 5.5,
+    "julianDayUT": 2433307.7,
+    "ayanamsa": 23.15968869878338,
+    "ascendant": {
+      "longitude": 342.7215119426721,
+      "sign": "Pisces"
+    },
+    "moon": {
+      "longitude": 12.576686534929369,
+      "sign": "Aries",
+      "nakshatra": "Ashwini",
+      "pada": 4,
+      "dashaLord": "Ketu",
+      "dashaSpanYears": 7,
+      "balanceYears": 0.39723956916208164
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 282.5128550783388,
+        "speed": 1.0165143763294062,
+        "sign": "Capricorn"
+      },
+      "Moon": {
+        "longitude": 12.576686534929369,
+        "speed": 11.803297675057525,
+        "sign": "Aries"
+      },
+      "Mars": {
+        "longitude": 166.2282838895379,
+        "speed": 0.18482697708333898,
+        "sign": "Virgo"
+      },
+      "Mercury": {
+        "longitude": 265.52332598958986,
+        "speed": -0.42557729605190076,
+        "sign": "Sagittarius"
+      },
+      "Jupiter": {
+        "longitude": 289.2100391343698,
+        "speed": 0.23766149674686593,
+        "sign": "Capricorn"
+      },
+      "Venus": {
+        "longitude": 290.73791962302835,
+        "speed": -0.5691104601078059,
+        "sign": "Capricorn"
+      },
+      "Saturn": {
+        "longitude": 145.62950953669093,
+        "speed": -0.04684542192027999,
+        "sign": "Leo"
+      },
+      "Rahu": {
+        "longitude": 347.6190876933392,
+        "speed": -0.052992118969125174,
+        "sign": "Pisces"
+      },
+      "Ketu": {
+        "longitude": 167.61908769333922,
+        "speed": -0.052992118969125174,
+        "sign": "Virgo"
+      }
+    }
+  },
+  {
+    "id": "AP-0017",
+    "name": "Aryabhata Launch (Sriharikota)",
+    "category": "Early Space Age Epoch",
+    "dob": "1975-04-19",
+    "tob": "06:00 AM",
+    "pob": "Sriharikota, India",
+    "lat": 13.7199,
+    "lon": 80.2305,
+    "tz": 5.5,
+    "julianDayUT": 2442521.5208333335,
+    "ayanamsa": 23.51201076860292,
+    "ascendant": {
+      "longitude": 5.508060220468497,
+      "sign": "Aries"
+    },
+    "moon": {
+      "longitude": 92.57576909149535,
+      "sign": "Cancer",
+      "nakshatra": "Punarvasu",
+      "pada": 4,
+      "dashaLord": "Jupiter",
+      "dashaSpanYears": 16,
+      "balanceYears": 0.90907709020559
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 4.830922239911819,
+        "speed": 0.9771417856481104,
+        "sign": "Aries"
+      },
+      "Moon": {
+        "longitude": 92.57576909149535,
+        "speed": 13.881489912162566,
+        "sign": "Cancer"
+      },
+      "Mars": {
+        "longitude": 311.9821040277045,
+        "speed": 0.7613725416333867,
+        "sign": "Aquarius"
+      },
+      "Mercury": {
+        "longitude": 5.00014523311751,
+        "speed": 2.1110022952700436,
+        "sign": "Aries"
+      },
+      "Jupiter": {
+        "longitude": 343.99175971511596,
+        "speed": 0.2338294088748131,
+        "sign": "Pisces"
+      },
+      "Venus": {
+        "longitude": 42.474799317213474,
+        "speed": 1.173514653267857,
+        "sign": "Taurus"
+      },
+      "Saturn": {
+        "longitude": 79.57753802471193,
+        "speed": 0.06241241019687338,
+        "sign": "Gemini"
+      },
+      "Rahu": {
+        "longitude": 219.35985000587257,
+        "speed": -0.052992044940423005,
+        "sign": "Scorpio"
+      },
+      "Ketu": {
+        "longitude": 39.359850005872545,
+        "speed": -0.052992044940423005,
+        "sign": "Taurus"
+      }
+    }
+  },
+  {
+    "id": "AP-0018",
+    "name": "Chandrayaan-1 Launch (Sriharikota)",
+    "category": "Moon Mission Launch",
+    "dob": "2008-10-22",
+    "tob": "06:22 AM",
+    "pob": "Sriharikota, India",
+    "lat": 13.7199,
+    "lon": 80.2305,
+    "tz": 5.5,
+    "julianDayUT": 2454761.53611125,
+    "ayanamsa": 23.98011021862618,
+    "ascendant": {
+      "longitude": 189.1798990056293,
+      "sign": "Libra"
+    },
+    "moon": {
+      "longitude": 101.92680173088961,
+      "sign": "Cancer",
+      "nakshatra": "Pushya",
+      "pada": 3,
+      "dashaLord": "Saturn",
+      "dashaSpanYears": 19,
+      "balanceYears": 6.754307533482316
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 185.00985851507994,
+        "speed": 0.9950921478497611,
+        "sign": "Libra"
+      },
+      "Moon": {
+        "longitude": 101.92680173088961,
+        "speed": 13.734880496811426,
+        "sign": "Cancer"
+      },
+      "Mars": {
+        "longitude": 198.21467852414744,
+        "speed": 0.691609063386189,
+        "sign": "Libra"
+      },
+      "Mercury": {
+        "longitude": 166.79360077475351,
+        "speed": 0.9629308315311753,
+        "sign": "Virgo"
+      },
+      "Jupiter": {
+        "longitude": 261.4739511516068,
+        "speed": 0.12719819501203533,
+        "sign": "Sagittarius"
+      },
+      "Venus": {
+        "longitude": 219.97308663143315,
+        "speed": 1.2110825481988914,
+        "sign": "Scorpio"
+      },
+      "Saturn": {
+        "longitude": 143.64611097950848,
+        "speed": 0.10497707665936248,
+        "sign": "Leo"
+      },
+      "Rahu": {
+        "longitude": 290.7367189517129,
+        "speed": -0.052992004315888734,
+        "sign": "Capricorn"
+      },
+      "Ketu": {
+        "longitude": 110.73671895171287,
+        "speed": -0.052992004315888734,
+        "sign": "Cancer"
+      }
+    }
+  },
+  {
+    "id": "AP-0019",
+    "name": "Chandrayaan-3 Landing (Bengaluru)",
+    "category": "Modern Lunar Landing",
+    "dob": "2023-08-23",
+    "tob": "06:04 PM",
+    "pob": "Bengaluru, India",
+    "lat": 12.9716,
+    "lon": 77.5946,
+    "tz": 5.5,
+    "julianDayUT": 2460180.02361125,
+    "ayanamsa": 24.18735347191813,
+    "ascendant": {
+      "longitude": 297.7477755294741,
+      "sign": "Capricorn"
+    },
+    "moon": {
+      "longitude": 205.2653361453021,
+      "sign": "Libra",
+      "nakshatra": "Vishakha",
+      "pada": 2,
+      "dashaLord": "Jupiter",
+      "dashaSpanYears": 16,
+      "balanceYears": 9.681596625637507
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 125.95697052280404,
+        "speed": 0.9635904247673835,
+        "sign": "Leo"
+      },
+      "Moon": {
+        "longitude": 205.2653361453021,
+        "speed": 12.794624594624935,
+        "sign": "Libra"
+      },
+      "Mars": {
+        "longitude": 153.23737577255275,
+        "speed": 0.637780780980533,
+        "sign": "Virgo"
+      },
+      "Mercury": {
+        "longitude": 147.6622230705966,
+        "speed": 0.02888196523034699,
+        "sign": "Leo"
+      },
+      "Jupiter": {
+        "longitude": 21.15664615008389,
+        "speed": 0.03942808600642316,
+        "sign": "Aries"
+      },
+      "Venus": {
+        "longitude": 110.64966420126332,
+        "speed": -0.44367948950608044,
+        "sign": "Cancer"
+      },
+      "Saturn": {
+        "longitude": 309.93893200494307,
+        "speed": -0.07549634976691515,
+        "sign": "Aquarius"
+      },
+      "Rahu": {
+        "longitude": 3.6002523458547877,
+        "speed": -0.052991998261713615,
+        "sign": "Aries"
+      },
+      "Ketu": {
+        "longitude": 183.60025234585478,
+        "speed": -0.052991998261713615,
+        "sign": "Libra"
+      }
+    }
+  },
+  {
+    "id": "AP-0020",
+    "name": "Apollo 11 Landing (Houston, USA)",
+    "category": "First Moon Walk (Central USA)",
+    "dob": "1969-07-20",
+    "tob": "03:17 PM",
+    "pob": "Houston, USA",
+    "lat": 29.7604,
+    "lon": -95.3698,
+    "tz": -5.0,
+    "julianDayUT": 2440423.34513875,
+    "ayanamsa": 23.43177638035735,
+    "ascendant": {
+      "longitude": 205.9037444948023,
+      "sign": "Libra"
+    },
+    "moon": {
+      "longitude": 164.4413947190109,
+      "sign": "Virgo",
+      "nakshatra": "Hasta",
+      "pada": 2,
+      "dashaLord": "Moon",
+      "dashaSpanYears": 10,
+      "balanceYears": 6.668953960741829
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 94.47825297706822,
+        "speed": 0.9546338133574764,
+        "sign": "Cancer"
+      },
+      "Moon": {
+        "longitude": 164.4413947190109,
+        "speed": 12.727282503746164,
+        "sign": "Virgo"
+      },
+      "Mars": {
+        "longitude": 219.34074909131277,
+        "speed": 0.16736427025629477,
+        "sign": "Scorpio"
+      },
+      "Mercury": {
+        "longitude": 92.41042217017393,
+        "speed": 2.1347499642681718,
+        "sign": "Cancer"
+      },
+      "Jupiter": {
+        "longitude": 157.31373519408714,
+        "speed": 0.14608700366140898,
+        "sign": "Virgo"
+      },
+      "Venus": {
+        "longitude": 51.60493212177204,
+        "speed": 1.1008867652007646,
+        "sign": "Taurus"
+      },
+      "Saturn": {
+        "longitude": 14.665503972564954,
+        "speed": 0.05285047614976165,
+        "sign": "Aries"
+      },
+      "Rahu": {
+        "longitude": 330.54645916646666,
+        "speed": -0.05299203389808765,
+        "sign": "Pisces"
+      },
+      "Ketu": {
+        "longitude": 150.54645916646666,
+        "speed": -0.05299203389808765,
+        "sign": "Virgo"
+      }
+    }
+  },
+  {
+    "id": "AP-0021",
+    "name": "Edinburgh 8-8-88 (Edinburgh, UK)",
+    "category": "High Latitude Northern UK (55.9° N)",
+    "dob": "1988-08-08",
+    "tob": "08:08 AM",
+    "pob": "Edinburgh, UK",
+    "lat": 55.9533,
+    "lon": -3.1883,
+    "tz": 1.0,
+    "julianDayUT": 2447381.7972220834,
+    "ayanamsa": 23.69787586803477,
+    "ascendant": {
+      "longitude": 136.9718892446941,
+      "sign": "Leo"
+    },
+    "moon": {
+      "longitude": 64.87049256797447,
+      "sign": "Gemini",
+      "nakshatra": "Mrigashira",
+      "pada": 4,
+      "dashaLord": "Mars",
+      "dashaSpanYears": 7,
+      "balanceYears": 0.9429914018134067
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 112.25118138696261,
+        "speed": 0.9588393666802949,
+        "sign": "Cancer"
+      },
+      "Moon": {
+        "longitude": 64.87049256797447,
+        "speed": 12.556028511863303,
+        "sign": "Gemini"
+      },
+      "Mars": {
+        "longitude": 345.5031980682801,
+        "speed": 0.2394983178325838,
+        "sign": "Pisces"
+      },
+      "Mercury": {
+        "longitude": 117.77272659550422,
+        "speed": 1.9768311891023436,
+        "sign": "Cancer"
+      },
+      "Jupiter": {
+        "longitude": 38.97882996290713,
+        "speed": 0.13684216934999732,
+        "sign": "Taurus"
+      },
+      "Venus": {
+        "longitude": 67.38283333630062,
+        "speed": 0.8262887212625857,
+        "sign": "Gemini"
+      },
+      "Saturn": {
+        "longitude": 242.61708081593292,
+        "speed": -0.03444523948424305,
+        "sign": "Sagittarius"
+      },
+      "Rahu": {
+        "longitude": 321.8039388314431,
+        "speed": -0.052992040389095975,
+        "sign": "Aquarius"
+      },
+      "Ketu": {
+        "longitude": 141.80393883144308,
+        "speed": -0.052992040389095975,
+        "sign": "Leo"
+      }
+    }
+  },
+  {
+    "id": "AP-0022",
+    "name": "Mexico City Solstice (Mexico City)",
+    "category": "Central America High Elevation",
+    "dob": "2012-12-21",
+    "tob": "05:11 AM",
+    "pob": "Mexico City, Mexico",
+    "lat": 19.4326,
+    "lon": -99.1332,
+    "tz": -6.0,
+    "julianDayUT": 2456282.965972083,
+    "ayanamsa": 24.038299644922176,
+    "ascendant": {
+      "longitude": 219.31806424567677,
+      "sign": "Scorpio"
+    },
+    "moon": {
+      "longitude": 350.195392738567,
+      "sign": "Pisces",
+      "nakshatra": "Revati",
+      "pada": 2,
+      "dashaLord": "Mercury",
+      "dashaSpanYears": 17,
+      "balanceYears": 12.500874258327066
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 245.9573703680249,
+        "speed": 1.0182883346959724,
+        "sign": "Sagittarius"
+      },
+      "Moon": {
+        "longitude": 350.195392738567,
+        "speed": 12.267641685737017,
+        "sign": "Pisces"
+      },
+      "Mars": {
+        "longitude": 272.3855294407404,
+        "speed": 0.7809349326297518,
+        "sign": "Capricorn"
+      },
+      "Mercury": {
+        "longitude": 230.65603287900038,
+        "speed": 1.4794671105697652,
+        "sign": "Scorpio"
+      },
+      "Jupiter": {
+        "longitude": 44.858623375016464,
+        "speed": -0.11844565120258459,
+        "sign": "Taurus"
+      },
+      "Venus": {
+        "longitude": 222.54395623442934,
+        "speed": 1.2496503263200696,
+        "sign": "Scorpio"
+      },
+      "Saturn": {
+        "longitude": 194.6188293346082,
+        "speed": 0.08987341414978677,
+        "sign": "Libra"
+      },
+      "Rahu": {
+        "longitude": 210.1131062404637,
+        "speed": -0.05299200861111988,
+        "sign": "Scorpio"
+      },
+      "Ketu": {
+        "longitude": 30.113106240463708,
+        "speed": -0.05299200861111988,
+        "sign": "Taurus"
+      }
+    }
+  },
+  {
+    "id": "AP-0023",
+    "name": "London 1940 Wartime (London, UK)",
+    "category": "WWII Mid-Century Epoch",
+    "dob": "1940-05-10",
+    "tob": "02:00 PM",
+    "pob": "London, UK",
+    "lat": 51.5074,
+    "lon": -0.1278,
+    "tz": 1.0,
+    "julianDayUT": 2429760.0416666665,
+    "ayanamsa": 23.024042225930867,
+    "ascendant": {
+      "longitude": 137.99829229561152,
+      "sign": "Leo"
+    },
+    "moon": {
+      "longitude": 62.309763517639624,
+      "sign": "Gemini",
+      "nakshatra": "Mrigashira",
+      "pada": 3,
+      "dashaLord": "Mars",
+      "dashaSpanYears": 7,
+      "balanceYears": 2.287374153239199
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 26.6800113538287,
+        "speed": 0.9662439013212821,
+        "sign": "Aries"
+      },
+      "Moon": {
+        "longitude": 62.309763517639624,
+        "speed": 13.042090383593475,
+        "sign": "Gemini"
+      },
+      "Mars": {
+        "longitude": 62.39303887017928,
+        "speed": 0.6489227013606571,
+        "sign": "Gemini"
+      },
+      "Mercury": {
+        "longitude": 13.888870220813093,
+        "speed": 1.9469445281152724,
+        "sign": "Aries"
+      },
+      "Jupiter": {
+        "longitude": 5.639132112337855,
+        "speed": 0.23257993750002526,
+        "sign": "Aries"
+      },
+      "Venus": {
+        "longitude": 69.76831338570422,
+        "speed": 0.7130761704568138,
+        "sign": "Gemini"
+      },
+      "Saturn": {
+        "longitude": 13.356435517336406,
+        "speed": 0.12545168172905458,
+        "sign": "Aries"
+      },
+      "Rahu": {
+        "longitude": 175.61682760541183,
+        "speed": -0.05299209524555248,
+        "sign": "Virgo"
+      },
+      "Ketu": {
+        "longitude": 355.6168276054118,
+        "speed": -0.05299209524555248,
+        "sign": "Pisces"
+      }
+    }
+  },
+  {
+    "id": "AP-0024",
+    "name": "New Delhi Spring Equinox (New Delhi)",
+    "category": "Modern Planetary Conjunctions",
+    "dob": "2020-03-24",
+    "tob": "08:00 PM",
+    "pob": "New Delhi, India",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "tz": 5.5,
+    "julianDayUT": 2458933.1041666665,
+    "ayanamsa": 24.139660803449715,
+    "ascendant": {
+      "longitude": 179.7606210985608,
+      "sign": "Virgo"
+    },
+    "moon": {
+      "longitude": 342.5562170667271,
+      "sign": "Pisces",
+      "nakshatra": "Uttara Bhadrapada",
+      "pada": 3,
+      "dashaLord": "Saturn",
+      "dashaSpanYears": 19,
+      "balanceYears": 5.8573906799139435
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 340.2773606226542,
+        "speed": 0.9914669281516297,
+        "sign": "Pisces"
+      },
+      "Moon": {
+        "longitude": 342.5562170667271,
+        "speed": 11.86513177947177,
+        "sign": "Pisces"
+      },
+      "Mars": {
+        "longitude": 271.54402481873075,
+        "speed": 0.694896874660304,
+        "sign": "Capricorn"
+      },
+      "Mercury": {
+        "longitude": 312.5307344352547,
+        "speed": 1.0208694821319892,
+        "sign": "Aquarius"
+      },
+      "Jupiter": {
+        "longitude": 269.2798392658122,
+        "speed": 0.14104000437753275,
+        "sign": "Sagittarius"
+      },
+      "Venus": {
+        "longitude": 26.27691557307252,
+        "speed": 0.9896008370757715,
+        "sign": "Aries"
+      },
+      "Saturn": {
+        "longitude": 276.04402345172264,
+        "speed": 0.07182651666721299,
+        "sign": "Capricorn"
+      },
+      "Rahu": {
+        "longitude": 69.67699474834536,
+        "speed": -0.05299203468949149,
+        "sign": "Gemini"
+      },
+      "Ketu": {
+        "longitude": 249.67699474834535,
+        "speed": -0.05299203468949149,
+        "sign": "Sagittarius"
+      }
+    }
+  },
+  {
+    "id": "AP-0025",
+    "name": "Ayodhya Prana Pratishtha (Ayodhya)",
+    "category": "Auspicious Abhijit Muhurat",
+    "dob": "2024-01-22",
+    "tob": "12:29 PM",
+    "pob": "Ayodhya, India",
+    "lat": 26.7922,
+    "lon": 82.1998,
+    "tz": 5.5,
+    "julianDayUT": 2460331.7909720833,
+    "ayanamsa": 24.19315837887069,
+    "ascendant": {
+      "longitude": 25.6081702404077,
+      "sign": "Aries"
+    },
+    "moon": {
+      "longitude": 57.9286445100369,
+      "sign": "Taurus",
+      "nakshatra": "Mrigashira",
+      "pada": 2,
+      "dashaLord": "Mars",
+      "dashaSpanYears": 7,
+      "balanceYears": 4.587461632230631
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 277.54038699223605,
+        "speed": 1.0172115840211104,
+        "sign": "Capricorn"
+      },
+      "Moon": {
+        "longitude": 57.9286445100369,
+        "speed": 12.77785928533297,
+        "sign": "Taurus"
+      },
+      "Mars": {
+        "longitude": 259.0641539791873,
+        "speed": 0.7558832165070182,
+        "sign": "Sagittarius"
+      },
+      "Mercury": {
+        "longitude": 255.77132462978602,
+        "speed": 1.326018183636485,
+        "sign": "Sagittarius"
+      },
+      "Jupiter": {
+        "longitude": 12.227460349102149,
+        "speed": 0.07413400133334042,
+        "sign": "Aries"
+      },
+      "Venus": {
+        "longitude": 244.48281424072815,
+        "speed": 1.229926680579769,
+        "sign": "Sagittarius"
+      },
+      "Saturn": {
+        "longitude": 311.16406829589937,
+        "speed": 0.10839808100474893,
+        "sign": "Aquarius"
+      },
+      "Rahu": {
+        "longitude": 355.5577982029258,
+        "speed": -0.05299199786651171,
+        "sign": "Pisces"
+      },
+      "Ketu": {
+        "longitude": 175.55779820292582,
+        "speed": -0.05299199786651171,
+        "sign": "Virgo"
+      }
+    }
+  },
+  {
+    "id": "AP-0026",
+    "name": "Munich Solar Eclipse (Munich, Germany)",
+    "category": "Total Solar Eclipse Cusp",
+    "dob": "1999-08-11",
+    "tob": "01:03 PM",
+    "pob": "Munich, Germany",
+    "lat": 48.1351,
+    "lon": 11.582,
+    "tz": 2.0,
+    "julianDayUT": 2451401.9604166667,
+    "ayanamsa": 23.851621851350842,
+    "ascendant": {
+      "longitude": 190.37196465945624,
+      "sign": "Libra"
+    },
+    "moon": {
+      "longitude": 114.45155371015693,
+      "sign": "Cancer",
+      "nakshatra": "Ashlesha",
+      "pada": 3,
+      "dashaLord": "Mercury",
+      "dashaSpanYears": 17,
+      "balanceYears": 7.074269019549922
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 114.50121690761263,
+        "speed": 0.9596807515291352,
+        "sign": "Cancer"
+      },
+      "Moon": {
+        "longitude": 114.45155371015693,
+        "speed": 13.949755688775932,
+        "sign": "Cancer"
+      },
+      "Mars": {
+        "longitude": 202.99741395203023,
+        "speed": 0.5476031971743429,
+        "sign": "Libra"
+      },
+      "Mercury": {
+        "longitude": 96.31258164398025,
+        "speed": 0.5980792480961247,
+        "sign": "Cancer"
+      },
+      "Jupiter": {
+        "longitude": 10.832548062776036,
+        "speed": 0.04449688258718858,
+        "sign": "Aries"
+      },
+      "Venus": {
+        "longitude": 128.3075688913785,
+        "speed": -0.4651410149275162,
+        "sign": "Leo"
+      },
+      "Saturn": {
+        "longitude": 23.028111784439222,
+        "speed": 0.03246296908495452,
+        "sign": "Aries"
+      },
+      "Rahu": {
+        "longitude": 108.76737885601501,
+        "speed": -0.052992019924712704,
+        "sign": "Cancer"
+      },
+      "Ketu": {
+        "longitude": 288.767378856015,
+        "speed": -0.052992019924712704,
+        "sign": "Capricorn"
+      }
+    }
+  },
+  {
+    "id": "AP-0027",
+    "name": "Buenos Aires Lunar Eclipse (Buenos Aires)",
+    "category": "Southern Hemisphere Eclipse (-34.6° S)",
+    "dob": "1985-05-04",
+    "tob": "04:53 PM",
+    "pob": "Buenos Aires, Argentina",
+    "lat": -34.6037,
+    "lon": -58.3816,
+    "tz": -3.0,
+    "julianDayUT": 2446190.3284720834,
+    "ayanamsa": 23.652311104107184,
+    "ascendant": {
+      "longitude": 175.571637940077,
+      "sign": "Virgo"
+    },
+    "moon": {
+      "longitude": 200.63416212684982,
+      "sign": "Libra",
+      "nakshatra": "Vishakha",
+      "pada": 1,
+      "dashaLord": "Jupiter",
+      "dashaSpanYears": 16,
+      "balanceYears": 15.239005447780231
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 20.63246515236401,
+        "speed": 0.9683671802447642,
+        "sign": "Aries"
+      },
+      "Moon": {
+        "longitude": 200.63416212684982,
+        "speed": 15.142361141676822,
+        "sign": "Libra"
+      },
+      "Mars": {
+        "longitude": 42.201048046566235,
+        "speed": 0.6895608521101109,
+        "sign": "Taurus"
+      },
+      "Mercury": {
+        "longitude": 354.1563286305024,
+        "speed": 1.1272053581642865,
+        "sign": "Pisces"
+      },
+      "Jupiter": {
+        "longitude": 291.8246530908594,
+        "speed": 0.09327465888877728,
+        "sign": "Capricorn"
+      },
+      "Venus": {
+        "longitude": 344.11566408911364,
+        "speed": 0.3441663765657796,
+        "sign": "Pisces"
+      },
+      "Saturn": {
+        "longitude": 211.99246616683638,
+        "speed": -0.07257750933133862,
+        "sign": "Scorpio"
+      },
+      "Rahu": {
+        "longitude": 24.942279959369124,
+        "speed": -0.05299202694577643,
+        "sign": "Aries"
+      },
+      "Ketu": {
+        "longitude": 204.94227995936913,
+        "speed": -0.05299202694577643,
+        "sign": "Libra"
+      }
+    }
+  },
+  {
+    "id": "AP-0028",
+    "name": "Quito Exact Equator (Quito, Ecuador)",
+    "category": "Exact Equator (-0.18° S)",
+    "dob": "2005-03-20",
+    "tob": "07:33 AM",
+    "pob": "Quito, Ecuador",
+    "lat": -0.1807,
+    "lon": -78.4678,
+    "tz": -5.0,
+    "julianDayUT": 2453450.0229166667,
+    "ayanamsa": 23.929950233559794,
+    "ascendant": {
+      "longitude": 355.4640051465682,
+      "sign": "Pisces"
+    },
+    "moon": {
+      "longitude": 95.70673612610518,
+      "sign": "Cancer",
+      "nakshatra": "Pushya",
+      "pada": 1,
+      "dashaLord": "Saturn",
+      "dashaSpanYears": 19,
+      "balanceYears": 15.617901020300117
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 336.07156907642457,
+        "speed": 0.9932358747765672,
+        "sign": "Pisces"
+      },
+      "Moon": {
+        "longitude": 95.70673612610518,
+        "speed": 11.888577571476441,
+        "sign": "Cancer"
+      },
+      "Mars": {
+        "longitude": 275.9070938912388,
+        "speed": 0.7216866397422962,
+        "sign": "Capricorn"
+      },
+      "Mercury": {
+        "longitude": 350.1548617372979,
+        "speed": -0.06894289172089903,
+        "sign": "Pisces"
+      },
+      "Jupiter": {
+        "longitude": 171.81585815308648,
+        "speed": -0.11952498855160161,
+        "sign": "Virgo"
+      },
+      "Venus": {
+        "longitude": 333.3825640679192,
+        "speed": 1.2447306652608583,
+        "sign": "Pisces"
+      },
+      "Saturn": {
+        "longitude": 86.46843992525008,
+        "speed": -0.0029831926662089326,
+        "sign": "Gemini"
+      },
+      "Rahu": {
+        "longitude": 0.23643238010744955,
+        "speed": -0.05299200781260995,
+        "sign": "Aries"
+      },
+      "Ketu": {
+        "longitude": 180.23643238010746,
+        "speed": -0.05299200781260995,
+        "sign": "Libra"
+      }
+    }
+  },
+  {
+    "id": "AP-0029",
+    "name": "Apollo 17 Night Launch (Cape Canaveral)",
+    "category": "Subtropical Eastern USA",
+    "dob": "1972-12-07",
+    "tob": "12:33 AM",
+    "pob": "Cape Canaveral, USA",
+    "lat": 28.3922,
+    "lon": -80.6077,
+    "tz": -5.0,
+    "julianDayUT": 2441658.73125,
+    "ayanamsa": 23.479017388030627,
+    "ascendant": {
+      "longitude": 146.5753006255162,
+      "sign": "Leo"
+    },
+    "moon": {
+      "longitude": 246.7366520764863,
+      "sign": "Sagittarius",
+      "nakshatra": "Mula",
+      "pada": 3,
+      "dashaLord": "Ketu",
+      "dashaSpanYears": 7,
+      "balanceYears": 3.463257659844694
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 231.7384506249418,
+        "speed": 1.0159686744642695,
+        "sign": "Scorpio"
+      },
+      "Moon": {
+        "longitude": 246.7366520764863,
+        "speed": 11.914708132173327,
+        "sign": "Sagittarius"
+      },
+      "Mars": {
+        "longitude": 200.69626881805715,
+        "speed": 0.6700356926015792,
+        "sign": "Libra"
+      },
+      "Mercury": {
+        "longitude": 212.95480286366814,
+        "speed": 0.25489828667893794,
+        "sign": "Scorpio"
+      },
+      "Jupiter": {
+        "longitude": 258.7037654726854,
+        "speed": 0.2196595983527337,
+        "sign": "Sagittarius"
+      },
+      "Venus": {
+        "longitude": 202.1753389108201,
+        "speed": 1.2397819679135333,
+        "sign": "Libra"
+      },
+      "Saturn": {
+        "longitude": 53.76779424853215,
+        "speed": -0.08258828011056621,
+        "sign": "Taurus"
+      },
+      "Rahu": {
+        "longitude": 265.08082821988694,
+        "speed": -0.05299206377851378,
+        "sign": "Sagittarius"
+      },
+      "Ketu": {
+        "longitude": 85.08082821988694,
+        "speed": -0.05299206377851378,
+        "sign": "Gemini"
+      }
+    }
+  },
+  {
+    "id": "AP-0030",
+    "name": "Ujjain Prime Meridian (Ujjain, India)",
+    "category": "Classical Indian 0° Meridian",
+    "dob": "2026-10-16",
+    "tob": "12:00 PM",
+    "pob": "Ujjain, India",
+    "lat": 23.1765,
+    "lon": 75.7885,
+    "tz": 5.5,
+    "julianDayUT": 2461329.7708333335,
+    "ayanamsa": 24.231330093043596,
+    "ascendant": {
+      "longitude": 252.6361666391525,
+      "sign": "Sagittarius"
+    },
+    "moon": {
+      "longitude": 242.5770020610941,
+      "sign": "Sagittarius",
+      "nakshatra": "Mula",
+      "pada": 1,
+      "dashaLord": "Ketu",
+      "dashaSpanYears": 7,
+      "balanceYears": 5.6470739179256
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 178.68313923487204,
+        "speed": 0.9916026078400885,
+        "sign": "Virgo"
+      },
+      "Moon": {
+        "longitude": 242.5770020610941,
+        "speed": 11.876942101709787,
+        "sign": "Sagittarius"
+      },
+      "Mars": {
+        "longitude": 106.10221296208559,
+        "speed": 0.5481667911620683,
+        "sign": "Cancer"
+      },
+      "Mercury": {
+        "longitude": 203.2738932944446,
+        "speed": 0.7725948888287342,
+        "sign": "Libra"
+      },
+      "Jupiter": {
+        "longitude": 117.91170743433894,
+        "speed": 0.1541728466644746,
+        "sign": "Cancer"
+      },
+      "Venus": {
+        "longitude": 190.9917602275365,
+        "speed": -0.48477410207888877,
+        "sign": "Libra"
+      },
+      "Saturn": {
+        "longitude": 346.155221346946,
+        "speed": -0.07575689675995584,
+        "sign": "Pisces"
+      },
+      "Rahu": {
+        "longitude": 302.6728630626244,
+        "speed": -0.05299201174996749,
+        "sign": "Aquarius"
+      },
+      "Ketu": {
+        "longitude": 122.6728630626244,
+        "speed": -0.05299201174996749,
+        "sign": "Leo"
+      }
+    }
+  }
+]

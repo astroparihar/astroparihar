@@ -1,0 +1,620 @@
+================================================================================
+ASTROPARIHAR EXPANDED INDEPENDENT BENCHMARK SUITE: 30 DIVERSE CHARTS
+Ground Truth Reference: Swiss Ephemeris v2.10.03 (IAU / Moshier Analytic Model)
+Sidereal Standard    : Lahiri / Chitra Paksha (Mode 1)
+Execution Date       : 2026-10-20T14:13:01.993Z
+Environment          : Node.js v24.14.1 on win32-x64
+================================================================================
+
+
+--------------------------------------------------------------------------------
+[CHART 1/30] AP-0001: Audit Benchmark Native (Chennai) (Baseline Audit Chart)
+Location: Chennai, India (Lat: 13.0827, Lon: 80.2707, TZ: +5.5h) | Civil: 1968-05-28 05:05 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.20" delta)
+  [PASS] Ascendant Longitude conformity (9.0" / 0.15' delta)
+  [PASS] Moon Longitude conformity (5.26" delta)
+  [PASS] Moon Nakshatra is Rohini
+  [PASS] Starting Mahadasha Lord is Moon
+  [PASS] Vimshottari Dasha birth balance (0.0011 yrs delta)
+  [PASS] Sun position conformity (4.65" delta)
+  [PASS] Mars position conformity (16.36" delta)
+  [PASS] Mercury position conformity (14.23" delta)
+  [PASS] Jupiter position conformity (0.73" delta)
+  [PASS] Venus position conformity (16.26" delta)
+  [PASS] Saturn position conformity (5.66" delta)
+  [PASS] Rahu position conformity (0.10" delta)
+  [PASS] Ketu position conformity (0.10" delta)
+
+--------------------------------------------------------------------------------
+[CHART 2/30] AP-0002: Indian Independence (New Delhi) (Midnight Historical Chart)
+Location: New Delhi, India (Lat: 28.6139, Lon: 77.209, TZ: +5.5h) | Civil: 1947-08-15 12:00 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.46" delta)
+  [PASS] Ascendant Longitude conformity (16.5" / 0.28' delta)
+  [PASS] Moon Longitude conformity (12.03" delta)
+  [PASS] Moon Nakshatra is Pushya
+  [PASS] Starting Mahadasha Lord is Saturn
+  [PASS] Vimshottari Dasha birth balance (0.0048 yrs delta)
+  [PASS] Sun position conformity (13.63" delta)
+  [PASS] Mars position conformity (0.58" delta)
+  [PASS] Mercury position conformity (2.98" delta)
+  [PASS] Jupiter position conformity (15.68" delta)
+  [PASS] Venus position conformity (6.37" delta)
+  [PASS] Saturn position conformity (7.13" delta)
+  [PASS] Rahu position conformity (0.29" delta)
+  [PASS] Ketu position conformity (0.29" delta)
+
+--------------------------------------------------------------------------------
+[CHART 3/30] AP-0003: Mahatma Gandhi (Porbandar) (19th Century Historical)
+Location: Porbandar, India (Lat: 21.6417, Lon: 69.6293, TZ: +4.64195h) | Civil: 1869-10-02 07:11 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (2.26" delta)
+  [PASS] Ascendant Longitude conformity (12.4" / 0.21' delta)
+  [PASS] Moon Longitude conformity (9.00" delta)
+  [PASS] Moon Nakshatra is Ashlesha
+  [PASS] Starting Mahadasha Lord is Mercury
+  [PASS] Vimshottari Dasha birth balance (0.0032 yrs delta)
+  [PASS] Sun position conformity (12.05" delta)
+  [PASS] Mars position conformity (5.20" delta)
+  [PASS] Mercury position conformity (6.90" delta)
+  [PASS] Jupiter position conformity (34.57" delta)
+  [PASS] Venus position conformity (4.95" delta)
+  [PASS] Saturn position conformity (8.06" delta)
+  [PASS] Rahu position conformity (1.88" delta)
+  [PASS] Ketu position conformity (1.88" delta)
+
+--------------------------------------------------------------------------------
+[CHART 4/30] AP-0004: Sachin Tendulkar (Mumbai) (West India - Venus Dasha)
+Location: Mumbai, India (Lat: 19.076, Lon: 72.8777, TZ: +5.5h) | Civil: 1973-04-24 04:00 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.16" delta)
+  [PASS] Ascendant Longitude conformity (16.1" / 0.27' delta)
+  [PASS] Moon Longitude conformity (15.30" delta)
+  [PASS] Moon Nakshatra is Purva Ashadha
+  [PASS] Starting Mahadasha Lord is Venus
+  [PASS] Vimshottari Dasha birth balance (0.0064 yrs delta)
+  [PASS] Sun position conformity (15.51" delta)
+  [PASS] Mars position conformity (21.06" delta)
+  [PASS] Mercury position conformity (35.31" delta)
+  [PASS] Jupiter position conformity (22.01" delta)
+  [PASS] Venus position conformity (34.43" delta)
+  [PASS] Saturn position conformity (28.12" delta)
+  [PASS] Rahu position conformity (0.08" delta)
+  [PASS] Ketu position conformity (0.08" delta)
+
+--------------------------------------------------------------------------------
+[CHART 5/30] AP-0005: Roger Federer (Basel, Switzerland) (Western Europe - Jupiter Dasha)
+Location: Basel, Switzerland (Lat: 47.5596, Lon: 7.5886, TZ: +2h) | Civil: 1981-08-08 10:15 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.09" delta)
+  [PASS] Ascendant Longitude conformity (13.8" / 0.23' delta)
+  [PASS] Moon Longitude conformity (12.37" delta)
+  [PASS] Moon Nakshatra is Vishakha
+  [PASS] Starting Mahadasha Lord is Jupiter
+  [PASS] Vimshottari Dasha birth balance (0.0041 yrs delta)
+  [PASS] Sun position conformity (13.19" delta)
+  [PASS] Mars position conformity (4.21" delta)
+  [PASS] Mercury position conformity (2.55" delta)
+  [PASS] Jupiter position conformity (3.79" delta)
+  [PASS] Venus position conformity (3.82" delta)
+  [PASS] Saturn position conformity (1.60" delta)
+  [PASS] Rahu position conformity (0.05" delta)
+  [PASS] Ketu position conformity (0.05" delta)
+
+--------------------------------------------------------------------------------
+[CHART 6/30] AP-0006: Bill Gates (Seattle, USA) (North America - West Coast)
+Location: Seattle, USA (Lat: 47.6062, Lon: -122.3321, TZ: -8h) | Civil: 1955-10-28 09:15 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.35" delta)
+  [PASS] Ascendant Longitude conformity (17.1" / 0.28' delta)
+  [PASS] Moon Longitude conformity (15.96" delta)
+  [PASS] Moon Nakshatra is Uttara Bhadrapada
+  [PASS] Starting Mahadasha Lord is Saturn
+  [PASS] Vimshottari Dasha birth balance (0.0063 yrs delta)
+  [PASS] Sun position conformity (15.02" delta)
+  [PASS] Mars position conformity (35.47" delta)
+  [PASS] Mercury position conformity (37.95" delta)
+  [PASS] Jupiter position conformity (22.72" delta)
+  [PASS] Venus position conformity (36.53" delta)
+  [PASS] Saturn position conformity (34.99" delta)
+  [PASS] Rahu position conformity (0.20" delta)
+  [PASS] Ketu position conformity (0.20" delta)
+
+--------------------------------------------------------------------------------
+[CHART 7/30] AP-0007: Elon Musk (Pretoria, South Africa) (Southern Hemisphere (-25.7° S))
+Location: Pretoria, South Africa (Lat: -25.7479, Lon: 28.2293, TZ: +2h) | Civil: 1971-06-28 07:30 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.18" delta)
+  [PASS] Ascendant Longitude conformity (16.3" / 0.27' delta)
+  [PASS] Moon Longitude conformity (14.10" delta)
+  [PASS] Moon Nakshatra is Purva Phalguni
+  [PASS] Starting Mahadasha Lord is Venus
+  [PASS] Vimshottari Dasha birth balance (0.0059 yrs delta)
+  [PASS] Sun position conformity (12.87" delta)
+  [PASS] Mars position conformity (7.90" delta)
+  [PASS] Mercury position conformity (29.53" delta)
+  [PASS] Jupiter position conformity (0.40" delta)
+  [PASS] Venus position conformity (31.79" delta)
+  [PASS] Saturn position conformity (32.04" delta)
+  [PASS] Rahu position conformity (0.08" delta)
+  [PASS] Ketu position conformity (0.08" delta)
+
+--------------------------------------------------------------------------------
+[CHART 8/30] AP-0008: Kolkata Winter Solstice (Kolkata) (Gandanta Water-Fire Cusp)
+Location: Kolkata, India (Lat: 22.5726, Lon: 88.3639, TZ: +5.5h) | Civil: 1984-12-22 03:00 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.07" delta)
+  [PASS] Ascendant Longitude conformity (13.6" / 0.23' delta)
+  [PASS] Moon Longitude conformity (14.26" delta)
+  [PASS] Moon Nakshatra is Jyeshtha
+  [PASS] Starting Mahadasha Lord is Mercury
+  [PASS] Vimshottari Dasha birth balance (0.0051 yrs delta)
+  [PASS] Sun position conformity (14.65" delta)
+  [PASS] Mars position conformity (4.57" delta)
+  [PASS] Mercury position conformity (4.81" delta)
+  [PASS] Jupiter position conformity (2.54" delta)
+  [PASS] Venus position conformity (0.86" delta)
+  [PASS] Saturn position conformity (3.84" delta)
+  [PASS] Rahu position conformity (0.03" delta)
+  [PASS] Ketu position conformity (0.03" delta)
+
+--------------------------------------------------------------------------------
+[CHART 9/30] AP-0009: London Midday (London, UK) (High Latitude (51.5° N) Europe)
+Location: London, UK (Lat: 51.5074, Lon: -0.1278, TZ: +0h) | Civil: 1990-01-15 12:30 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.04" delta)
+  [PASS] Ascendant Longitude conformity (1.8" / 0.03' delta)
+  [PASS] Moon Longitude conformity (13.92" delta)
+  [PASS] Moon Nakshatra is Purva Phalguni
+  [PASS] Starting Mahadasha Lord is Venus
+  [PASS] Vimshottari Dasha birth balance (0.0058 yrs delta)
+  [PASS] Sun position conformity (12.60" delta)
+  [PASS] Mars position conformity (30.15" delta)
+  [PASS] Mercury position conformity (25.97" delta)
+  [PASS] Jupiter position conformity (6.60" delta)
+  [PASS] Venus position conformity (38.99" delta)
+  [PASS] Saturn position conformity (32.86" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 10/30] AP-0010: Tokyo Y2K Midnight (Tokyo, Japan) (Millennial Rollover (East Asia))
+Location: Tokyo, Japan (Lat: 35.6762, Lon: 139.6503, TZ: +9h) | Civil: 2000-01-01 12:01 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.00" delta)
+  [PASS] Ascendant Longitude conformity (14.4" / 0.24' delta)
+  [PASS] Moon Longitude conformity (14.10" delta)
+  [PASS] Moon Nakshatra is Swati
+  [PASS] Starting Mahadasha Lord is Rahu
+  [PASS] Vimshottari Dasha birth balance (0.0053 yrs delta)
+  [PASS] Sun position conformity (14.91" delta)
+  [PASS] Mars position conformity (2.18" delta)
+  [PASS] Mercury position conformity (5.37" delta)
+  [PASS] Jupiter position conformity (15.34" delta)
+  [PASS] Venus position conformity (0.25" delta)
+  [PASS] Saturn position conformity (22.91" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 11/30] AP-0011: Shah Rukh Khan (New Delhi) (Mars Dasha - Dhanishta)
+Location: New Delhi, India (Lat: 28.6139, Lon: 77.209, TZ: +5.5h) | Civil: 1965-11-02 02:30 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.23" delta)
+  [PASS] Ascendant Longitude conformity (16.6" / 0.28' delta)
+  [PASS] Moon Longitude conformity (16.78" delta)
+  [PASS] Moon Nakshatra is Shravana
+  [PASS] Starting Mahadasha Lord is Moon
+  [PASS] Vimshottari Dasha birth balance (0.0035 yrs delta)
+  [PASS] Sun position conformity (15.48" delta)
+  [PASS] Mars position conformity (1.43" delta)
+  [PASS] Mercury position conformity (3.57" delta)
+  [PASS] Jupiter position conformity (32.98" delta)
+  [PASS] Venus position conformity (1.29" delta)
+  [PASS] Saturn position conformity (26.45" delta)
+  [PASS] Rahu position conformity (0.12" delta)
+  [PASS] Ketu position conformity (0.12" delta)
+
+--------------------------------------------------------------------------------
+[CHART 12/30] AP-0012: Sydney Summer Sunrise (Sydney, Australia) (Southern Hemisphere (-33.8° S))
+Location: Sydney, Australia (Lat: -33.8688, Lon: 151.2093, TZ: +11h) | Civil: 1977-01-14 06:45 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.13" delta)
+  [PASS] Ascendant Longitude conformity (12.6" / 0.21' delta)
+  [PASS] Moon Longitude conformity (9.36" delta)
+  [PASS] Moon Nakshatra is Swati
+  [PASS] Starting Mahadasha Lord is Rahu
+  [PASS] Vimshottari Dasha birth balance (0.0035 yrs delta)
+  [PASS] Sun position conformity (9.79" delta)
+  [PASS] Mars position conformity (30.72" delta)
+  [PASS] Mercury position conformity (31.73" delta)
+  [PASS] Jupiter position conformity (0.21" delta)
+  [PASS] Venus position conformity (25.89" delta)
+  [PASS] Saturn position conformity (14.49" delta)
+  [PASS] Rahu position conformity (0.06" delta)
+  [PASS] Ketu position conformity (0.06" delta)
+
+--------------------------------------------------------------------------------
+[CHART 13/30] AP-0013: Singapore Summer Solstice (Singapore) (Equatorial (1.35° N))
+Location: Singapore (Lat: 1.3521, Lon: 103.8198, TZ: +8h) | Civil: 2010-06-21 08:00 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.02" delta)
+  [PASS] Ascendant Longitude conformity (16.7" / 0.28' delta)
+  [PASS] Moon Longitude conformity (15.94" delta)
+  [PASS] Moon Nakshatra is Chitra
+  [PASS] Starting Mahadasha Lord is Mars
+  [PASS] Vimshottari Dasha birth balance (0.0023 yrs delta)
+  [PASS] Sun position conformity (16.45" delta)
+  [PASS] Mars position conformity (21.89" delta)
+  [PASS] Mercury position conformity (33.15" delta)
+  [PASS] Jupiter position conformity (19.14" delta)
+  [PASS] Venus position conformity (30.72" delta)
+  [PASS] Saturn position conformity (11.69" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 14/30] AP-0014: Oslo Winter Solstice (Oslo, Norway) (Extreme High Latitude (59.9° N))
+Location: Oslo, Norway (Lat: 59.9139, Lon: 10.7522, TZ: +1h) | Civil: 1995-12-21 07:00 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.01" delta)
+  [PASS] Ascendant Longitude conformity (14.9" / 0.25' delta)
+  [PASS] Moon Longitude conformity (7.27" delta)
+  [PASS] Moon Nakshatra is Mula
+  [PASS] Starting Mahadasha Lord is Ketu
+  [PASS] Vimshottari Dasha birth balance (0.0011 yrs delta)
+  [PASS] Sun position conformity (6.27" delta)
+  [PASS] Mars position conformity (27.27" delta)
+  [PASS] Mercury position conformity (25.56" delta)
+  [PASS] Jupiter position conformity (32.56" delta)
+  [PASS] Venus position conformity (24.03" delta)
+  [PASS] Saturn position conformity (7.58" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 15/30] AP-0015: London 1983 Victory (London, UK) (Summer Twilight High Latitude)
+Location: London, UK (Lat: 51.5074, Lon: -0.1278, TZ: +1h) | Civil: 1983-06-25 06:30 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.08" delta)
+  [PASS] Ascendant Longitude conformity (16.6" / 0.28' delta)
+  [PASS] Moon Longitude conformity (16.87" delta)
+  [PASS] Moon Nakshatra is Purva Ashadha
+  [PASS] Starting Mahadasha Lord is Venus
+  [PASS] Vimshottari Dasha birth balance (0.0070 yrs delta)
+  [PASS] Sun position conformity (16.54" delta)
+  [PASS] Mars position conformity (4.00" delta)
+  [PASS] Mercury position conformity (3.91" delta)
+  [PASS] Jupiter position conformity (34.21" delta)
+  [PASS] Venus position conformity (5.74" delta)
+  [PASS] Saturn position conformity (25.08" delta)
+  [PASS] Rahu position conformity (0.04" delta)
+  [PASS] Ketu position conformity (0.04" delta)
+
+--------------------------------------------------------------------------------
+[CHART 16/30] AP-0016: Indian Republic Day (New Delhi) (Historical Foundation Chart)
+Location: New Delhi, India (Lat: 28.6139, Lon: 77.209, TZ: +5.5h) | Civil: 1950-01-26 10:18 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.42" delta)
+  [PASS] Ascendant Longitude conformity (2.8" / 0.05' delta)
+  [PASS] Moon Longitude conformity (0.50" delta)
+  [PASS] Moon Nakshatra is Ashwini
+  [PASS] Starting Mahadasha Lord is Ketu
+  [PASS] Vimshottari Dasha birth balance (0.0001 yrs delta)
+  [PASS] Sun position conformity (2.28" delta)
+  [PASS] Mars position conformity (8.06" delta)
+  [PASS] Mercury position conformity (10.63" delta)
+  [PASS] Jupiter position conformity (13.30" delta)
+  [PASS] Venus position conformity (31.01" delta)
+  [PASS] Saturn position conformity (18.76" delta)
+  [PASS] Rahu position conformity (0.26" delta)
+  [PASS] Ketu position conformity (0.26" delta)
+
+--------------------------------------------------------------------------------
+[CHART 17/30] AP-0017: Aryabhata Launch (Sriharikota) (Early Space Age Epoch)
+Location: Sriharikota, India (Lat: 13.7199, Lon: 80.2305, TZ: +5.5h) | Civil: 1975-04-19 06:00 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.14" delta)
+  [PASS] Ascendant Longitude conformity (16.2" / 0.27' delta)
+  [PASS] Moon Longitude conformity (13.50" delta)
+  [PASS] Moon Nakshatra is Punarvasu
+  [PASS] Starting Mahadasha Lord is Jupiter
+  [PASS] Vimshottari Dasha birth balance (0.0045 yrs delta)
+  [PASS] Sun position conformity (14.95" delta)
+  [PASS] Mars position conformity (28.71" delta)
+  [PASS] Mercury position conformity (31.79" delta)
+  [PASS] Jupiter position conformity (37.82" delta)
+  [PASS] Venus position conformity (29.60" delta)
+  [PASS] Saturn position conformity (9.79" delta)
+  [PASS] Rahu position conformity (0.07" delta)
+  [PASS] Ketu position conformity (0.07" delta)
+
+--------------------------------------------------------------------------------
+[CHART 18/30] AP-0018: Chandrayaan-1 Launch (Sriharikota) (Moon Mission Launch)
+Location: Sriharikota, India (Lat: 13.7199, Lon: 80.2305, TZ: +5.5h) | Civil: 2008-10-22 06:22 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.02" delta)
+  [PASS] Ascendant Longitude conformity (10.4" / 0.17' delta)
+  [PASS] Moon Longitude conformity (10.95" delta)
+  [PASS] Moon Nakshatra is Pushya
+  [PASS] Starting Mahadasha Lord is Saturn
+  [PASS] Vimshottari Dasha birth balance (0.0043 yrs delta)
+  [PASS] Sun position conformity (10.66" delta)
+  [PASS] Mars position conformity (30.79" delta)
+  [PASS] Mercury position conformity (29.48" delta)
+  [PASS] Jupiter position conformity (7.01" delta)
+  [PASS] Venus position conformity (28.40" delta)
+  [PASS] Saturn position conformity (24.44" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 19/30] AP-0019: Chandrayaan-3 Landing (Bengaluru) (Modern Lunar Landing)
+Location: Bengaluru, India (Lat: 12.9716, Lon: 77.5946, TZ: +5.5h) | Civil: 2023-08-23 06:04 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.01" delta)
+  [PASS] Ascendant Longitude conformity (4.0" / 0.07' delta)
+  [PASS] Moon Longitude conformity (5.90" delta)
+  [PASS] Moon Nakshatra is Vishakha
+  [PASS] Starting Mahadasha Lord is Jupiter
+  [PASS] Vimshottari Dasha birth balance (0.0020 yrs delta)
+  [PASS] Sun position conformity (6.87" delta)
+  [PASS] Mars position conformity (11.34" delta)
+  [PASS] Mercury position conformity (13.26" delta)
+  [PASS] Jupiter position conformity (18.45" delta)
+  [PASS] Venus position conformity (9.35" delta)
+  [PASS] Saturn position conformity (31.34" delta)
+  [PASS] Rahu position conformity (0.07" delta)
+  [PASS] Ketu position conformity (0.07" delta)
+
+--------------------------------------------------------------------------------
+[CHART 20/30] AP-0020: Apollo 11 Landing (Houston, USA) (First Moon Walk (Central USA))
+Location: Houston, USA (Lat: 29.7604, Lon: -95.3698, TZ: -5h) | Civil: 1969-07-20 03:17 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.19" delta)
+  [PASS] Ascendant Longitude conformity (4.9" / 0.08' delta)
+  [PASS] Moon Longitude conformity (2.95" delta)
+  [PASS] Moon Nakshatra is Hasta
+  [PASS] Starting Mahadasha Lord is Moon
+  [PASS] Vimshottari Dasha birth balance (0.0006 yrs delta)
+  [PASS] Sun position conformity (2.89" delta)
+  [PASS] Mars position conformity (4.80" delta)
+  [PASS] Mercury position conformity (20.22" delta)
+  [PASS] Jupiter position conformity (14.34" delta)
+  [PASS] Venus position conformity (19.98" delta)
+  [PASS] Saturn position conformity (4.59" delta)
+  [PASS] Rahu position conformity (0.10" delta)
+  [PASS] Ketu position conformity (0.10" delta)
+
+--------------------------------------------------------------------------------
+[CHART 21/30] AP-0021: Edinburgh 8-8-88 (Edinburgh, UK) (High Latitude Northern UK (55.9° N))
+Location: Edinburgh, UK (Lat: 55.9533, Lon: -3.1883, TZ: +1h) | Civil: 1988-08-08 08:08 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.05" delta)
+  [PASS] Ascendant Longitude conformity (3.6" / 0.06' delta)
+  [PASS] Moon Longitude conformity (4.62" delta)
+  [PASS] Moon Nakshatra is Mrigashira
+  [PASS] Starting Mahadasha Lord is Mars
+  [PASS] Vimshottari Dasha birth balance (0.0007 yrs delta)
+  [PASS] Sun position conformity (4.44" delta)
+  [PASS] Mars position conformity (1.86" delta)
+  [PASS] Mercury position conformity (25.53" delta)
+  [PASS] Jupiter position conformity (10.26" delta)
+  [PASS] Venus position conformity (17.45" delta)
+  [PASS] Saturn position conformity (5.35" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 22/30] AP-0022: Mexico City Solstice (Mexico City) (Central America High Elevation)
+Location: Mexico City, Mexico (Lat: 19.4326, Lon: -99.1332, TZ: -6h) | Civil: 2012-12-21 05:11 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.02" delta)
+  [PASS] Ascendant Longitude conformity (13.3" / 0.22' delta)
+  [PASS] Moon Longitude conformity (14.46" delta)
+  [PASS] Moon Nakshatra is Revati
+  [PASS] Starting Mahadasha Lord is Mercury
+  [PASS] Vimshottari Dasha birth balance (0.0051 yrs delta)
+  [PASS] Sun position conformity (13.88" delta)
+  [PASS] Mars position conformity (33.02" delta)
+  [PASS] Mercury position conformity (35.03" delta)
+  [PASS] Jupiter position conformity (2.40" delta)
+  [PASS] Venus position conformity (34.22" delta)
+  [PASS] Saturn position conformity (27.47" delta)
+  [PASS] Rahu position conformity (0.03" delta)
+  [PASS] Ketu position conformity (0.03" delta)
+
+--------------------------------------------------------------------------------
+[CHART 23/30] AP-0023: London 1940 Wartime (London, UK) (WWII Mid-Century Epoch)
+Location: London, UK (Lat: 51.5074, Lon: -0.1278, TZ: +1h) | Civil: 1940-05-10 02:00 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.57" delta)
+  [PASS] Ascendant Longitude conformity (6.7" / 0.11' delta)
+  [PASS] Moon Longitude conformity (6.01" delta)
+  [PASS] Moon Nakshatra is Mrigashira
+  [PASS] Starting Mahadasha Lord is Mars
+  [PASS] Vimshottari Dasha birth balance (0.0009 yrs delta)
+  [PASS] Sun position conformity (6.03" delta)
+  [PASS] Mars position conformity (20.09" delta)
+  [PASS] Mercury position conformity (24.21" delta)
+  [PASS] Jupiter position conformity (24.94" delta)
+  [PASS] Venus position conformity (18.79" delta)
+  [PASS] Saturn position conformity (19.73" delta)
+  [PASS] Rahu position conformity (0.38" delta)
+  [PASS] Ketu position conformity (0.38" delta)
+
+--------------------------------------------------------------------------------
+[CHART 24/30] AP-0024: New Delhi Spring Equinox (New Delhi) (Modern Planetary Conjunctions)
+Location: New Delhi, India (Lat: 28.6139, Lon: 77.209, TZ: +5.5h) | Civil: 2020-03-24 08:00 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.01" delta)
+  [PASS] Ascendant Longitude conformity (17.2" / 0.29' delta)
+  [PASS] Moon Longitude conformity (15.11" delta)
+  [PASS] Moon Nakshatra is Uttara Bhadrapada
+  [PASS] Starting Mahadasha Lord is Saturn
+  [PASS] Vimshottari Dasha birth balance (0.0060 yrs delta)
+  [PASS] Sun position conformity (17.80" delta)
+  [PASS] Mars position conformity (9.32" delta)
+  [PASS] Mercury position conformity (0.21" delta)
+  [PASS] Jupiter position conformity (7.80" delta)
+  [PASS] Venus position conformity (3.06" delta)
+  [PASS] Saturn position conformity (10.55" delta)
+  [PASS] Rahu position conformity (0.05" delta)
+  [PASS] Ketu position conformity (0.05" delta)
+
+--------------------------------------------------------------------------------
+[CHART 25/30] AP-0025: Ayodhya Prana Pratishtha (Ayodhya) (Auspicious Abhijit Muhurat)
+Location: Ayodhya, India (Lat: 26.7922, Lon: 82.1998, TZ: +5.5h) | Civil: 2024-01-22 12:29 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.01" delta)
+  [PASS] Ascendant Longitude conformity (10.4" / 0.17' delta)
+  [PASS] Moon Longitude conformity (2.64" delta)
+  [PASS] Moon Nakshatra is Mrigashira
+  [PASS] Starting Mahadasha Lord is Mars
+  [PASS] Vimshottari Dasha birth balance (0.0004 yrs delta)
+  [PASS] Sun position conformity (4.29" delta)
+  [PASS] Mars position conformity (15.79" delta)
+  [PASS] Mercury position conformity (16.77" delta)
+  [PASS] Jupiter position conformity (11.36" delta)
+  [PASS] Venus position conformity (13.16" delta)
+  [PASS] Saturn position conformity (8.66" delta)
+  [PASS] Rahu position conformity (0.07" delta)
+  [PASS] Ketu position conformity (0.07" delta)
+
+--------------------------------------------------------------------------------
+[CHART 26/30] AP-0026: Munich Solar Eclipse (Munich, Germany) (Total Solar Eclipse Cusp)
+Location: Munich, Germany (Lat: 48.1351, Lon: 11.582, TZ: +2h) | Civil: 1999-08-11 01:03 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.00" delta)
+  [PASS] Ascendant Longitude conformity (13.4" / 0.22' delta)
+  [PASS] Moon Longitude conformity (10.62" delta)
+  [PASS] Moon Nakshatra is Ashlesha
+  [PASS] Starting Mahadasha Lord is Mercury
+  [PASS] Vimshottari Dasha birth balance (0.0038 yrs delta)
+  [PASS] Sun position conformity (12.39" delta)
+  [PASS] Mars position conformity (6.44" delta)
+  [PASS] Mercury position conformity (5.32" delta)
+  [PASS] Jupiter position conformity (11.82" delta)
+  [PASS] Venus position conformity (0.49" delta)
+  [PASS] Saturn position conformity (11.95" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 27/30] AP-0027: Buenos Aires Lunar Eclipse (Buenos Aires) (Southern Hemisphere Eclipse (-34.6° S))
+Location: Buenos Aires, Argentina (Lat: -34.6037, Lon: -58.3816, TZ: -3h) | Civil: 1985-05-04 04:53 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.07" delta)
+  [PASS] Ascendant Longitude conformity (16.9" / 0.28' delta)
+  [PASS] Moon Longitude conformity (12.78" delta)
+  [PASS] Moon Nakshatra is Vishakha
+  [PASS] Starting Mahadasha Lord is Jupiter
+  [PASS] Vimshottari Dasha birth balance (0.0043 yrs delta)
+  [PASS] Sun position conformity (14.07" delta)
+  [PASS] Mars position conformity (4.77" delta)
+  [PASS] Mercury position conformity (5.65" delta)
+  [PASS] Jupiter position conformity (17.33" delta)
+  [PASS] Venus position conformity (6.22" delta)
+  [PASS] Saturn position conformity (31.44" delta)
+  [PASS] Rahu position conformity (0.03" delta)
+  [PASS] Ketu position conformity (0.03" delta)
+
+--------------------------------------------------------------------------------
+[CHART 28/30] AP-0028: Quito Exact Equator (Quito, Ecuador) (Exact Equator (-0.18° S))
+Location: Quito, Ecuador (Lat: -0.1807, Lon: -78.4678, TZ: -5h) | Civil: 2005-03-20 07:33 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.01" delta)
+  [PASS] Ascendant Longitude conformity (7.7" / 0.13' delta)
+  [PASS] Moon Longitude conformity (6.71" delta)
+  [PASS] Moon Nakshatra is Pushya
+  [PASS] Starting Mahadasha Lord is Saturn
+  [PASS] Vimshottari Dasha birth balance (0.0027 yrs delta)
+  [PASS] Sun position conformity (6.92" delta)
+  [PASS] Mars position conformity (4.46" delta)
+  [PASS] Mercury position conformity (12.60" delta)
+  [PASS] Jupiter position conformity (30.28" delta)
+  [PASS] Venus position conformity (13.37" delta)
+  [PASS] Saturn position conformity (13.44" delta)
+  [PASS] Rahu position conformity (0.02" delta)
+  [PASS] Ketu position conformity (0.02" delta)
+
+--------------------------------------------------------------------------------
+[CHART 29/30] AP-0029: Apollo 17 Night Launch (Cape Canaveral) (Subtropical Eastern USA)
+Location: Cape Canaveral, USA (Lat: 28.3922, Lon: -80.6077, TZ: -5h) | Civil: 1972-12-07 12:33 AM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.16" delta)
+  [PASS] Ascendant Longitude conformity (15.6" / 0.26' delta)
+  [PASS] Moon Longitude conformity (13.33" delta)
+  [PASS] Moon Nakshatra is Mula
+  [PASS] Starting Mahadasha Lord is Ketu
+  [PASS] Vimshottari Dasha birth balance (0.0019 yrs delta)
+  [PASS] Sun position conformity (15.44" delta)
+  [PASS] Mars position conformity (33.49" delta)
+  [PASS] Mercury position conformity (35.76" delta)
+  [PASS] Jupiter position conformity (37.36" delta)
+  [PASS] Venus position conformity (32.68" delta)
+  [PASS] Saturn position conformity (5.61" delta)
+  [PASS] Rahu position conformity (0.08" delta)
+  [PASS] Ketu position conformity (0.08" delta)
+
+--------------------------------------------------------------------------------
+[CHART 30/30] AP-0030: Ujjain Prime Meridian (Ujjain, India) (Classical Indian 0° Meridian)
+Location: Ujjain, India (Lat: 23.1765, Lon: 75.7885, TZ: +5.5h) | Civil: 2026-10-16 12:00 PM
+--------------------------------------------------------------------------------
+  [PASS] Ayanamsha conformity (0.00" delta)
+  [PASS] Ascendant Longitude conformity (12.3" / 0.20' delta)
+  [PASS] Moon Longitude conformity (10.22" delta)
+  [PASS] Moon Nakshatra is Mula
+  [PASS] Starting Mahadasha Lord is Ketu
+  [PASS] Vimshottari Dasha birth balance (0.0015 yrs delta)
+  [PASS] Sun position conformity (6.78" delta)
+  [PASS] Mars position conformity (13.61" delta)
+  [PASS] Mercury position conformity (26.44" delta)
+  [PASS] Jupiter position conformity (15.63" delta)
+  [PASS] Venus position conformity (8.13" delta)
+  [PASS] Saturn position conformity (22.29" delta)
+  [PASS] Rahu position conformity (0.08" delta)
+  [PASS] Ketu position conformity (0.08" delta)
+
+================================================================================
+SUMMARY TABLE: 30 DIVERSE BENCHMARK CASES VS SWISS EPHEMERIS v2.10.03
+================================================================================
+ID      | Chart Name                      | Lagna       | Moon Sign   | Dasha Lord | Max Delta | Status
+--------|---------------------------------|-------------|-------------|------------|-----------|-------
+AP-0001 | Audit Benchmark Native (Chennai | Taurus      | Taurus      | Moon       |     16.4" | PASS
+AP-0002 | Indian Independence (New Delhi) | Taurus      | Cancer      | Saturn     |     15.7" | PASS
+AP-0003 | Mahatma Gandhi (Porbandar)      | Libra       | Cancer      | Mercury    |     34.6" | PASS
+AP-0004 | Sachin Tendulkar (Mumbai)       | Leo         | Sagittarius | Venus      |     35.3" | PASS
+AP-0005 | Roger Federer (Basel, Switzerla | Virgo       | Libra       | Jupiter    |     13.2" | PASS
+AP-0006 | Bill Gates (Seattle, USA)       | Gemini      | Pisces      | Saturn     |     37.9" | PASS
+AP-0007 | Elon Musk (Pretoria, South Afri | Gemini      | Leo         | Venus      |     32.0" | PASS
+AP-0008 | Kolkata Winter Solstice (Kolkat | Libra       | Scorpio     | Mercury    |     14.6" | PASS
+AP-0009 | London Midday (London, UK)      | Taurus      | Leo         | Venus      |     39.0" | PASS
+AP-0010 | Tokyo Y2K Midnight (Tokyo, Japa | Virgo       | Libra       | Rahu       |     22.9" | PASS
+AP-0011 | Shah Rukh Khan (New Delhi)      | Leo         | Capricorn   | Moon       |     33.0" | PASS
+AP-0012 | Sydney Summer Sunrise (Sydney,  | Capricorn   | Libra       | Rahu       |     31.7" | PASS
+AP-0013 | Singapore Summer Solstice (Sing | Sagittarius | Libra       | Mars       |     33.1" | PASS
+AP-0014 | Oslo Winter Solstice (Oslo, Nor | Cancer      | Sagittarius | Ketu       |     32.6" | PASS
+AP-0015 | London 1983 Victory (London, UK | Scorpio     | Sagittarius | Venus      |     34.2" | PASS
+AP-0016 | Indian Republic Day (New Delhi) | Pisces      | Aries       | Ketu       |     31.0" | PASS
+AP-0017 | Aryabhata Launch (Sriharikota)  | Aries       | Cancer      | Jupiter    |     37.8" | PASS
+AP-0018 | Chandrayaan-1 Launch (Srihariko | Libra       | Cancer      | Saturn     |     30.8" | PASS
+AP-0019 | Chandrayaan-3 Landing (Bengalur | Capricorn   | Libra       | Jupiter    |     31.3" | PASS
+AP-0020 | Apollo 11 Landing (Houston, USA | Libra       | Virgo       | Moon       |     20.2" | PASS
+AP-0021 | Edinburgh 8-8-88 (Edinburgh, UK | Leo         | Gemini      | Mars       |     25.5" | PASS
+AP-0022 | Mexico City Solstice (Mexico Ci | Scorpio     | Pisces      | Mercury    |     35.0" | PASS
+AP-0023 | London 1940 Wartime (London, UK | Leo         | Gemini      | Mars       |     24.9" | PASS
+AP-0024 | New Delhi Spring Equinox (New D | Virgo       | Pisces      | Saturn     |     17.8" | PASS
+AP-0025 | Ayodhya Prana Pratishtha (Ayodh | Aries       | Taurus      | Mars       |     16.8" | PASS
+AP-0026 | Munich Solar Eclipse (Munich, G | Libra       | Cancer      | Mercury    |     12.4" | PASS
+AP-0027 | Buenos Aires Lunar Eclipse (Bue | Virgo       | Libra       | Jupiter    |     31.4" | PASS
+AP-0028 | Quito Exact Equator (Quito, Ecu | Pisces      | Cancer      | Saturn     |     30.3" | PASS
+AP-0029 | Apollo 17 Night Launch (Cape Ca | Leo         | Sagittarius | Ketu       |     37.4" | PASS
+AP-0030 | Ujjain Prime Meridian (Ujjain,  | Sagittarius | Sagittarius | Ketu       |     26.4" | PASS
+================================================================================
+TOTAL 30-CHART SUITE ASSERTIONS : 420
+PASSED                          : 420
+FAILED                          : 0
+OVERALL CONFORMANCE RATE        : 100.00%
+================================================================================

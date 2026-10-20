@@ -1,0 +1,42 @@
+================================================================================
+ASTROPARIHAR API CONTRACT & HTTP PROTOCOL VERIFICATION SUITE
+Target Endpoint: /api/birth-chart/calculate (POST & GET)
+Test Date      : 2026-10-20T14:13:02.463Z
+================================================================================
+
+▶ TEST SUITE 1: Canonical Benchmark Native Payload (POST)
+  [PASS] 1.1: HTTP Status is 200 OK
+  [PASS] 1.2: Response body success === true
+  [PASS] 1.3: calculationEngine metadata object present
+  [PASS] 1.4: Engine specifies Lahiri Ayanamsha
+  [PASS] 1.5: Ascendant is Taurus (Vrishabha)
+  [PASS] 1.6: totalLongitudeDeg is numeric float
+  [PASS] 1.7: Moon Nakshatra is Rohini (Pada 4)
+  [PASS] 1.8: Rohini Nakshatra Lord is Moon
+  [PASS] 1.9: Exact UTC Epoch is -50372700000 ms
+  [PASS] 1.10: Explicit birthDateLocal provided
+  [PASS] 1.11: Explicit birthDateUtc provided
+  [PASS] 1.12: Active Mahadasha on 16 Oct 2026 is Saturn
+  [PASS] 1.13: Active Antardasha on 16 Oct 2026 is Rahu
+  [PASS] 1.14: Active Pratyantardasha on 16 Oct 2026 is Ketu
+  [PASS] 1.15: Exactly 9 planetary positions returned
+  [PASS] 1.16: D1 Rashi chart has 12 houses
+  [PASS] 1.17: D9 Navamsha chart has 12 houses
+  [PASS] 1.18: D10 Dasamsa chart has 12 houses
+  [PASS] 1.19: Vishdhar Kaal Sarp Dosha returned as Active
+
+▶ TEST SUITE 2: HTTP Contract Error Handling & Validation (400 Bad Request)
+  [PASS] 2.1: Missing dob returns HTTP 400
+  [PASS] 2.2: Missing dob error message descriptive
+  [PASS] 2.3: Malformed dob string returns HTTP 400
+  [PASS] 2.4: Malformed date format error descriptive
+  [PASS] 2.5: Impossible date numbers (1990-15-45) return HTTP 400
+  [PASS] 2.6: Date values error descriptive
+  [PASS] 2.7: Latitude > 90° returns HTTP 400
+  [PASS] 2.8: Invalid latitude error descriptive
+  [PASS] 2.9: Longitude > 180° returns HTTP 400
+  [PASS] 2.10: Invalid longitude error descriptive
+
+================================================================================
+API CONTRACT TEST RESULTS: 29 PASSED, 0 FAILED
+================================================================================
