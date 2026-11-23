@@ -3,8 +3,8 @@
  * Dynamic theme support for Light Vedic & Dark Cosmic.
  */
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppBar } from '@/components/AppBar';
 import { AppIcon } from '@/components/AppIcon';
@@ -15,6 +15,7 @@ import { IconBadge, ListTile, SettingsCard, SwitchTile, TileDivider } from '@/co
 import { AppRoutes, go, pop, push } from '@/navigation/routes';
 import { useAuthStore } from '@/features/auth/authStore';
 import { requestPermanentAccountDeletion } from '@/services/accountDeletionService';
+import { fetchSessions, revokeSession, heartbeatSession, getOrCreateSessionId } from '@/services/sessionService';
 import { withAlpha } from '@/theme/colors';
 import { useTranslation } from '@/theme/languageStore';
 import { useThemeColors } from '@/theme/themeStore';
@@ -169,155 +170,124 @@ export function SecurityScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const { t } = useTranslation();
-  const [bio, setBio] = useState(true);
-  const [twoFactor, setTwoFactor] = useState(false);
-  const [alerts, setAlerts] = useState(true);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+
+  const loadSessions = async (force = false) => {
+    if (!isAuthenticated || !user?.uid && !user?.phone) return;
+    if (force) setRefreshing(true);
+    const id = await getOrCreateSessionId();
+    setCurrentSessionId(id);
+    const result = await fetchSessions(user?.uid || '', user?.phone || '');
+    if (result.revoked) {
+      await useAuthStore.getState().logout();
+      Alert.alert('Signed Out', 'This session was signed out from another device.');
+      go(AppRoutes.signInScreen);
+      return;
+    }
+    if (result.ok) {
+      const list = Array.isArray(result.data?.sessions) ? result.data.sessions : Array.isArray(result.data) ? result.data : [];
+      const normalized = list.map((s: any) => ({
+        ...s,
+        sessionId: String(s.sessionId || s.id || ''),
+        deviceName: s.deviceName || s.name || 'iPhone',
+        osLabel: s.osLabel || 'iOS',
+        appVersion: s.appVersion || '1.0.0',
+        current: s.current === true || String(s.sessionId || s.id || '') === id,
+      }));
+      normalized.sort((a: any, b: any) => Number(b.current) - Number(a.current));
+      setSessions(normalized);
+    }
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      heartbeatSession(user?.uid || '', user?.phone || '').then((r) => {
+        if (r.revoked) {
+          useAuthStore.getState().logout();
+          Alert.alert('Signed Out', 'This session was signed out from another device.');
+          go(AppRoutes.signInScreen);
+        }
+      });
+      loadSessions();
+    }
+  }, [isAuthenticated, user?.uid, user?.phone]);
+
+  const revokeOne = (targetId: string) => {
+    Alert.alert('Revoke Session', 'Sign out this device?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Revoke', style: 'destructive', onPress: async () => {
+        const r = await revokeSession(user?.uid || '', user?.phone || '', targetId);
+        if (!r.ok) { showSnackBar('Could not revoke this session', '#CF4444'); return; }
+        setSessions((prev) => prev.filter((s) => s.sessionId !== targetId));
+      } },
+    ]);
+  };
+
+  const revokeOthers = () => {
+    Alert.alert('Sign Out Other Devices', `Sign out ${sessions.filter((s) => !s.current).length} other device(s)?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: async () => {
+        const r = await revokeSession(user?.uid || '', user?.phone || '', undefined, true, currentSessionId);
+        if (!r.ok) { showSnackBar('Could not sign out other devices', '#CF4444'); return; }
+        setSessions((prev) => prev.filter((s) => s.current));
+      } },
+    ]);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="security.screen">
-      <AppBar
-        title={t('profile.security', 'Security')}
-        onBack={pop}
-        testIDPrefix="security"
-        backgroundColor={colors.background}
-        backColor={colors.textPrimary}
-      />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90), gap: 20 }}>
-        <LinearGradient
-          colors={
-            colors.isLight
-              ? ['#FFF9F0', '#F2E9DE']
-              : [withAlpha(colors.goldAccent, 25), colors.surfaceVariant]
-          }
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={{
-            padding: 20,
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: colors.cardBorder,
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-        >
-          <ProgressRing
-            value={twoFactor ? 1 : 0.65}
-            size={64}
-            strokeWidth={6}
-            color={twoFactor ? '#2D9E6B' : '#D4821A'}
-            backgroundColor={colors.surfaceVariant}
-          >
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '800' }}>
-              {twoFactor ? '100' : '65'}
-            </Text>
-          </ProgressRing>
-          <View style={{ marginLeft: 16, flex: 1 }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '700' }}>
-              {twoFactor ? 'Excellent Security' : 'Good Security'}
-            </Text>
-            <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 12 }}>
-              {twoFactor ? 'Your account is fully protected' : 'Enable 2FA to achieve 100% protection'}
-            </Text>
-          </View>
-        </LinearGradient>
-
-        <View>
-          <H>Authentication</H>
+      <AppBar title={t('profile.security', 'Security')} onBack={pop} testIDPrefix="security" backgroundColor={colors.background} backColor={colors.textPrimary} />
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadSessions(true)} tintColor={colors.goldAccent} />} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90), gap: 20 }}>
+        {!isAuthenticated ? (
           <SettingsCard>
-            <SwitchTile
-              testID="security.biometric"
-              title="Biometric Login"
-              subtitle="Use fingerprint or Face ID"
-              value={bio}
-              onChange={(v) => {
-                setBio(v);
-                showSnackBar(`Biometric login ${v ? 'activated' : 'deactivated'}`, colors.surfaceVariant);
-              }}
-              secondary={<IconBadge icon="fingerprint_rounded" color={colors.goldAccent} size={22} />}
-            />
-            <TileDivider indent={16} endIndent={16} />
-            <SwitchTile
-              testID="security.twoFactor"
-              title="Two-Factor Authentication"
-              subtitle="Extra security via SMS/WhatsApp OTP"
-              value={twoFactor}
-              onChange={(v) => {
-                setTwoFactor(v);
-                showSnackBar(`2FA ${v ? 'enabled! Security score is now 100%' : 'disabled'}`, colors.surfaceVariant);
-              }}
-              secondary={<IconBadge icon="security_outlined" color="#4FC3F7" size={22} />}
-            />
-            <TileDivider indent={16} endIndent={16} />
-            <SwitchTile
-              testID="security.loginAlerts"
-              title="Login Alerts"
-              subtitle="Get notified of new logins"
-              value={alerts}
-              onChange={setAlerts}
-              secondary={<IconBadge icon="notifications_active_outlined" color="#2D9E6B" size={22} />}
-            />
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <IconBadge icon="security_outlined" color={colors.goldAccent} size={34} />
+              <Text style={{ marginTop: 12, color: colors.textPrimary, fontSize: 16, fontWeight: '700', textAlign: 'center' }}>Sign In to Manage Account Security</Text>
+              <Pressable testID="security.signIn" onPress={() => push(AppRoutes.signInScreen)} style={{ marginTop: 16, borderRadius: 100, backgroundColor: colors.goldAccent, paddingHorizontal: 20, paddingVertical: 10 }}>
+                <Text style={{ color: '#0A0E1A', fontSize: 13, fontWeight: '800' }}>Sign In / Register</Text>
+              </Pressable>
+            </View>
           </SettingsCard>
-        </View>
-
-        <View>
-          <H>Account Credentials</H>
-          <SettingsCard>
-            <ListTile
-              testID="security.changePassword"
-              leading={<IconBadge icon="lock_outline_rounded" color={colors.goldAccent} />}
-              title="Change Password"
-              subtitle="Update your master passcode"
-              trailing="chevron"
-              onPress={() => showSnackBar('Passcode reset link sent to registered mobile', colors.surfaceVariant)}
-            />
-            <TileDivider />
-            <ListTile
-              testID="security.changePhone"
-              leading={<IconBadge icon="phone_outlined" color="#4FC3F7" />}
-              title="Change Mobile Number"
-              subtitle="Update linked OTP number"
-              trailing="chevron"
-              onPress={() => showSnackBar('Verification OTP will be required on new phone number', colors.surfaceVariant)}
-            />
-          </SettingsCard>
-        </View>
-
-        <View>
-          <H>Active Sessions</H>
-          <SettingsCard>
-            {([['📱', 'Primary Mobile App', 'Current Active Device', true], ['💻', 'Web Astro Dashboard', 'Active 2h ago', false]] as const).map(([e, d, info, cur], i) => (
-              <View key={d}>
-                {i > 0 ? <TileDivider /> : null}
-                <ListTile
-                  leading={
-                    <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: colors.surfaceVariant, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 18 }}>{e}</Text>
-                    </View>
-                  }
-                  titleNode={
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '600' }}>{d}</Text>
-                      {cur ? (
-                        <View style={{ marginLeft: 8, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: withAlpha('#2D9E6B', 25) }}>
-                          <Text style={{ color: '#2D9E6B', fontSize: 10, fontWeight: '700' }}>Current</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  }
-                  subtitle={info}
-                  trailing={cur ? null : (
-                    <Pressable
-                      testID="security.revoke"
-                      onPress={() => showSnackBar('Web session logged out', colors.surfaceVariant)}
-                    >
-                      <Text style={{ color: '#CF4444', fontSize: 12, fontWeight: '600' }}>Revoke</Text>
-                    </Pressable>
-                  )}
-                />
+        ) : (
+          <> 
+            <LinearGradient colors={colors.isLight ? ['#F0FFF7', '#F2E9DE'] : [withAlpha('#2D9E6B', 25), colors.surfaceVariant]} style={{ padding: 18, borderRadius: 20, borderWidth: 1, borderColor: withAlpha('#2D9E6B', 70), flexDirection: 'row', alignItems: 'center' }}>
+              <IconBadge icon="verified_user_outlined" color="#2D9E6B" size={30} />
+              <View style={{ marginLeft: 12, flex: 1 }}>
+                <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '800' }}>OTP-Protected Account</Text>
+                <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 12 }}>Verified mobile: {user?.phone || '—'}</Text>
               </View>
-            ))}
-          </SettingsCard>
-        </View>
+            </LinearGradient>
+
+            <View>
+              <H>Account Credentials</H>
+              <SettingsCard>
+                <ListTile testID="security.changePhone" leading={<IconBadge icon="phone_outlined" color="#4FC3F7" />} title="Change Mobile Number" subtitle={`Linked: ${user?.phone || '—'}`} trailing="chevron" onPress={() => Alert.alert('Change Mobile Number', 'Switching numbers signs out this session and requires OTP verification on the new number.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Continue', style: 'destructive', onPress: async () => { await useAuthStore.getState().logout(); go(AppRoutes.signInScreen); } }])} />
+              </SettingsCard>
+            </View>
+
+            <View>
+              <H>Active Sessions</H>
+              <SettingsCard>
+                {sessions.map((s, i) => (
+                  <View key={s.sessionId || i}>
+                    {i > 0 ? <TileDivider /> : null}
+                    <ListTile leading={<IconBadge icon={s.platform === 'ios' ? 'phone_iphone' : 'devices_outlined'} color={s.current ? '#2D9E6B' : colors.goldAccent} />} titleNode={<View style={{ flexDirection: 'row', alignItems: 'center' }}><Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700' }}>{s.deviceName}</Text>{s.current ? <View style={{ marginLeft: 8, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: withAlpha('#2D9E6B', 25) }}><Text style={{ color: '#2D9E6B', fontSize: 10, fontWeight: '700' }}>Current</Text></View> : null}</View>} subtitle={`${s.osLabel} • v${s.appVersion} • ${s.current ? 'Active now' : s.lastActiveAt ? `Active ${s.lastActiveAt}` : 'Active recently'}`} trailing={!s.current ? (<Pressable testID={`security.revoke.${i}`} onPress={() => revokeOne(s.sessionId)}><Text style={{ color: '#CF4444', fontSize: 12, fontWeight: '700' }}>Revoke</Text></Pressable>) : null} />
+                  </View>
+                ))}
+              </SettingsCard>
+              {sessions.filter((s) => !s.current).length > 0 ? (
+                <Pressable testID="security.revokeOthers" onPress={revokeOthers} style={{ marginTop: 12, borderRadius: 100, borderWidth: 1, borderColor: '#CF4444', alignItems: 'center', paddingVertical: 12 }}><Text style={{ color: '#CF4444', fontSize: 13, fontWeight: '800' }}>Sign Out All Other Devices ({sessions.filter((s) => !s.current).length})</Text></Pressable>
+              ) : sessions.length === 1 ? (
+                <Text style={{ marginTop: 10, color: colors.textMuted, fontSize: 11, textAlign: 'center' }}>Only this device is currently signed in to your account.</Text>
+              ) : null}
+            </View>
+          </>
+        )}
       </ScrollView>
     </View>
   );

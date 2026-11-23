@@ -14,10 +14,13 @@
  */
 
 import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 
 export interface AstrologerSpeechOptions {
   language?: string;
   astrologerName?: string;
+  astrologerId?: string;
+  voiceId?: string;
   gender?: 'male' | 'female';
   onStart?: () => void;
   onDone?: () => void;
@@ -125,7 +128,7 @@ export function cleanTextForSpeech(raw: string, lang?: string): string {
   } else if (l.includes('tamil') || l.startsWith('ta')) {
     cleaned = cleaned
       .replace(/Acharya\s+Devavrat\s+Shastri/gi, 'ஆச்சார்ய தேவவ்ரத் சாஸ்திரி')
-      .replace(/Acharya\s+Devavrat/gi, 'ஆச்சார்ய தேவவ்ரத்')
+      .replace(/Acharya\s+Devavrat/gi, 'ஆச்சார்ய దేవవ్రత్')
       .replace(/Acharya\s+Dhananjay\s+Shastri/gi, 'ஆச்சார்ய தனஞ்சய் சாஸ்திரி')
       .replace(/Acharya\s+Dhananjay/gi, 'ஆச்சார்ய தனஞ்சய்')
       .replace(/Pandit\s+Radha\s+Raman/gi, 'பண்டிட் ராதாரமண்')
@@ -161,7 +164,7 @@ export function cleanTextForSpeech(raw: string, lang?: string): string {
       .replace(/Acharya\s+Devavrat\s+Shastri/gi, 'ആചാര്യ ദേവവ്രത് ശാസ്ത്രി')
       .replace(/Acharya\s+Devavrat/gi, 'ആചാര്യ ദേവവ്രത്')
       .replace(/Acharya\s+Dhananjay\s+Shastri/gi, 'ആചാര്യ ധനഞ്ജയ് ശാസ്ത്രി')
-      .replace(/Acharya\s+Dhananjay/gi, 'ആചാര്യ ധനഞ്ജയ്')
+      .replace(/Acharya\s+Dhananjay/gi, 'ആചാര്യ ധനంజയ്')
       .replace(/Pandit\s+Radha\s+Raman/gi, 'പണ്ഡിറ്റ് രാധാരമൺ')
       .replace(/Guruji\s+Sundararam/gi, 'ഗുരുജി സുന്ദരരാം')
       .replace(/Acharya/gi, 'ആചാര്യ')
@@ -332,19 +335,37 @@ async function resolveVoiceIdentifier(langCode: string, isFemale: boolean): Prom
     }
 
     const meta = getLanguageMetadata(langCode);
+    const normalizedLangs = new Set([
+      (langCode || '').toLowerCase(),
+      meta.bcp47.toLowerCase(),
+      meta.iso2,
+      meta.iso3,
+      ...(meta.tags || []).map((t) => String(t).toLowerCase()),
+    ]);
 
-    // Filter all voices matching this language
+    // Filter all voices matching this language AND prefer exact locale matches over any random installed voice.
     const matching = cachedVoices.filter((v) => {
       const vLang = (v.language || '').toLowerCase().replace(/_/g, '-');
+      const vName = (v.name || '').toLowerCase();
       const vId = (v.identifier || '').toLowerCase();
-      return (
+      const exactLangMatch = Array.from(normalizedLangs).some((tag) =>
+        String(tag).length > 0 && (vLang === tag || vLang.startsWith(`${tag}-`) || vId.includes(tag) || vName.includes(tag))
+      );
+      const isoMatch =
         vLang.startsWith(meta.iso2) ||
         vLang.startsWith(meta.iso3) ||
-        meta.tags.some((t) => vLang.startsWith(t) || vId.includes(t))
-      );
+        vId.includes(meta.iso2) ||
+        vName.includes(meta.iso2) ||
+        meta.tags.some((t) => {
+          const tag = String(t).toLowerCase();
+          return vLang.startsWith(tag) || vId.includes(tag) || vName.includes(tag);
+        });
+      return exactLangMatch || isoMatch;
     });
 
     if (matching.length === 0) {
+      // Do NOT fall back to a random English voice when the user selected a different language.
+      // Let the native OS TTS engine choose the best available voice for the requested language.
       return { voiceId: undefined, isNativeGenderMatched: false };
     }
 
@@ -552,8 +573,13 @@ export async function speakAstrologerText(
  * Stop active speech and cancel any pending queued chunks immediately
  */
 export async function stopAstrologerSpeech(): Promise<void> {
-  activeSpeechId += 1; // Invalidate current speech queue
+  activeSpeechId += 1;
   try {
+    if (activeRemoteSound) {
+      await activeRemoteSound.stopAsync().catch(() => {});
+      await activeRemoteSound.unloadAsync().catch(() => {});
+      activeRemoteSound = null;
+    }
     await Speech.stop();
   } catch (err) {
     console.warn('Error stopping speech:', err);
@@ -568,5 +594,45 @@ export async function isAstrologerSpeaking(): Promise<boolean> {
     return await Speech.isSpeakingAsync();
   } catch {
     return false;
+  }
+}
+
+let activeRemoteSound: Audio.Sound | null = null;
+
+async function fetchStudioChunk(text: string, options: AstrologerSpeechOptions): Promise<{ base64: string } | null> {
+  try {
+    const lang = getLanguageCode(options.language);
+    const gender = isFemaleAstrologer(options.astrologerName, options.gender) ? 'female' : 'male';
+    const res = await fetch('https://astroparihar.com/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        text,
+        lang,
+        gender,
+        voiceId: options.voiceId,
+        astrologerId: options.astrologerId,
+        astrologerName: options.astrologerName,
+        format: 'json',
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const providerOk = data?.provider === 'openai' || /^openai:|^neural:/i.test(String(data?.voiceUsed || ''));
+    const fallback = /^fallback:/i.test(String(data?.voiceUsed || ''));
+    if (!providerOk || fallback || typeof data?.audioBase64 !== 'string' || !data.audioBase64) return null;
+    return { base64: data.audioBase64 };
+  } catch { return null; }
+}
+
+async function configureIosSpeechAudioSession() {
+  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+    await Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: true,
+      shouldDuckAndroid: true,
+      interruptionModeIOS: 1,
+      interruptionModeAndroid: 1,
+    }).catch(() => {});
   }
 }

@@ -661,48 +661,26 @@ export default function ConsultationHistoryScreen() {
                     <Text numberOfLines={2} style={{ color: colors.textSecondary, fontSize: 11 }}>{`Topic: ${c.topic}`}</Text>
                   </View>
 
-                  <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <AppIcon key={i} name={i < c.rating ? 'star_rounded' : 'star_outline_rounded'} color={colors.goldAccent} size={15} />
-                    ))}
-                    <Text style={{ marginLeft: 6, flex: 1, color: colors.textMuted, fontSize: 11 }}>{c.status}</Text>
-
-                    {/* View Summary Report Button */}
-                    <Pressable
-                      testID={`consultationHistory.card.${idx}.viewReport`}
-                      onPress={() => handleViewReport(c)}
-                      style={{
-                        marginRight: 8,
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 100,
-                        backgroundColor: withAlpha(colors.goldAccent, colors.isLight ? 25 : 30),
-                        borderWidth: 1,
-                        borderColor: colors.goldAccent,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <AppIcon name="description" color={colors.goldAccent} size={13} style={{ marginRight: 4 }} />
-                      <Text style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '800' }}>
-                        View Report
-                      </Text>
-                    </Pressable>
-
-                    <Pressable
-                      testID={`consultationHistory.card.${idx}.bookAgain`}
-                      onPress={() => handleBookAgain(c)}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 100,
-                        backgroundColor: colors.goldAccent,
-                      }}
-                    >
-                      <Text style={{ color: '#0A0E1A', fontSize: 11, fontWeight: '800' }}>
-                        {c.source === 'ai' ? 'Consult AI' : t('common.bookAgain', 'Book Again')}
-                      </Text>
-                    </Pressable>
+                  <View style={{ marginTop: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <AppIcon key={i} name={i < c.rating ? 'star_rounded' : 'star_outline_rounded'} color={colors.goldAccent} size={15} />
+                        ))}
+                      </View>
+                      <View style={{ flexShrink: 0, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100, backgroundColor: withAlpha('#2D9E6B', 25) }}>
+                        <Text numberOfLines={1} style={{ color: '#2D9E6B', fontSize: 11, fontWeight: '800' }}>✓ Completed</Text>
+                      </View>
+                    </View>
+                    <View style={{ marginTop: 10, flexDirection: 'row', gap: 10 }}>
+                      <Pressable testID={`consultationHistory.card.${idx}.viewReport`} onPress={() => handleViewReport(c)} style={{ flex: 1, height: 38, borderRadius: 100, borderWidth: 1, borderColor: colors.goldAccent, backgroundColor: withAlpha(colors.goldAccent, 20), flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        <AppIcon name="description" color={colors.goldAccent} size={13} style={{ marginRight: 4 }} />
+                        <Text numberOfLines={1} style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '800' }}>View Report</Text>
+                      </Pressable>
+                      <Pressable testID={`consultationHistory.card.${idx}.bookAgain`} onPress={() => handleBookAgain(c)} style={{ flex: 1, height: 38, borderRadius: 100, backgroundColor: colors.goldAccent, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text numberOfLines={1} style={{ color: '#0A0E1A', fontSize: 11, fontWeight: '800' }}>{c.source === 'ai' ? 'Consult AI' : t('common.bookAgain', 'Book Again')}</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
               ))

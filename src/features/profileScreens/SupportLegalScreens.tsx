@@ -4,7 +4,7 @@
  * Dynamic theme support for Light Vedic & Dark Cosmic.
  */
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppBar } from '@/components/AppBar';
@@ -16,6 +16,7 @@ import { AppRoutes, pop, push } from '@/navigation/routes';
 import { withAlpha } from '@/theme/colors';
 import { useTranslation } from '@/theme/languageStore';
 import { useThemeColors } from '@/theme/themeStore';
+import { fetchDynamicFeed, postDynamic } from '@/services/dynamicApi';
 
 const CATEGORIES = [
   { emoji: '🔮', title: 'Getting Started', count: 8, color: '#9370DB' },
@@ -49,9 +50,17 @@ export function HelpCentreScreen() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [focused, setFocused] = useState(false);
   const [gridW, setGridW] = useState(0);
+  const [faqs, setFaqs] = useState(FAQS);
   const cell = gridW > 0 ? (gridW - 20) / 3 : 0;
-  const filtered = FAQS.map((f, i) => ({ ...f, i })).filter((f) => !query || f.q.toLowerCase().includes(query.toLowerCase()));
+  const filtered = faqs.map((f, i) => ({ ...f, i })).filter((f) => !query || f.q.toLowerCase().includes(query.toLowerCase()));
   const toggle = (i: number) => setExpanded((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; });
+
+  useEffect(() => {
+    fetchDynamicFeed('/api/app-dynamic/support-legal', 'support_legal').then((data) => {
+      const live = data?.faqs || data?.help?.faqs || data?.config?.faqs;
+      if (Array.isArray(live) && live.length) setFaqs(live.map((f: any) => ({ q: f.q || f.question || '', a: f.a || f.answer || '' })));
+    });
+  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="helpCentre.screen">
@@ -133,17 +142,16 @@ export function HelpCentreScreen() {
   );
 }
 
-function FormField({ label, hint, multiline, testID }: { label: string; hint: string; multiline?: boolean; testID: string }) {
+function FormField({ label, hint, multiline, testID, value, onChange }: { label: string; hint: string; multiline?: boolean; testID: string; value: string; onChange: (value: string) => void }) {
   const colors = useThemeColors();
-  const [v, setV] = useState('');
   const [focused, setFocused] = useState(false);
   return (
     <View>
       <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>{label}</Text>
       <TextInput
         testID={testID}
-        value={v}
-        onChangeText={setV}
+        value={value}
+        onChangeText={onChange}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={hint}
@@ -175,6 +183,9 @@ export function ContactSupportScreen() {
     { emoji: '📞', title: 'Phone Support', desc: '+91 1800-ASTRO (Toll Free)', color: '#FFB347', action: 'Call Now' },
     { emoji: '📱', title: 'WhatsApp', desc: 'Message us on WhatsApp', color: '#25D366', action: 'Open WhatsApp' },
   ];
+  const [subject, setSubject] = useState('');
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="contactSupport.screen">
       <AppBar
@@ -241,9 +252,26 @@ export function ContactSupportScreen() {
 
         <H mt={24}>Submit a Ticket</H>
         <View style={{ padding: 16, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorder, gap: 12 }}>
-          <FormField testID="contactSupport.subject" label="Subject" hint="Briefly describe your inquiry" />
-          <FormField testID="contactSupport.description" label="Description" hint="Provide more details..." multiline />
-          <ElevatedButton testID="contactSupport.submit" label="Submit Ticket" onPress={() => showSnackBar('Support ticket submitted successfully. Ticket ID #ASTRO-9281', colors.surfaceVariant)} radius={12} paddingV={14} fontSize={14} style={{ marginTop: 4 }} />
+          <FormField testID="contactSupport.subject" label="Subject" hint="Briefly describe your inquiry" value={subject} onChange={setSubject} />
+          <FormField testID="contactSupport.description" label="Description" hint="Provide more details..." multiline value={description} onChange={setDescription} />
+          <ElevatedButton
+            testID="contactSupport.submit"
+            label={submitting ? 'Submitting...' : 'Submit Ticket'}
+            onPress={async () => {
+              if (!subject.trim() || !description.trim()) { showSnackBar('Please enter a subject and description', '#CF4444'); return; }
+              setSubmitting(true);
+              const r = await postDynamic('/api/app-dynamic/support-tickets', { subject: subject.trim(), description: description.trim() });
+              setSubmitting(false);
+              if (!r.ok) { showSnackBar(r.data?.message || 'Could not submit support ticket', '#CF4444'); return; }
+              setSubject(''); setDescription('');
+              showSnackBar(r.data?.ticketId ? `Support ticket submitted: ${r.data.ticketId}` : 'Support ticket submitted successfully', colors.surfaceVariant);
+            }}
+            radius={12}
+            paddingV={14}
+            fontSize={14}
+            style={{ marginTop: 4 }}
+            loading={submitting}
+          />
         </View>
       </ScrollView>
     </View>

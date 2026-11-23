@@ -1,6 +1,133 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { normalizeDobForApi, normalizeTimeForApi } from '@/components/pickers';
 import { API_ENDPOINTS } from '@/config/api';
 import { useAuthStore } from '@/features/auth/authStore';
+
+async function resolveEffectiveUserInfoForAIChat(input?: any, userId?: string): Promise<any> {
+  const authUser = useAuthStore.getState().user;
+  let activeProfile: any = null;
+
+  try {
+    const { useBirthProfileStore } = await import('@/services/birthProfileStore');
+    activeProfile = useBirthProfileStore.getState().activeProfile || null;
+  } catch {
+    activeProfile = null;
+  }
+
+  const storageKeys = new Set<string>([
+    'astroparihar_user_birth_details',
+    ...(authUser?.uid ? [`astroparihar_user_birth_details_${authUser.uid}`] : []),
+    ...(authUser?.phone ? [`astroparihar_user_birth_details_${authUser.phone.replace(/\D/g, '')}`] : []),
+  ]);
+
+  const candidates: any[] = [input].filter(Boolean);
+
+  if (authUser) {
+    candidates.push({
+      name: authUser.name || 'Seeker',
+      fullName: authUser.name || 'Seeker',
+      dob: authUser.dob,
+      dateOfBirth: authUser.dob,
+      tob: authUser.tob || '12:00 PM',
+      time: authUser.tob || '12:00 PM',
+      birthTime: authUser.tob || '12:00 PM',
+      pob: authUser.pob || 'New Delhi, India',
+      place: authUser.pob || 'New Delhi, India',
+      birthPlace: authUser.pob || 'New Delhi, India',
+      location: authUser.pob || 'New Delhi, India',
+      gender: authUser.gender || 'Male',
+      zodiac: authUser.zodiac,
+      moonSign: authUser.moonSign,
+      nakshatra: authUser.nakshatra,
+      profileType: authUser.profileType || 'Myself',
+      relationship: authUser.profileType || 'Myself',
+      type: authUser.profileType || 'Myself',
+    });
+  }
+
+  if (activeProfile) {
+    candidates.push({
+      name: activeProfile.name || 'Seeker',
+      fullName: activeProfile.name || 'Seeker',
+      dob: activeProfile.dob,
+      dateOfBirth: activeProfile.dob,
+      tob: activeProfile.time || activeProfile.tob || '12:00 PM',
+      time: activeProfile.time || activeProfile.tob || '12:00 PM',
+      birthTime: activeProfile.time || activeProfile.tob || '12:00 PM',
+      pob: activeProfile.place || activeProfile.pob || 'New Delhi, India',
+      place: activeProfile.place || activeProfile.pob || 'New Delhi, India',
+      birthPlace: activeProfile.place || activeProfile.pob || 'New Delhi, India',
+      location: activeProfile.place || activeProfile.pob || 'New Delhi, India',
+      gender: activeProfile.gender || 'Male',
+      zodiac: activeProfile.zodiac || activeProfile.sign,
+      moonSign: activeProfile.moonSign,
+      nakshatra: activeProfile.nakshatra,
+      profileType: activeProfile.type || 'Myself',
+      relationship: activeProfile.type || 'Myself',
+      type: activeProfile.type || 'Myself',
+    });
+  }
+
+  for (const key of storageKeys) {
+    try {
+      const stored = await AsyncStorage.getItem(key);
+      if (!stored) continue;
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed === 'object') {
+        candidates.push(parsed);
+      }
+    } catch {
+      // Ignore malformed persisted profile data
+    }
+  }
+
+  const merged: Record<string, any> = {
+    name: 'Seeker',
+    gender: 'Male',
+    dob: '',
+    tob: '12:00 PM',
+    pob: 'New Delhi, India',
+    relationship: 'Myself',
+    profileType: 'Myself',
+    zodiac: '',
+    moonSign: '',
+    nakshatra: '',
+  };
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    const name = candidate.name || candidate.fullName || candidate.userName || merged.name;
+    if (name && name !== 'Seeker') merged.name = name;
+    merged.gender = candidate.gender || merged.gender;
+    merged.dob = candidate.dob || candidate.birthDate || candidate.dateOfBirth || merged.dob;
+    merged.tob = candidate.tob || candidate.time || candidate.birthTime || merged.tob;
+    merged.pob = candidate.pob || candidate.place || candidate.birthPlace || candidate.location || merged.pob;
+    merged.relationship = candidate.relationship || candidate.profileType || candidate.type || merged.relationship;
+    merged.profileType = candidate.profileType || candidate.relationship || candidate.type || merged.profileType;
+    merged.zodiac = candidate.zodiac || candidate.sign || merged.zodiac;
+    merged.moonSign = candidate.moonSign || merged.moonSign;
+    merged.nakshatra = candidate.nakshatra || merged.nakshatra;
+    if (candidate.email) merged.email = candidate.email;
+    if (candidate.phone) merged.phone = candidate.phone;
+    if (candidate.uid) merged.uid = candidate.uid;
+  }
+
+  if (merged.dob) {
+    merged.dob = normalizeDobForApi(merged.dob);
+  }
+  if (merged.tob) {
+    merged.tob = normalizeTimeForApi(merged.tob);
+  }
+
+  if (merged.pob && !merged.place) {
+    merged.place = merged.pob;
+  }
+  if (!merged.uid && userId) {
+    merged.uid = userId;
+  }
+
+  return merged.dob || merged.pob || merged.name !== 'Seeker' ? merged : null;
+}
 
 export const API_BASE_URL = API_ENDPOINTS.appDynamic;
 
@@ -156,8 +283,8 @@ export async function fetchCalculatedKundli(profile?: {
     }
 
     const payload = {
-      dob: effectiveProfile?.dob || '1995-10-15',
-      tob: effectiveProfile?.tob || '12:00 PM',
+      dob: normalizeDobForApi(effectiveProfile?.dob) || '1995-10-15',
+      tob: normalizeTimeForApi(effectiveProfile?.tob),
       pob: effectiveProfile?.pob || 'New Delhi, India',
       name: effectiveProfile?.name || authUser?.name || 'Guest',
       gender: effectiveProfile?.gender || authUser?.gender || 'Male',
@@ -587,119 +714,11 @@ export interface AIChatResponse {
 
 export function stripTrailingAstrologerQuestions(text: string, language?: string): string {
   if (!text) return '';
-  let cleaned = text.trim();
 
-  // Never strip ChatGPT-style clarification messages, questions, or greetings
-  const lower = cleaned.toLowerCase();
-  if (
-    lower.includes('clarify') ||
-    lower.includes('do you mean') ||
-    lower.includes('are you asking') ||
-    lower.includes('are you referring') ||
-    lower.includes('what are you trying to tell me') ||
-    lower.includes('what would you like to know') ||
-    cleaned.includes('స్పష్టం') ||
-    cleaned.includes('స్పష్టత') ||
-    cleaned.includes('స్పష్టంగా') ||
-    cleaned.includes('తెలియజేయండి') ||
-    cleaned.includes('అడగండి') ||
-    cleaned.includes('స్పష్ట') ||
-    cleaned.includes('स्पष्ट करें') ||
-    cleaned.includes('स्पष्टीकरण') ||
-    cleaned.includes('स्पष्ट कर सकते हैं') ||
-    cleaned.includes('தெளிவுபடுத்த') ||
-    cleaned.includes('விளக்க முடியுமா') ||
-    cleaned.includes('ಸ್ಪಷ್ಟಪಡಿಸಬಹುದೇ') ||
-    cleaned.includes('ಸ್ಪಷ್ಟಪಡಿಸಿ') ||
-    cleaned.includes('വ്യക്തമാക്കാമോ') ||
-    cleaned.includes('വ്യക്തത')
-  ) {
-    return cleaned;
-  }
-
-  const normLang =
-    /telugu|^te$/i.test(language || '') ? 'Telugu' :
-    /hindi|^hi$/i.test(language || '') ? 'Hindi' :
-    /tamil|^ta$/i.test(language || '') ? 'Tamil' :
-    /kannada|^kn$/i.test(language || '') ? 'Kannada' :
-    /malayalam|^ml$/i.test(language || '') ? 'Malayalam' : 'English';
-
-  const isQuestionSentence = (s: string) => {
-    const t = s.trim();
-    if (!t) return false;
-    if (/[?？]/.test(t)) return true;
-    return /తెలుసుకోవాలనుకుంటున్నారా|అనుభవిస్తున్నారా|కలిగి ఉన్నారా|వివరించగలరా|ఉన్నారా\?|जानना चाहते हैं|अनुभव कर रहे हैं|बता सकते हैं|Would you like to|Do you want to|Are you experiencing|Can you tell me/i.test(t);
-  };
-
-  // Repeatedly strip trailing question lines / sentences
-  let changed = true;
-  while (changed && cleaned.length > 0) {
-    changed = false;
-    // Strip trailing line if it contains/ends in question
-    const lines = cleaned.split('\n');
-    const lastLine = lines[lines.length - 1].trim();
-    if (isQuestionSentence(lastLine)) {
-      lines.pop();
-      cleaned = lines.join('\n').trim();
-      changed = true;
-      continue;
-    }
-
-    // Strip trailing sentence within the last line
-    const sentenceDelim = /([.!?।॥])/;
-    const parts = lastLine.split(sentenceDelim);
-    if (parts.length > 2) {
-      const sentences: string[] = [];
-      for (let i = 0; i < parts.length - 1; i += 2) {
-        sentences.push((parts[i] + parts[i + 1]).trim());
-      }
-      if (parts[parts.length - 1].trim()) {
-        sentences.push(parts[parts.length - 1].trim());
-      }
-      const lastSent = sentences[sentences.length - 1];
-      if (isQuestionSentence(lastSent)) {
-        sentences.pop();
-        lines[lines.length - 1] = sentences.join(' ').trim();
-        cleaned = lines.filter((l) => l.trim().length > 0).join('\n\n').trim();
-        changed = true;
-      }
-    }
-  }
-
-  // Remove any lingering question marks and their clauses at the end
-  cleaned = cleaned.replace(/[—–-]\s*[^\n.!?]*[?？]\s*$/g, '').trim();
-  cleaned = cleaned.replace(/[?？]\s*$/g, '.').trim();
-
-  // If text became empty or was only questions to begin with, keep the original text
-  if (!cleaned || cleaned.length < 15) {
-    if (text.trim().length > 0) {
-      // Return original message (e.g. concise clarification, greeting, or direct astrological answer)
-      return text.trim();
-    }
-    if (normLang === 'Telugu') {
-      cleaned = 'మీ జన్మ కుండలి ప్రకారం గ్రహాల స్థితులు పరిశీలించబడ్డాయి. ప్రస్తుత గోచారంలో బృహస్పతి అనుకూలంగా ఉండటంతో కార్యసిద్ధి, మనశ్శాంతి లభిస్తాయి. నిత్యం ఇష్టదేవతా ప్రార్థన మరియు వేద పరిహారాల ఆచరణ శ్రేయస్కరం.';
-    } else if (normLang === 'Hindi') {
-      cleaned = 'आपकी जन्म पत्रिका के अनुसार ग्रह स्थितियां अनुकूल हैं। देवगुरु बृहस्पति की शुभ दृष्टि से आपके कार्यों में प्रगति और मानसिक शांति प्राप्त होगी। नित्य इष्टदेव की उपासना एवं वैदिक उपाय कल्याणकारी सिद्ध होंगे।';
-    } else {
-      cleaned = 'Based on your Vedic birth chart, planetary transits are aligning favorably. Consecrated remedial rituals and regular spiritual practices will illuminate your highest pathway with peace and prosperity.';
-    }
-  }
-
-  const BLESSINGS: Record<string, string> = {
-    Telugu: 'సర్వే జనాః సుఖినో భవంతు. శుభం భూయాత్! 🙏',
-    Hindi: 'सर्वे भवन्तु सुखिनः। शुभं भवतु! 🙏',
-    Tamil: 'ஓம் சாந்தி. சுப மங்களம் உண்டாகட்டும்! 🙏',
-    Kannada: 'ಸರ್ವೇ ಜನಾಃ ಸುಖಿನೋ ಭವಂತು. ಶುಭವಾಗಲಿ! 🙏',
-    Malayalam: 'സർവ്വേ ഭവന്തു സുഖിനഃ. ശുഭം ഭവിക്കട്ടെ! 🙏',
-    English: 'May cosmic grace illuminate your path with peace and prosperity. Om Tat Sat! 🙏',
-  };
-
-  const blessing = BLESSINGS[normLang] || BLESSINGS.English;
-  if (!cleaned.includes('🙏') && !cleaned.includes('శుభం') && !cleaned.includes('शुभं') && !cleaned.includes('Blessings')) {
-    cleaned += `\n\n${blessing}`;
-  }
-
-  return cleaned;
+  // Keep the backend response exactly as provided so app responses match the website.
+  // Local sanitization is intentionally conservative: only normalize whitespace, never
+  // append blessings, never strip legitimate content, and never rewrite the answer.
+  return text.trim();
 }
 
 export async function sendLiveAIChatMessage(params: {
@@ -713,37 +732,43 @@ export async function sendLiveAIChatMessage(params: {
   const lang = params.language || 'English';
   const astroId = params.astrologerId || 'acharya-devavrat';
   const model = params.modelPreference || 'auto';
-
-  let effectiveUserInfo = params.userInfo;
-  if (!effectiveUserInfo?.dob) {
-    try {
-      const authUser = useAuthStore.getState().user;
-      if (authUser?.dob) {
-        effectiveUserInfo = {
-          name: authUser.name || 'Seeker',
-          dob: authUser.dob,
-          tob: authUser.tob || '12:00 PM',
-          pob: authUser.pob || 'New Delhi, India',
-          gender: authUser.gender || 'Male',
-          zodiac: authUser.zodiac,
-          moonSign: authUser.moonSign,
-          nakshatra: authUser.nakshatra,
-        };
-      } else {
-        const stored = await AsyncStorage.getItem('astroparihar_user_birth_details');
-        if (stored) effectiveUserInfo = JSON.parse(stored);
-      }
-    } catch {}
-  }
-
   const effectiveUserId =
     params.userId ||
     useAuthStore.getState().user?.uid ||
     '';
 
+  let effectiveUserInfo = await resolveEffectiveUserInfoForAIChat(params.userInfo, effectiveUserId);
+
+  if (!effectiveUserInfo) {
+    effectiveUserInfo = await resolveEffectiveUserInfoForAIChat(undefined, effectiveUserId);
+  }
+
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 25000);
+    const customerName = effectiveUserInfo?.name || 'Seeker';
+    const birthDetails = {
+      name: effectiveUserInfo?.name || 'Seeker',
+      fullName: effectiveUserInfo?.name || 'Seeker',
+      gender: effectiveUserInfo?.gender || 'Male',
+      dob: effectiveUserInfo?.dob || '',
+      dateOfBirth: effectiveUserInfo?.dob || '',
+      tob: effectiveUserInfo?.tob || '12:00 PM',
+      time: effectiveUserInfo?.tob || '12:00 PM',
+      birthTime: effectiveUserInfo?.tob || '12:00 PM',
+      pob: effectiveUserInfo?.pob || 'New Delhi, India',
+      place: effectiveUserInfo?.pob || 'New Delhi, India',
+      birthPlace: effectiveUserInfo?.pob || 'New Delhi, India',
+      location: effectiveUserInfo?.pob || 'New Delhi, India',
+      primaryConcern: params.messages[params.messages.length - 1]?.content || 'Career growth and life guidance',
+      zodiac: effectiveUserInfo?.zodiac || '',
+      moonSign: effectiveUserInfo?.moonSign || '',
+      nakshatra: effectiveUserInfo?.nakshatra || '',
+      profileType: effectiveUserInfo?.profileType || effectiveUserInfo?.relationship || 'Myself',
+      relationship: effectiveUserInfo?.relationship || effectiveUserInfo?.profileType || 'Myself',
+      type: effectiveUserInfo?.type || effectiveUserInfo?.profileType || 'Myself',
+    };
+
     const res = await fetch(`${API_BASE_URL}/ai-chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -753,7 +778,19 @@ export async function sendLiveAIChatMessage(params: {
         astrologerId: astroId,
         modelPreference: model,
         userInfo: effectiveUserInfo,
+        birthDetails,
+        customerId: effectiveUserId,
+        customerName,
         userId: effectiveUserId,
+        name: customerName,
+        gender: effectiveUserInfo?.gender || 'Male',
+        dob: effectiveUserInfo?.dob || '',
+        tob: effectiveUserInfo?.tob || '12:00 PM',
+        pob: effectiveUserInfo?.pob || 'New Delhi, India',
+        dateOfBirth: effectiveUserInfo?.dob || '',
+        timeOfBirth: effectiveUserInfo?.tob || '12:00 PM',
+        placeOfBirth: effectiveUserInfo?.pob || 'New Delhi, India',
+        profile: effectiveUserInfo,
       }),
       signal: controller.signal,
     });

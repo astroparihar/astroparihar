@@ -9,13 +9,13 @@
  * - Dynamic Light Vedic & Dark Cosmic theming with high-contrast text
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppBar } from '@/components/AppBar';
 import { AppIcon } from '@/components/AppIcon';
 import { ElevatedButton } from '@/components/common';
 import { BottomSheet, PopupMenu, showSnackBar } from '@/components/overlays';
-import { formatTimeOfDay, pickDate, pickTime } from '@/components/pickers';
+import { formatDobToDDMMYYYY, formatTimeOfDay, normalizeTimeForApi, parseDobToDate, parseTimeToDate, pickDate, pickTime } from '@/components/pickers';
 import { LocationSearchInput } from '@/components/LocationSearchInput';
 import { Text, TextInput } from '@/components/Text';
 import { AppRoutes, pop, push } from '@/navigation/routes';
@@ -119,8 +119,18 @@ export default function BirthProfilesScreen() {
   const sheetScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    loadProfiles();
-  }, [authUser]);
+    void loadProfiles();
+  }, [authUser?.uid, authUser?.phone, loadProfiles]);
+
+  const normalizeDobForEditForm = (value?: string) => {
+    if (!value) return '1995-10-15';
+    const parsed = parseDobToDate(value);
+    if (isNaN(parsed.getTime())) return '1995-10-15';
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
 
   const openAddSheet = () => {
     setSheetMode('add');
@@ -140,7 +150,7 @@ export default function BirthProfilesScreen() {
     setFormName(profile.name);
     setFormType(profile.type || 'Myself');
     setFormGender(profile.gender || 'Male');
-    setFormDob(profile.dob || '1995-10-15');
+    setFormDob(normalizeDobForEditForm(profile.dob));
     setFormTime(profile.time || '12:00 PM');
     setFormPlace(profile.place || 'New Delhi, India');
     setSheetOpen(true);
@@ -148,9 +158,9 @@ export default function BirthProfilesScreen() {
 
   const handlePickDate = async () => {
     try {
-      const initialDate = formDob ? new Date(formDob) : new Date(1995, 9, 15);
+      const initialDate = parseDobToDate(formDob);
       const chosen = await pickDate({
-        value: isNaN(initialDate.getTime()) ? new Date(1995, 9, 15) : initialDate,
+        value: initialDate,
         maximumDate: new Date(),
       });
       if (chosen) {
@@ -165,10 +175,10 @@ export default function BirthProfilesScreen() {
   const handlePickTime = async () => {
     try {
       const chosen = await pickTime({
-        value: new Date(2000, 0, 1, 12, 0),
+        value: parseTimeToDate(formTime),
       });
       if (chosen) {
-        setFormTime(formatTimeOfDay(chosen));
+        setFormTime(normalizeTimeForApi(chosen));
       }
     } catch { }
   };
@@ -193,27 +203,34 @@ export default function BirthProfilesScreen() {
   };
 
   const handleSaveProfile = async () => {
-    if (!formName.trim()) {
-      showSnackBar('Please enter member name', '#CF4444');
-      return;
-    }
-    if (!formPlace.trim()) {
-      showSnackBar('Please enter birth place', '#CF4444');
-      return;
-    }
-
+    if (saving) return;
+    Keyboard.dismiss();
     setSaving(true);
+
     try {
+      if (!formName.trim()) {
+        showSnackBar('Please enter member name', '#CF4444');
+        return;
+      }
+      if (!formPlace.trim()) {
+        showSnackBar('Please enter birth place', '#CF4444');
+        return;
+      }
+
+      const safeDob = normalizeDobForEditForm(formDob);
+      const safeTime = formTime || '12:00 PM';
+
       if (sheetMode === 'edit' && editingId) {
         const updated = await updateProfile(editingId, {
           name: formName.trim(),
           type: formType,
           gender: formGender,
-          dob: formDob,
-          time: formTime,
+          dob: safeDob,
+          time: safeTime,
           place: formPlace.trim(),
         });
         if (updated) {
+          setSheetOpen(false);
           showSnackBar(`Updated birth details for ${updated.name}!`);
         }
       } else {
@@ -221,14 +238,15 @@ export default function BirthProfilesScreen() {
           name: formName.trim(),
           type: formType,
           gender: formGender,
-          dob: formDob,
-          time: formTime,
+          dob: safeDob,
+          time: safeTime,
           place: formPlace.trim(),
           setAsActive: false,
         });
+        setSheetOpen(false);
         showSnackBar(`Added ${created.name} (${created.type}) to your family profiles!`);
       }
-      setSheetOpen(false);
+      await loadProfiles();
     } catch {
       showSnackBar('Could not save profile. Please try again.', '#CF4444');
     } finally {
@@ -483,181 +501,187 @@ export default function BirthProfilesScreen() {
             </Pressable>
           </View>
 
-          {/* Scrollable Form Body with Keyboard Handling */}
-          <ScrollView
-            ref={sheetScrollRef}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            showsVerticalScrollIndicator={true}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
             style={{ flex: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: 24,
-              paddingTop: 16,
-              paddingBottom: 40,
-            }}
           >
-            {/* Relationship */}
-            <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-              Relationship
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-              {PROFILE_RELATION_TYPES.map((r) => {
-                const isSel = formType === r.label;
-                return (
+            {/* Scrollable Form Body with Keyboard Handling */}
+            <ScrollView
+              ref={sheetScrollRef}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              showsVerticalScrollIndicator={true}
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                paddingHorizontal: 24,
+                paddingTop: 16,
+                paddingBottom: 40,
+              }}
+            >
+              {/* Relationship */}
+              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                Relationship
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                {PROFILE_RELATION_TYPES.map((r) => {
+                  const isSel = formType === r.label;
+                  return (
+                    <Pressable
+                      key={r.label}
+                      onPress={() => setFormType(r.label)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingHorizontal: 13,
+                        paddingVertical: 7,
+                        borderRadius: 16,
+                        backgroundColor: isSel ? colors.goldAccent : colors.surfaceVariant,
+                        borderWidth: 1.5,
+                        borderColor: isSel ? colors.goldAccent : colors.cardBorder,
+                        shadowColor: isSel ? colors.goldAccent : 'transparent',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isSel ? 0.25 : 0,
+                        shadowRadius: 4,
+                        elevation: isSel ? 2 : 0,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>{r.emoji}</Text>
+                      <Text
+                        style={{
+                          color: isSel ? '#FFFFFF' : colors.textPrimary,
+                          fontSize: 12,
+                          fontWeight: isSel ? '800' : '600',
+                          marginLeft: 5,
+                        }}
+                      >
+                        {r.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Full Name Input */}
+              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                Full Name <Text style={{ color: colors.goldAccent }}>*</Text>
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: colors.surfaceVariant,
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  borderColor: colors.cardBorder,
+                  paddingHorizontal: 12,
+                  minHeight: 50,
+                  marginBottom: 16,
+                }}
+              >
+                <AppIcon name="person_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="e.g. Rahul Sharma"
+                  value={formName}
+                  onChangeText={setFormName}
+                  placeholderTextColor={colors.textMuted}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      sheetScrollRef.current?.scrollTo({ y: 60, animated: true });
+                    }, 100);
+                  }}
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: colors.textPrimary,
+                    paddingVertical: 12,
+                  }}
+                />
+              </View>
+
+              {/* Birth Date & Time Side by Side */}
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                    Birth Date <Text style={{ color: colors.goldAccent }}>*</Text>
+                  </Text>
                   <Pressable
-                    key={r.label}
-                    onPress={() => setFormType(r.label)}
+                    onPress={handlePickDate}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      paddingHorizontal: 13,
-                      paddingVertical: 7,
-                      borderRadius: 16,
-                      backgroundColor: isSel ? colors.goldAccent : colors.surfaceVariant,
+                      paddingHorizontal: 12,
+                      minHeight: 50,
+                      borderRadius: 14,
+                      backgroundColor: colors.surfaceVariant,
                       borderWidth: 1.5,
-                      borderColor: isSel ? colors.goldAccent : colors.cardBorder,
-                      shadowColor: isSel ? colors.goldAccent : 'transparent',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: isSel ? 0.25 : 0,
-                      shadowRadius: 4,
-                      elevation: isSel ? 2 : 0,
+                      borderColor: colors.cardBorder,
                     }}
                   >
-                    <Text style={{ fontSize: 14 }}>{r.emoji}</Text>
-                    <Text
-                      style={{
-                        color: isSel ? '#FFFFFF' : colors.textPrimary,
-                        fontSize: 12,
-                        fontWeight: isSel ? '800' : '600',
-                        marginLeft: 5,
-                      }}
-                    >
-                      {r.label}
+                    <AppIcon name="calendar_today" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                    <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
+                      {formDob || 'Select Date'}
                     </Text>
                   </Pressable>
-                );
-              })}
-            </View>
+                </View>
 
-            {/* Full Name Input */}
-            <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-              Full Name <Text style={{ color: colors.goldAccent }}>*</Text>
-            </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                    Birth Time <Text style={{ color: colors.goldAccent }}>*</Text>
+                  </Text>
+                  <Pressable
+                    onPress={handlePickTime}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      minHeight: 50,
+                      borderRadius: 14,
+                      backgroundColor: colors.surfaceVariant,
+                      borderWidth: 1.5,
+                      borderColor: colors.cardBorder,
+                    }}
+                  >
+                    <AppIcon name="schedule" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                    <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
+                      {formTime || 'Select Time'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Birth Place Location Input */}
+              <LocationSearchInput
+                value={formPlace}
+                onChangeText={setFormPlace}
+                required
+                label="Birth Place (City, State, Country)"
+                placeholder="Enter birth place (e.g. Hyderabad, Guntur)"
+              />
+            </ScrollView>
+
+            {/* Pinned Action Footer */}
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.surfaceVariant,
-                borderRadius: 14,
-                borderWidth: 1.5,
-                borderColor: colors.cardBorder,
-                paddingHorizontal: 12,
-                minHeight: 50,
-                marginBottom: 16,
+                paddingHorizontal: 24,
+                paddingTop: 12,
+                paddingBottom: Math.max(insets.bottom, 16),
+                borderTopWidth: 1,
+                borderTopColor: colors.cardBorder,
+                backgroundColor: colors.surface,
               }}
             >
-              <AppIcon name="person_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
-              <TextInput
-                placeholder="e.g. Rahul Sharma"
-                value={formName}
-                onChangeText={setFormName}
-                placeholderTextColor={colors.textMuted}
-                onFocus={() => {
-                  setTimeout(() => {
-                    sheetScrollRef.current?.scrollTo({ y: 60, animated: true });
-                  }, 100);
-                }}
-                style={{
-                  flex: 1,
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color: colors.textPrimary,
-                  paddingVertical: 12,
-                }}
+              <ElevatedButton
+                label={saving ? 'Calculating Chart...' : sheetMode === 'add' ? 'Save Birth Profile' : 'Update Profile Details'}
+                onPress={handleSaveProfile}
+                disabled={saving}
+                loading={saving}
+                radius={14}
+                paddingV={14}
               />
             </View>
-
-            {/* Birth Date & Time Side by Side */}
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                  Birth Date <Text style={{ color: colors.goldAccent }}>*</Text>
-                </Text>
-                <Pressable
-                  onPress={handlePickDate}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    minHeight: 50,
-                    borderRadius: 14,
-                    backgroundColor: colors.surfaceVariant,
-                    borderWidth: 1.5,
-                    borderColor: colors.cardBorder,
-                  }}
-                >
-                  <AppIcon name="calendar_today" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
-                    {formDob || 'Select Date'}
-                  </Text>
-                </Pressable>
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                  Birth Time <Text style={{ color: colors.goldAccent }}>*</Text>
-                </Text>
-                <Pressable
-                  onPress={handlePickTime}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    minHeight: 50,
-                    borderRadius: 14,
-                    backgroundColor: colors.surfaceVariant,
-                    borderWidth: 1.5,
-                    borderColor: colors.cardBorder,
-                  }}
-                >
-                  <AppIcon name="schedule" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
-                    {formTime || 'Select Time'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Birth Place Location Input */}
-            <LocationSearchInput
-              value={formPlace}
-              onChangeText={setFormPlace}
-              required
-              label="Birth Place (City, State, Country)"
-              placeholder="Enter birth place (e.g. Hyderabad, Guntur)"
-            />
-          </ScrollView>
-
-          {/* Pinned Action Footer */}
-          <View
-            style={{
-              paddingHorizontal: 24,
-              paddingTop: 12,
-              paddingBottom: Math.max(insets.bottom, 16),
-              borderTopWidth: 1,
-              borderTopColor: colors.cardBorder,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <ElevatedButton
-              label={saving ? 'Calculating Chart...' : sheetMode === 'add' ? 'Save Birth Profile' : 'Update Profile Details'}
-              onPress={handleSaveProfile}
-              disabled={saving}
-              loading={saving}
-              radius={14}
-              paddingV={14}
-            />
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </BottomSheet>
     </View>

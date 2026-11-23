@@ -987,7 +987,7 @@ export default function LiveAstrologersScreen() {
     let isMounted = true;
 
     // 1. Immediately read cached real astrologers from AsyncStorage for instant 0ms display
-    AsyncStorage.getItem('@astroparihar_real_astrologers_live').then((cached) => {
+    AsyncStorage.getItem('astroparihar_real_astrologers_cache').then((cached) => {
       if (!isMounted || !cached) return;
       try {
         const list = JSON.parse(cached);

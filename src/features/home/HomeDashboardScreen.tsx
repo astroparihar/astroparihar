@@ -657,7 +657,10 @@ const DEFAULT_QUICK_ACTIONS = [
 function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
   const colors = useThemeColors();
   const [w, setW] = useState(0);
-  const cell = w > 0 ? (w - 24) / 3 : 0;
+  const gap = 12;
+  const padding = 40;
+  const availableWidth = Math.max(w - padding - gap * 2, 0);
+  const cell = w > 0 ? Math.max(availableWidth / 3, 90) : 0;
   const [actions, setActions] = useState(DEFAULT_QUICK_ACTIONS);
 
   useEffect(() => {
@@ -696,7 +699,10 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
         <Text style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '700' }}>Vedic & AI Tools</Text>
       </View>
       <View style={{ marginTop: 14, paddingHorizontal: 20 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+        <View
+          style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}
+          onLayout={(e) => setW(e.nativeEvent.layout.width)}
+        >
           {cell > 0 &&
             actions.map((a) => (
               <Pressable
@@ -706,6 +712,7 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
                 style={{
                   width: cell,
                   height: cell / 1.1,
+                  marginBottom: 12,
                   borderRadius: 20,
                   borderWidth: 1.5,
                   alignItems: 'center',
@@ -1375,7 +1382,7 @@ function PersonalisedRecs({
           >
             <Text style={{ fontSize: 22 }}>{r.emoji}</Text>
           </View>
-          <View style={{ flex: 1, marginLeft: 14 }}>
+          <View style={{ flex: 1, marginLeft: 14, minWidth: 0 }}>
             <View
               style={{
                 alignSelf: 'flex-start',
@@ -1397,10 +1404,10 @@ function PersonalisedRecs({
                 {r.tag}
               </Text>
             </View>
-            <Text numberOfLines={1} style={{ marginTop: 4, color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>
+            <Text numberOfLines={2} ellipsizeMode="tail" style={{ marginTop: 4, color: colors.textPrimary, fontSize: 14, fontWeight: '700', lineHeight: 18 }}>
               {r.title}
             </Text>
-            <Text numberOfLines={1} style={{ marginTop: 2, color: colors.isLight ? '#5A6A85' : '#8A99AD', fontSize: 12 }}>
+            <Text numberOfLines={2} ellipsizeMode="tail" style={{ marginTop: 2, color: colors.isLight ? '#5A6A85' : '#8A99AD', fontSize: 12, lineHeight: 16 }}>
               {r.subtitle}
             </Text>
           </View>
@@ -1412,7 +1419,13 @@ function PersonalisedRecs({
 }
 
 /* -------------------------------------------- RealAstrologersCarouselWidget */
-function RealAstrologersCarousel({ realAstrologers = [] }: { realAstrologers?: LiveAstrologer[] }) {
+function RealAstrologersCarousel({
+  realAstrologers = [],
+  isLoading = false,
+}: {
+  realAstrologers?: LiveAstrologer[];
+  isLoading?: boolean;
+}) {
   const colors = useThemeColors();
   const formatRate = useCurrencyStore((s) => s.formatRate);
   const displayList = realAstrologers || [];
@@ -1458,35 +1471,58 @@ function RealAstrologersCarousel({ realAstrologers = [] }: { realAstrologers?: L
         contentContainerStyle={{ paddingHorizontal: 20 }}
       >
         {displayList.length === 0 ? (
-          <View style={{ flexDirection: 'row', gap: 14, paddingVertical: 4 }}>
-            {[1, 2, 3].map((k) => (
-              <View
-                key={k}
-                style={{
-                  width: 280,
-                  height: 124,
-                  borderRadius: 20,
-                  backgroundColor: colors.isLight ? '#FBF8F2' : 'rgba(201,168,76,0.06)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 1,
-                  borderColor: colors.isLight ? 'rgba(201,168,76,0.25)' : 'rgba(201,168,76,0.15)',
-                  flexDirection: 'row',
-                  padding: 16,
-                }}
-              >
-                <ActivityIndicator size="small" color="#C9A84C" />
-                <View style={{ marginLeft: 14 }}>
-                  <Text style={{ color: colors.goldAccent, fontSize: 13, fontWeight: '700' }}>
-                    Connecting Gurus...
-                  </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
-                    Loading Vedic profiles
-                  </Text>
+          isLoading ? (
+            <View style={{ flexDirection: 'row', gap: 14, paddingVertical: 4 }}>
+              {[1, 2, 3].map((k) => (
+                <View
+                  key={k}
+                  style={{
+                    width: 280,
+                    height: 124,
+                    borderRadius: 20,
+                    backgroundColor: colors.isLight ? '#FBF8F2' : 'rgba(201,168,76,0.06)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: colors.isLight ? 'rgba(201,168,76,0.25)' : 'rgba(201,168,76,0.15)',
+                    flexDirection: 'row',
+                    padding: 16,
+                  }}
+                >
+                  <ActivityIndicator size="small" color="#C9A84C" />
+                  <View style={{ marginLeft: 14 }}>
+                    <Text style={{ color: colors.goldAccent, fontSize: 13, fontWeight: '700' }}>
+                      Connecting Gurus...
+                    </Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
+                      Loading Vedic profiles
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          ) : (
+            <View
+              style={{
+                width: 280,
+                height: 124,
+                borderRadius: 20,
+                backgroundColor: colors.isLight ? '#FBF8F2' : 'rgba(201,168,76,0.06)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: colors.isLight ? 'rgba(201,168,76,0.25)' : 'rgba(201,168,76,0.15)',
+                padding: 18,
+              }}
+            >
+              <Text style={{ color: colors.goldAccent, fontSize: 13, fontWeight: '700', textAlign: 'center' }}>
+                Live astrologers are syncing.
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 4, textAlign: 'center' }}>
+                Please tap refresh to retry.
+              </Text>
+            </View>
+          )
         ) : (
           displayList.map((a) => {
           const formattedName = (a.name || 'Astrologer')
@@ -2193,6 +2229,7 @@ export default function HomeDashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [realAstrologers, setRealAstrologers] = useState<LiveAstrologer[]>([]);
   const [aiAstrologers, setAiAstrologers] = useState<LiveAstrologer[]>(DEFAULT_AI_ASTROLOGERS);
+  const [realAstrologersLoading, setRealAstrologersLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const loadData = async () => {
@@ -2207,22 +2244,37 @@ export default function HomeDashboardScreen() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    setRealAstrologersLoading(true);
+
     // 1. Instantly load cached real astrologers from AsyncStorage for 0ms initial render
-    AsyncStorage.getItem('@astroparihar_real_astrologers_live').then((cached) => {
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setRealAstrologers((prev) => (prev.length === 0 ? parsed : prev));
-          }
-        } catch {}
-      }
+    AsyncStorage.getItem('astroparihar_real_astrologers_cache').then((cached) => {
+      if (!isMounted || !cached) return;
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRealAstrologers((prev) => (prev.length === 0 ? parsed : prev));
+        }
+      } catch {}
     });
 
     // 2. Fetch fresh live data and poll gently at 25s intervals to protect backend concurrency
-    loadData();
-    const poll = setInterval(loadData, 25000);
-    return () => clearInterval(poll);
+    loadData().finally(() => {
+      if (isMounted) setRealAstrologersLoading(false);
+    });
+
+    const poll = setInterval(() => {
+      setRealAstrologersLoading(true);
+      loadData().finally(() => {
+        if (isMounted) setRealAstrologersLoading(false);
+      });
+    }, 25000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(poll);
+    };
   }, []);
 
   const onRefresh = async () => {
@@ -2253,7 +2305,7 @@ export default function HomeDashboardScreen() {
         <View style={{ height: 24 }} />
         <PersonalisedRecs realAstrologers={realAstrologers} aiAstrologers={aiAstrologers} />
         <View style={{ height: 24 }} />
-        <RealAstrologersCarousel realAstrologers={realAstrologers} />
+        <RealAstrologersCarousel realAstrologers={realAstrologers} isLoading={realAstrologersLoading} />
         <View style={{ height: 24 }} />
         <AiAstrologersCarousel aiAstrologers={aiAstrologers} />
         {/* Generous bottom spacing so content never cuts off behind sticky CTAs & floating nav */}

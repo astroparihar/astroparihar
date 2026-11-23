@@ -291,6 +291,11 @@ export async function getDynamicPromotions(): Promise<DynamicPromotion[]> {
             };
           });
 
+          if (mapped.length === 0) {
+            await AsyncStorage.setItem(STORAGE_PROMOTIONS_KEY, JSON.stringify(DEFAULT_DYNAMIC_PROMOTIONS));
+            return DEFAULT_DYNAMIC_PROMOTIONS;
+          }
+
           await AsyncStorage.setItem(STORAGE_PROMOTIONS_KEY, JSON.stringify(mapped));
           return mapped;
         }
@@ -298,7 +303,10 @@ export async function getDynamicPromotions(): Promise<DynamicPromotion[]> {
     } catch {}
 
     // Fallback to cache if available
-    if (parsedCache !== null) return parsedCache;
+    if (parsedCache !== null) {
+      const safeCache = parsedCache.filter((b) => b.active !== false);
+      return safeCache.length > 0 ? safeCache : DEFAULT_DYNAMIC_PROMOTIONS;
+    }
   } catch (err) {
     console.warn('Error reading dynamic promotions:', err);
   }
@@ -331,7 +339,9 @@ export async function getDynamicCosmicInsights(): Promise<CosmicInsight[]> {
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.insights)) {
-          // Accurately respect turned off cards (active === false) and map routes properly
+          // Accurately respect turned off cards (active === false) and map routes properly.
+          // If the backend has intentionally disabled everything, fallback to the default content rather than
+          // rendering an empty dashboard section on Android and web builds.
           const active = data.insights
             .filter((c: CosmicInsight) => c.active !== false)
             .map((c: CosmicInsight, idx: number) => {
@@ -345,6 +355,12 @@ export async function getDynamicCosmicInsights(): Promise<CosmicInsight[]> {
               }
               return { ...c, ctaAction: action };
             });
+
+          if (active.length === 0) {
+            await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(DEFAULT_COSMIC_INSIGHTS));
+            return DEFAULT_COSMIC_INSIGHTS;
+          }
+
           await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(active));
           return active;
         }
@@ -389,13 +405,20 @@ export async function getDynamicCosmicInsights(): Promise<CosmicInsight[]> {
             };
           });
           const active = list.filter((c: CosmicInsight) => c.active !== false);
+          if (active.length === 0) {
+            await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(DEFAULT_COSMIC_INSIGHTS));
+            return DEFAULT_COSMIC_INSIGHTS;
+          }
           await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(active));
           return active;
         }
       }
     } catch {}
 
-    if (parsedCache !== null) return parsedCache;
+    if (parsedCache !== null) {
+      const safeCache = parsedCache.filter((c) => c.active !== false);
+      return safeCache.length > 0 ? safeCache : DEFAULT_COSMIC_INSIGHTS;
+    }
   } catch (err) {
     console.warn('Error reading cosmic insights:', err);
   }

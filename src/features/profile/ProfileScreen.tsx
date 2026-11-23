@@ -11,7 +11,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -25,7 +27,7 @@ import { ElevatedButton } from '@/components/common';
 import { BottomSheet, showSnackBar } from '@/components/overlays';
 import { FamilyProfileSwitcherModal } from '@/components/FamilyProfileSwitcherModal';
 import { LocationSearchInput } from '@/components/LocationSearchInput';
-import { formatDobToDDMMYYYY, formatTimeOfDay, parseDobToDate, pickDate, pickTime } from '@/components/pickers';
+import { formatDobToDDMMYYYY, formatTimeOfDay, normalizeDobForApi, normalizeTimeForApi, parseDobToDate, parseTimeToDate, pickDate, pickTime } from '@/components/pickers';
 import { Text, TextInput } from '@/components/Text';
 import { API_ENDPOINTS } from '@/config/api';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -216,8 +218,7 @@ export const DEFAULT_PROFILE_CONFIG: DynamicProfileConfig = {
         { id: 'kundliReports', order: 4, labelKey: 'profile.kundliReports', defaultLabel: 'Reports & Guides', subtitle: 'Vedic consultation summaries, Parihara & PDF guides', icon: 'description_outlined', route: AppRoutes.kundliReportsScreen, active: true },
         { id: 'matchReports', order: 5, labelKey: 'profile.matchReports', defaultLabel: 'Match Reports', subtitle: '36 Guna Ashtakoot matrimonial reports', icon: 'favorite_border', route: AppRoutes.matchReportsScreen, active: true },
         { id: 'panchangReports', order: 6, labelKey: 'profile.panchangReports', defaultLabel: 'Panchang & Muhurat', subtitle: 'Daily Vedic almanac, tithi & auspicious timings', icon: 'calendar_today_outlined', route: AppRoutes.panchangScreen, active: true },
-        { id: 'savedAstrologers', order: 7, labelKey: 'profile.savedAstrologers', defaultLabel: 'Saved Astrologers', subtitle: 'Your favorite verified Vedic consultants', icon: 'star_outline', route: AppRoutes.savedAstrologersScreen, active: true },
-        { id: 'consultationHistory', order: 8, labelKey: 'profile.consultationHistory', defaultLabel: 'Consultation History', subtitle: 'Past audio, video & AI chat recordings', icon: 'history', route: AppRoutes.consultationHistoryScreen, active: true },
+        { id: 'consultationHistory', order: 7, labelKey: 'profile.consultationHistory', defaultLabel: 'Consultation History', subtitle: 'Past audio, video & AI chat recordings', icon: 'history', route: AppRoutes.consultationHistoryScreen, active: true },
       ],
     },
     {
@@ -229,7 +230,6 @@ export const DEFAULT_PROFILE_CONFIG: DynamicProfileConfig = {
       items: [
         { id: 'wallet', order: 1, labelKey: 'profile.wallet', defaultLabel: 'Wallet', subtitle: 'View balance, add funds & recharge offers', icon: 'account_balance_wallet_outlined', route: AppRoutes.walletScreen, active: true },
         { id: 'transactions', order: 2, labelKey: 'profile.transactions', defaultLabel: 'Transactions', subtitle: 'Detailed billing history & payment receipts', icon: 'receipt_long_outlined', route: AppRoutes.walletScreen, active: true },
-        { id: 'paymentMethods', order: 3, labelKey: 'profile.paymentMethods', defaultLabel: 'Payment Methods', subtitle: 'UPI, Cards, Netbanking & Saved options', icon: 'credit_card_outlined', route: AppRoutes.walletScreen, active: true },
       ],
     },
     {
@@ -400,6 +400,7 @@ export default function ProfileScreen() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [reportCount, setReportCount] = useState(4);
   const [consultationCount, setConsultationCount] = useState(2);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const [profileData, setProfileData] = useState({
     name: currentUserName,
@@ -581,7 +582,7 @@ export default function ProfileScreen() {
     getWalletBalance().then(setWalletBalance);
     const unsub = subscribeWallet(setWalletBalance);
     return () => unsub();
-  }, [authUser, isAuthenticated, activeProfile?.id, activeProfile?.name]);
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -619,7 +620,7 @@ export default function ProfileScreen() {
   const handlePickEditTob = async () => {
     try {
       const chosen = await pickTime({
-        value: new Date(2000, 0, 1, 12, 0),
+        value: parseTimeToDate(editTob),
       });
       if (chosen) {
         setEditTob(formatTimeOfDay(chosen));
@@ -628,32 +629,39 @@ export default function ProfileScreen() {
   };
 
   const saveProfileEdits = async () => {
-    const formattedDob = formatDobToDDMMYYYY(editDob);
-    const updated = {
-      name: editName.trim() || profileData.name,
-      email: editEmail.trim() || profileData.email,
-      dob: formattedDob || (profileData.dob !== 'Not specified' ? profileData.dob : ''),
-      tob: editTob.trim() || (profileData.tob !== 'Not specified' ? profileData.tob : ''),
-      pob: editPob.trim() || (profileData.pob !== 'Not specified' ? profileData.pob : ''),
-    };
+    if (savingProfile) return;
+    setSavingProfile(true);
+    try {
+      const normalizedDob = normalizeDobForApi(editDob);
+      const normalizedTob = normalizeTimeForApi(editTob);
+      const updated = {
+        name: editName.trim() || profileData.name,
+        email: editEmail.trim() || profileData.email,
+        dob: normalizedDob || (profileData.dob !== 'Not specified' && profileData.dob !== 'Sign in to view' ? normalizeDobForApi(profileData.dob) : ''),
+        tob: normalizedTob || (profileData.tob !== 'Not specified' && profileData.tob !== 'Sign in to view' ? normalizeTimeForApi(profileData.tob) : ''),
+        pob: editPob.trim() || (profileData.pob !== 'Not specified' && profileData.pob !== 'Sign in to view' ? profileData.pob : ''),
+      };
 
-    await updateUserProfile(updated);
-    if (activeProfile?.id) {
-      await updateProfile(activeProfile.id, {
-        name: updated.name,
-        dob: updated.dob,
-        time: updated.tob,
-        place: updated.pob,
-      });
+      await updateUserProfile(updated);
+      if (activeProfile?.id) {
+        await updateProfile(activeProfile.id, {
+          name: updated.name,
+          dob: updated.dob,
+          time: updated.tob,
+          place: updated.pob,
+        });
+      }
+      setProfileData((prev) => ({
+        ...prev,
+        ...updated,
+      }));
+      Keyboard.dismiss();
+      setEditSheetOpen(false);
+      showSnackBar('Profile details saved successfully!', colors.surfaceVariant);
+      loadUserData();
+    } finally {
+      setSavingProfile(false);
     }
-    setProfileData((prev) => ({
-      ...prev,
-      ...updated,
-    }));
-    Keyboard.dismiss();
-    setEditSheetOpen(false);
-    showSnackBar('Profile details saved successfully!', colors.surfaceVariant);
-    loadUserData();
   };
 
   const handleConfirmSignOut = async () => {
@@ -752,7 +760,6 @@ export default function ProfileScreen() {
       AppRoutes.kundliReportsScreen,
       AppRoutes.matchReportsScreen,
       AppRoutes.panchangScreen,
-      AppRoutes.savedAstrologersScreen,
       AppRoutes.consultationHistoryScreen,
       AppRoutes.birthProfilesScreen,
       AppRoutes.remediesScreen,
@@ -1282,7 +1289,7 @@ export default function ProfileScreen() {
             <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 12.5, lineHeight: 18 }}>
               {t(
                 'profile.guestSignInNotice',
-                'Sign in to access your personal Kundli, birth charts, detailed reports, daily Panchang, saved astrologers, wallet & transaction receipts.'
+                'Sign in to access your personal Kundli, birth charts, detailed reports, daily Panchang, wallet & transaction receipts.'
               )}
             </Text>
 
@@ -1291,7 +1298,6 @@ export default function ProfileScreen() {
                 { icon: 'auto_stories', text: 'My Kundli & Birth Chart' },
                 { icon: 'description_outlined', text: 'Kundli & Service Reports' },
                 { icon: 'calendar_today_outlined', text: 'Panchang & Auspicious Muhurat' },
-                { icon: 'star_outline', text: 'Saved Astrologers' },
                 { icon: 'account_balance_wallet_outlined', text: 'Wallet Balance & Transactions' },
               ].map((item) => (
                 <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -1333,6 +1339,7 @@ export default function ProfileScreen() {
           ?.map((section) => {
             const activeItems = section.items
               ?.filter((it) => it.active !== false)
+              ?.filter((it) => !['notifications', 'notificationSettings'].includes(it.id))
               ?.sort((a, b) => (a.order || 0) - (b.order || 0));
 
             if (!activeItems || activeItems.length === 0) return null;
@@ -1661,167 +1668,189 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          {/* Scrollable Form Body with Clean Keyboard Handling */}
-          <ScrollView
-            ref={editScrollRef}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            showsVerticalScrollIndicator={true}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 32 : 0}
             style={{ flex: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: 24,
-              paddingTop: 16,
-              paddingBottom: 40,
-            }}
           >
-            {/* Full Name */}
-            <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-              {config.editNameLabel || 'Full Name'}
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.surfaceVariant,
-                borderRadius: 14,
-                borderWidth: 1.5,
-                borderColor: colors.cardBorder,
-                paddingHorizontal: 12,
-                minHeight: 50,
-                marginBottom: 16,
+            {/* Scrollable Form Body with Clean Keyboard Handling */}
+            <ScrollView
+              ref={editScrollRef}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              showsVerticalScrollIndicator={true}
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                paddingHorizontal: 24,
+                paddingTop: 16,
+                paddingBottom: 40,
               }}
             >
-              <AppIcon name="person_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
-              <TextInput
-                value={editName}
-                onChangeText={setEditName}
-                placeholder="Full Name"
-                placeholderTextColor={colors.textMuted}
+              {/* Full Name */}
+              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                {config.editNameLabel || 'Full Name'}
+              </Text>
+              <View
                 style={{
-                  flex: 1,
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color: colors.textPrimary,
-                  paddingVertical: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: colors.surfaceVariant,
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  borderColor: colors.cardBorder,
+                  paddingHorizontal: 12,
+                  minHeight: 50,
+                  marginBottom: 16,
                 }}
-              />
-            </View>
+              >
+                <AppIcon name="person_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                <TextInput
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Full Name"
+                  placeholderTextColor={colors.textMuted}
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: colors.textPrimary,
+                    paddingVertical: 12,
+                  }}
+                />
+              </View>
 
-            {/* Phone / Email */}
-            <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-              {config.editPhoneOrEmailLabel || 'Phone / Email'}
-            </Text>
+              {/* Phone / Email */}
+              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                {config.editPhoneOrEmailLabel || 'Phone / Email'}
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: colors.surfaceVariant,
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  borderColor: colors.cardBorder,
+                  paddingHorizontal: 12,
+                  minHeight: 50,
+                  marginBottom: 16,
+                }}
+              >
+                <AppIcon name="mail_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                <TextInput
+                  value={editEmail}
+                  onChangeText={setEditEmail}
+                  placeholder="Phone or Email"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: colors.textPrimary,
+                    paddingVertical: 12,
+                  }}
+                />
+              </View>
+
+              {/* Birth Date & Birth Time */}
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                    {config.editDobLabel || 'Date of Birth (DD/MM/YYYY)'}
+                  </Text>
+                  <Pressable
+                    onPress={handlePickEditDob}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      minHeight: 50,
+                      borderRadius: 14,
+                      backgroundColor: colors.surfaceVariant,
+                      borderWidth: 1.5,
+                      borderColor: colors.cardBorder,
+                    }}
+                  >
+                    <AppIcon name="calendar_today" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                    <Text
+                      style={{
+                        flex: 1,
+                        color: editDob ? colors.textPrimary : colors.textMuted,
+                        fontSize: 13,
+                        fontWeight: '700',
+                        paddingVertical: 12,
+                      }}
+                    >
+                      {editDob || 'DD/MM/YYYY'}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                    {config.editTobLabel || 'Time of Birth'}
+                  </Text>
+                  <Pressable
+                    onPress={handlePickEditTob}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 12,
+                      minHeight: 50,
+                      borderRadius: 14,
+                      backgroundColor: colors.surfaceVariant,
+                      borderWidth: 1.5,
+                      borderColor: colors.cardBorder,
+                    }}
+                  >
+                    <AppIcon name="schedule" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                    <Text
+                      style={{
+                        flex: 1,
+                        color: editTob ? colors.textPrimary : colors.textMuted,
+                        fontSize: 13,
+                        fontWeight: '700',
+                        paddingVertical: 12,
+                      }}
+                    >
+                      {editTob || 'Select Time'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Birth Place Location Input */}
+              <LocationSearchInput
+                value={editPob}
+                onChangeText={setEditPob}
+                label={config.editPobLabel || 'Place of Birth (City, State, Country)'}
+                placeholder="Enter birth place (e.g. Hyderabad, Guntur)"
+              />
+            </ScrollView>
+
+            {/* Fixed Pinned Footer with Save Action Button - Always visible, never covered */}
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.surfaceVariant,
-                borderRadius: 14,
-                borderWidth: 1.5,
-                borderColor: colors.cardBorder,
-                paddingHorizontal: 12,
-                minHeight: 50,
-                marginBottom: 16,
+                paddingHorizontal: 24,
+                paddingTop: 12,
+                paddingBottom: Math.max(insets.bottom, 16),
+                borderTopWidth: 1,
+                borderTopColor: colors.cardBorder,
+                backgroundColor: colors.surface,
               }}
             >
-              <AppIcon name="mail_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
-              <TextInput
-                value={editEmail}
-                onChangeText={setEditEmail}
-                placeholder="Phone or Email"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={{
-                  flex: 1,
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color: colors.textPrimary,
-                  paddingVertical: 12,
-                }}
+              <ElevatedButton
+                label={config.editSaveButtonText || 'Save Profile Details'}
+                onPress={saveProfileEdits}
+                radius={14}
+                paddingV={14}
+                fontSize={14}
+                fontWeight="800"
               />
             </View>
-
-            {/* Birth Date & Birth Time */}
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                  {config.editDobLabel || 'Date of Birth (DD/MM/YYYY)'}
-                </Text>
-                <Pressable
-                  onPress={handlePickEditDob}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    minHeight: 50,
-                    borderRadius: 14,
-                    backgroundColor: colors.surfaceVariant,
-                    borderWidth: 1.5,
-                    borderColor: colors.cardBorder,
-                  }}
-                >
-                  <AppIcon name="calendar_today" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
-                    {editDob || 'DD/MM/YYYY'}
-                  </Text>
-                </Pressable>
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                  {config.editTobLabel || 'Time of Birth'}
-                </Text>
-                <Pressable
-                  onPress={handlePickEditTob}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    minHeight: 50,
-                    borderRadius: 14,
-                    backgroundColor: colors.surfaceVariant,
-                    borderWidth: 1.5,
-                    borderColor: colors.cardBorder,
-                  }}
-                >
-                  <AppIcon name="schedule" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
-                    {editTob || 'Select Time'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Birth Place Location Input */}
-            <LocationSearchInput
-              value={editPob}
-              onChangeText={setEditPob}
-              label={config.editPobLabel || 'Place of Birth (City, State, Country)'}
-              placeholder="Enter birth place (e.g. Hyderabad, Guntur)"
-            />
-          </ScrollView>
-
-          {/* Fixed Pinned Footer with Save Action Button - Always visible, never covered */}
-          <View
-            style={{
-              paddingHorizontal: 24,
-              paddingTop: 12,
-              paddingBottom: Math.max(insets.bottom, 16),
-              borderTopWidth: 1,
-              borderTopColor: colors.cardBorder,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <ElevatedButton
-              label={config.editSaveButtonText || 'Save Profile Details'}
-              onPress={saveProfileEdits}
-              radius={14}
-              paddingV={14}
-              fontSize={14}
-              fontWeight="800"
-            />
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </BottomSheet>
 

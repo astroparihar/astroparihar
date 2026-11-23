@@ -159,7 +159,7 @@ function ConsultCTABar({ testIDPrefix }: { testIDPrefix: string }) {
   );
 }
 type Mini = { name: string; specialty: string; imageUrl: string; rating: number; price: number; fullObj?: any };
-function AstrologerRow({ items, accent }: { items: Mini[]; accent: string }) {
+function AstrologerRow({ items = [], accent }: { items?: Mini[]; accent: string }) {
   const colors = useThemeColors();
   const { t } = useTranslation();
   const formatRate = useCurrencyStore((s) => s.formatRate);
@@ -262,11 +262,7 @@ export function CareerAstrologyScreen() {
         ))}
       </HScroll>
       <SectionTitle title="Expert Astrologers" accent={a} />
-      <AstrologerRow accent={a} items={[
-        { name: 'Pt. Rajesh Sharma', specialty: 'Career & Finance', imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop', rating: 4.9, price: 35 },
-        { name: 'Dr. Meena Iyer', specialty: 'Vedic Career', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop', rating: 4.8, price: 42 },
-        { name: 'Acharya Vikram', specialty: 'Job & Business', imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop', rating: 4.95, price: 55 },
-      ]} />
+      <AstrologerRow accent={a} />
     </ServiceLayout>
   );
 }
@@ -303,11 +299,7 @@ export function MarriageAstrologyScreen() {
         </View>
       </View>
       <SectionTitle title="Expert Astrologers" accent={a} />
-      <AstrologerRow accent={a} items={[
-        { name: 'Jyotishi Priya', specialty: 'Marriage & Love', imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop', rating: 4.97, price: 40 },
-        { name: 'Pt. Suresh Joshi', specialty: 'Kundli Milan', imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop', rating: 4.88, price: 38 },
-        { name: 'Acharya Devi', specialty: 'Relationship', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop', rating: 4.92, price: 45 },
-      ]} />
+      <AstrologerRow accent={a} />
     </ServiceLayout>
   );
 }
@@ -340,10 +332,7 @@ export function BusinessAstrologyScreen() {
         ))}
       </HScroll>
       <SectionTitle title="Expert Astrologers" accent={a} />
-      <AstrologerRow accent={a} items={[
-        { name: 'Acharya Kapil', specialty: 'Business & Finance', imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop', rating: 4.93, price: 50 },
-        { name: 'Pt. Anand Mishra', specialty: 'Entrepreneurship', imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop', rating: 4.87, price: 45 },
-      ]} />
+      <AstrologerRow accent={a} />
     </ServiceLayout>
   );
 }
@@ -381,10 +370,7 @@ export function FinanceAstrologyScreen() {
         ))}
       </View>
       <SectionTitle title="Expert Astrologers" accent={a} />
-      <AstrologerRow accent={a} items={[
-        { name: 'Pt. Ramesh Gupta', specialty: 'Wealth & Finance', imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop', rating: 4.91, price: 48 },
-        { name: 'Jyotishi Kavita', specialty: 'Investment Timing', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop', rating: 4.85, price: 40 },
-      ]} />
+      <AstrologerRow accent={a} />
     </ServiceLayout>
   );
 }

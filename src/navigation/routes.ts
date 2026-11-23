@@ -25,7 +25,6 @@ export const AppRoutes = {
   birthProfilesScreen: '/birth-profiles-screen',
   kundliReportsScreen: '/kundli-reports-screen',
   matchReportsScreen: '/match-reports-screen',
-  savedAstrologersScreen: '/saved-astrologers-screen',
   consultationHistoryScreen: '/consultation-history-screen',
   walletScreen: '/wallet-screen',
   languageScreen: '/language-screen',

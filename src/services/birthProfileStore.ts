@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { normalizeDobForStorage, normalizeTimeForStorage } from '@/components/pickers';
 import { useAuthStore, UserProfile } from '@/features/auth/authStore';
 import { fetchCalculatedKundli } from '@/services/astrologyService';
 
@@ -103,27 +104,31 @@ export const useBirthProfileStore = create<BirthProfileState>((set, get) => ({
       const authUser = useAuthStore.getState().user;
       const isAuthenticated = useAuthStore.getState().isAuthenticated;
       const isAuth = Boolean(isAuthenticated && authUser && (authUser.uid || authUser.phone));
-
-      if (!isAuth) {
-        set({ profiles: [], activeProfile: null, loading: false });
-        return [];
-      }
-
-      const storageKey = getUserStorageKey(authUser);
-      const stored = await AsyncStorage.getItem(storageKey);
+      const storageCandidates = isAuth
+        ? [getUserStorageKey(authUser), STORAGE_PROFILES_KEY]
+        : [STORAGE_PROFILES_KEY];
 
       let list: BirthProfile[] = [];
-      if (stored) {
+      for (const key of storageCandidates) {
+        if (!key) continue;
+        const stored = await AsyncStorage.getItem(key);
+        if (!stored) continue;
         try {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
             list = parsed;
+            break;
           }
         } catch {}
       }
 
+      if (!isAuth && list.length === 0) {
+        set({ profiles: [], activeProfile: null, loading: false });
+        return [];
+      }
+
       // If user is logged in, ensure at least primary profile exists
-      if (list.length === 0) {
+      if (list.length === 0 && isAuth) {
         const meta = getRelationMeta(authUser?.profileType || 'Myself');
         const defaultProfile: BirthProfile = {
           id: `bp_${authUser?.uid || Date.now()}`,
@@ -143,18 +148,18 @@ export const useBirthProfileStore = create<BirthProfileState>((set, get) => ({
           createdAt: new Date().toISOString(),
         };
         list = [defaultProfile];
-        await AsyncStorage.setItem(storageKey, JSON.stringify(list));
+        await AsyncStorage.setItem(getUserStorageKey(authUser), JSON.stringify(list));
         await AsyncStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(list));
       }
 
       // Ensure at least one profile is active
       let activeItem = list.find((p) => p.active);
-      if (!activeItem) {
+      if (!activeItem && list.length > 0) {
         list[0].active = true;
         activeItem = list[0];
       }
 
-      set({ profiles: list, activeProfile: activeItem, loading: false });
+      set({ profiles: list, activeProfile: activeItem || null, loading: false });
       return list;
     } catch {
       set({ loading: false });
@@ -210,39 +215,21 @@ export const useBirthProfileStore = create<BirthProfileState>((set, get) => ({
     const authUser = useAuthStore.getState().user;
     const meta = getRelationMeta(data.type);
 
-    let calculatedZodiac = 'Scorpio';
-    let calculatedMoonSign = 'Cancer';
-    let calculatedNakshatra = 'Pushya';
-
-    if (data.dob) {
-      try {
-        const chart = await fetchCalculatedKundli({
-          dob: data.dob,
-          tob: data.time || '12:00 PM',
-          pob: data.place || 'New Delhi, India',
-          name: data.name.trim(),
-          gender: data.gender || 'Male',
-        });
-        if (chart) {
-          if (chart.ascendant?.sign) calculatedZodiac = chart.ascendant.sign;
-          if (chart.moonSign) calculatedMoonSign = chart.moonSign;
-          if (chart.nakshatra) calculatedNakshatra = chart.nakshatra;
-        }
-      } catch {}
-    }
+    const safeDob = normalizeDobForStorage(data.dob);
+    const safeTime = normalizeTimeForStorage(data.time || '12:00 PM');
 
     const newProfile: BirthProfile = {
       id: `bp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       name: data.name.trim(),
       type: data.type || 'Family',
       gender: data.gender || 'Male',
-      dob: data.dob.trim(),
-      time: data.time?.trim() || '12:00 PM',
-      place: data.place?.trim() || 'New Delhi, India',
-      zodiac: calculatedZodiac,
-      sign: calculatedZodiac,
-      moonSign: calculatedMoonSign,
-      nakshatra: calculatedNakshatra,
+      dob: safeDob || data.dob.trim(),
+      time: safeTime,
+      place: (data.place || 'New Delhi, India').trim(),
+      zodiac: 'Scorpio',
+      sign: 'Scorpio',
+      moonSign: 'Cancer',
+      nakshatra: 'Pushya',
       emoji: meta.emoji,
       color: meta.color,
       active: !!data.setAsActive,
@@ -287,6 +274,35 @@ export const useBirthProfileStore = create<BirthProfileState>((set, get) => ({
       console.warn('Error saving added birth profile:', e?.message);
     }
 
+    if (newProfile.dob) {
+      void (async () => {
+        try {
+          const chart = await fetchCalculatedKundli({
+            dob: newProfile.dob,
+            tob: newProfile.time || '12:00 PM',
+            pob: newProfile.place || 'New Delhi, India',
+            name: newProfile.name,
+            gender: newProfile.gender || 'Male',
+          });
+          if (!chart) return;
+          const refreshedProfile = {
+            ...newProfile,
+            zodiac: typeof chart.ascendant?.sign === 'string' ? chart.ascendant.sign : newProfile.zodiac,
+            moonSign: typeof chart.moonSign === 'string' ? chart.moonSign : newProfile.moonSign,
+            nakshatra: typeof chart.nakshatra === 'string' ? chart.nakshatra : newProfile.nakshatra,
+            sign: typeof chart.ascendant?.sign === 'string' ? chart.ascendant.sign : newProfile.sign,
+            updatedAt: new Date().toISOString(),
+          };
+          const refreshedList = get().profiles.map((p) => (p.id === refreshedProfile.id ? refreshedProfile : p));
+          set({ profiles: refreshedList, activeProfile: refreshedProfile.active ? refreshedProfile : get().activeProfile });
+          await AsyncStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(refreshedList));
+          if (authUser) {
+            await AsyncStorage.setItem(getUserStorageKey(authUser), JSON.stringify(refreshedList));
+          }
+        } catch {}
+      })();
+    }
+
     return newProfile;
   },
 
@@ -299,46 +315,24 @@ export const useBirthProfileStore = create<BirthProfileState>((set, get) => ({
     const updatedType = partial.type !== undefined ? partial.type : existing.type;
     const meta = getRelationMeta(updatedType);
 
-    const nextDob = partial.dob !== undefined ? partial.dob : existing.dob;
-    const nextTob = partial.time !== undefined ? partial.time : existing.time;
-    const nextPob = partial.place !== undefined ? partial.place : existing.place;
+    const nextDob = normalizeDobForStorage(partial.dob !== undefined ? partial.dob : existing.dob);
+    const nextTob = normalizeTimeForStorage(partial.time !== undefined ? partial.time : existing.time);
+    const nextPob = (partial.place !== undefined ? partial.place : existing.place)?.trim() || 'New Delhi, India';
     const nextName = partial.name !== undefined ? partial.name.trim() : existing.name;
     const nextGender = partial.gender !== undefined ? partial.gender : existing.gender;
-
-    let nextZodiac = existing.zodiac;
-    let nextMoonSign = existing.moonSign;
-    let nextNakshatra = existing.nakshatra;
-
-    // Recalculate Vedic signs if DOB / TOB / POB changed
-    if (nextDob && (nextDob !== existing.dob || nextTob !== existing.time || nextPob !== existing.place)) {
-      try {
-        const chart = await fetchCalculatedKundli({
-          dob: nextDob,
-          tob: nextTob || '12:00 PM',
-          pob: nextPob || 'New Delhi, India',
-          name: nextName,
-          gender: nextGender || 'Male',
-        });
-        if (chart) {
-          if (chart.ascendant?.sign) nextZodiac = chart.ascendant.sign;
-          if (chart.moonSign) nextMoonSign = chart.moonSign;
-          if (chart.nakshatra) nextNakshatra = chart.nakshatra;
-        }
-      } catch {}
-    }
 
     const updatedProfile: BirthProfile = {
       ...existing,
       name: nextName,
       type: updatedType,
       gender: nextGender,
-      dob: nextDob,
+      dob: nextDob || existing.dob,
       time: nextTob,
       place: nextPob,
-      zodiac: nextZodiac,
-      sign: nextZodiac,
-      moonSign: nextMoonSign,
-      nakshatra: nextNakshatra,
+      zodiac: existing.zodiac,
+      sign: existing.zodiac,
+      moonSign: existing.moonSign,
+      nakshatra: existing.nakshatra,
       emoji: meta.emoji,
       color: meta.color,
       updatedAt: new Date().toISOString(),
@@ -376,6 +370,34 @@ export const useBirthProfileStore = create<BirthProfileState>((set, get) => ({
     } catch (e: any) {
       console.warn('Error updating birth profile:', e?.message);
     }
+
+    void (async () => {
+      if (!updatedProfile.dob) return;
+      try {
+        const chart = await fetchCalculatedKundli({
+          dob: updatedProfile.dob,
+          tob: updatedProfile.time || '12:00 PM',
+          pob: updatedProfile.place || 'New Delhi, India',
+          name: updatedProfile.name,
+          gender: updatedProfile.gender || 'Male',
+        });
+        if (!chart) return;
+        const refreshedProfile: BirthProfile = {
+          ...updatedProfile,
+          zodiac: typeof chart.ascendant?.sign === 'string' ? chart.ascendant.sign : updatedProfile.zodiac,
+          sign: typeof chart.ascendant?.sign === 'string' ? chart.ascendant.sign : updatedProfile.zodiac,
+          moonSign: typeof chart.moonSign === 'string' ? chart.moonSign : updatedProfile.moonSign,
+          nakshatra: typeof chart.nakshatra === 'string' ? chart.nakshatra : updatedProfile.nakshatra,
+          updatedAt: new Date().toISOString(),
+        };
+        const refreshedList = get().profiles.map((p) => (p.id === refreshedProfile.id ? refreshedProfile : p));
+        set({ profiles: refreshedList, activeProfile: refreshedProfile.active ? refreshedProfile : get().activeProfile });
+        await AsyncStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(refreshedList));
+        if (authUser) {
+          await AsyncStorage.setItem(getUserStorageKey(authUser), JSON.stringify(refreshedList));
+        }
+      } catch {}
+    })();
 
     return updatedProfile;
   },

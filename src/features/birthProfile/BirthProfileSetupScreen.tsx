@@ -8,14 +8,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { Keyboard, LayoutAnimation, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, LayoutAnimation, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedBox, AnimatedPressable, switcherEntering } from '@/components/AnimatedBox';
 import { AppIcon } from '@/components/AppIcon';
 import { ElevatedButton } from '@/components/common';
 import { showSnackBar } from '@/components/overlays';
-import { formatTimeOfDay, pickDate, pickTime } from '@/components/pickers';
+import { formatTimeOfDay, normalizeDobForStorage, normalizeTimeForStorage, pickDate, pickTime } from '@/components/pickers';
 import { LocationSearchInput } from '@/components/LocationSearchInput';
 import { lh, Text, TextInput } from '@/components/Text';
 import { API_ENDPOINTS } from '@/config/api';
@@ -333,8 +333,14 @@ export default function BirthProfileSetupScreen() {
     const cleanPhone = pendingAuth?.phone ? pendingAuth.phone.replace(/\D/g, '') : '';
     const uid = pendingAuth?.uid || (cleanPhone ? `phone_${cleanPhone}` : `user_${Date.now()}`);
     const phone = pendingAuth?.phone || '';
-    const formattedDob = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '';
-    const formattedTob = time ? formatTimeOfDay(time) : '';
+    const formattedDob = normalizeDobForStorage(date);
+    const formattedTob = normalizeTimeForStorage(time);
+
+    if (!formattedDob || !formattedTob) {
+      showSnackBar('Please enter your date of birth and birth time', '#CF4444');
+      setSaving(false);
+      return;
+    }
 
     let calculatedZodiac = 'Scorpio';
     let calculatedMoonSign = 'Cancer';
@@ -494,17 +500,23 @@ export default function BirthProfileSetupScreen() {
         </View>
       </View>
 
-      <View style={{ flex: 1 }}>
-        <Animated.View key={`step${currentStep}`} style={{ flex: 1 }} entering={switcherEntering(width * 0.05, 350)}>
-          {currentStep === 0 ? (
-            <ProfileTypeSelector selectedType={profileType} onTypeSelected={setProfileType} />
-          ) : currentStep === 1 ? (
-            <BirthDetailsForm name={name} setName={setName} gender={gender} setGender={setGender} date={date} setDate={setDate} time={time} setTime={setTime} />
-          ) : (
-            <BirthPlace value={birthPlace} onChange={setBirthPlace} />
-          )}
-        </Animated.View>
-      </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 28 : 0}
+      >
+        <View style={{ flex: 1 }}>
+          <Animated.View key={`step${currentStep}`} style={{ flex: 1 }} entering={switcherEntering(width * 0.05, 350)}>
+            {currentStep === 0 ? (
+              <ProfileTypeSelector selectedType={profileType} onTypeSelected={setProfileType} />
+            ) : currentStep === 1 ? (
+              <BirthDetailsForm name={name} setName={setName} gender={gender} setGender={setGender} date={date} setDate={setDate} time={time} setTime={setTime} />
+            ) : (
+              <BirthPlace value={birthPlace} onChange={setBirthPlace} />
+            )}
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
 
       <View
         style={{

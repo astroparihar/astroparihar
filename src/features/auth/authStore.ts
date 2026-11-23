@@ -119,6 +119,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await AsyncStorage.setItem(userKey, JSON.stringify(detailsToSave));
         if (phoneKey) await AsyncStorage.setItem(phoneKey, JSON.stringify(detailsToSave));
         await AsyncStorage.setItem('astroparihar_user_birth_details', JSON.stringify(detailsToSave));
+        try {
+          const { heartbeatSession } = await import('@/services/sessionService');
+          await heartbeatSession(user.uid, user.phone);
+          const { registerPushTokenIfAuthenticated } = await import('@/services/notificationService');
+          await registerPushTokenIfAuthenticated();
+        } catch {}
       } else {
         await AsyncStorage.removeItem(STORAGE_USER_KEY);
         await AsyncStorage.removeItem(STORAGE_TOKEN_KEY);
@@ -160,6 +166,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    const currentUser = get().user;
+    try {
+      if (currentUser?.uid || currentUser?.phone) {
+        const { getOrCreateSessionId, revokeSession, clearSessionId } = await import('@/services/sessionService');
+        const sessionId = await getOrCreateSessionId();
+        await revokeSession(currentUser.uid, currentUser.phone, sessionId);
+        await clearSessionId();
+      }
+      const { clearNotificationState } = await import('@/services/notificationService');
+      await clearNotificationState();
+    } catch {}
     set({
       user: null,
       token: null,

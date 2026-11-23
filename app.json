@@ -11,7 +11,8 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.astroparihar.app",
+      "bundleIdentifier": "com.astroparihar.astroapp",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "icon": "./assets/images/app_logo_emblem.png",
       "infoPlist": {
         "CFBundleDisplayName": "AstroParihar",
@@ -21,18 +22,19 @@
         "NSPhotoLibraryUsageDescription": "AstroParihar requires photo library access to allow uploading birth charts and setting your devotee profile picture.",
         "NSSpeechRecognitionUsageDescription": "AstroParihar uses speech recognition to convert your spoken astrological queries into text in real time.",
         "UIBackgroundModes": [
-          "audio"
+          "audio",
+          "remote-notification"
         ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.astroparihar.app",
+      "package": "com.astroparihar.astroapp",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app_logo_emblem.png",
-        "backgroundColor": "#080D1A"
+        "backgroundColor": "#FAF9F6"
       },
       "permissions": [
         "CAMERA",
@@ -41,19 +43,33 @@
         "ACCESS_NETWORK_STATE"
       ]
     },
-    "web": { "bundler": "metro", "output": "single" },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
     "plugins": [
       "expo-router",
       "expo-font",
-      ["expo-splash-screen", { "backgroundColor": "#FAF9F6" }],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FAF9F6"
+        }
+      ],
       "@react-native-community/datetimepicker",
       [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow AstroParihar to use your location for accurate Vedic planetary calculations and astrologer discovery."
         }
-      ]
+      ],
+      "expo-notifications",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      ["expo-build-properties", { "ios": { "useFrameworks": "dynamic", "buildReactNativeFromSource": true } }]
     ],
-    "experiments": { "typedRoutes": false }
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }

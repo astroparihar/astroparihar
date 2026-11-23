@@ -107,10 +107,10 @@ export default function SplashScreen() {
     outputRange: ['0deg', '360deg'],
   });
 
-  // Calculate balanced proportions with comfortable margins on any screen size
-  const wheelSize = Math.min(width * 0.78, height * 0.42, 300);
-  const emblemSize = wheelSize * 0.334;
-  const logoWidth = Math.min(width * 0.68, 260);
+  // Increase overall splash sizing for better visibility without altering the composition
+  const wheelSize = Math.min(width * 0.82, height * 0.5, 360);
+  const emblemSize = wheelSize * 0.34;
+  const logoWidth = Math.min(width * 0.82, 320);
   const logoHeight = logoWidth * (231 / 423);
 
   return (
@@ -208,7 +208,7 @@ export default function SplashScreen() {
         </View>
 
         {/* Below the Wheel: AstroParihar Text-Only Logo (Hand emblem removed) */}
-        <View style={{ width: logoWidth, height: logoHeight, marginTop: 24, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: logoWidth, height: logoHeight, marginTop: 30, alignItems: 'center', justifyContent: 'center' }}>
           <Image
             source={require('@/../assets/images/app_logo_text.png')}
             style={{ width: '100%', height: '100%' }}

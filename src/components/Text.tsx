@@ -13,8 +13,19 @@ import { ralewayFamily } from '@/theme/fonts';
 import { useLanguageStore } from '@/theme/languageStore';
 import { useThemeColors } from '@/theme/themeStore';
 
+function applyGlobalTypeScale(style: TextStyle): TextStyle {
+  const flat = { ...style };
+  if (typeof flat.fontSize === 'number') {
+    flat.fontSize = Math.round(flat.fontSize + 1.2);
+  }
+  if (typeof flat.lineHeight === 'number') {
+    flat.lineHeight = Math.max(Math.round(flat.lineHeight + 1.5), flat.fontSize ?? flat.lineHeight);
+  }
+  return flat;
+}
+
 function resolve(style: TextProps['style']): TextStyle {
-  const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
+  const flat = applyGlobalTypeScale((StyleSheet.flatten(style) ?? {}) as TextStyle);
   const { fontWeight, fontFamily, ...rest } = flat;
   return { ...rest, fontFamily: fontFamily ?? ralewayFamily(fontWeight as string | undefined) };
 }
