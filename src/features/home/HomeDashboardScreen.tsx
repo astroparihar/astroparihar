@@ -3,9 +3,10 @@
  * RefreshIndicator → RefreshControl (800 ms no-op refresh, same as source).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, AppState, FlatList, Modal, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedPressable, switcherEntering } from '@/components/AnimatedBox';
@@ -18,28 +19,33 @@ import { API_ENDPOINTS } from '@/config/api';
 import { REMEDIES, Remedy } from '@/data/remedies';
 import { useAuthStore } from '@/features/auth/authStore';
 import { AppRoutes, push } from '@/navigation/routes';
+import { fetchLiveHoroscopes } from '@/services/astrologyService';
+import { fillCmsTemplate, useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { useBirthProfileStore } from '@/services/birthProfileStore';
 import { AppLanguage, useLanguageStore } from '@/theme/languageStore';
 import {
   CosmicInsight,
   DEFAULT_AI_ASTROLOGERS,
+  DEFAULT_REAL_ASTROLOGERS,
   DynamicPromotion,
   fetchAiAstrologers,
   fetchRealAstrologers,
+  STORAGE_REAL_ASTROLOGERS_KEY,
   getDynamicCosmicInsights,
   getDynamicPromotions,
   LiveAstrologer,
 } from '@/services/homeDataService';
 import { useLocationStore } from '@/services/locationService';
+import { useNotificationStore } from '@/services/notificationStore';
 import { useCurrencyStore } from '@/services/currencyStore';
 import { AppColors, argb, withAlpha } from '@/theme/colors';
 import { useThemeColors } from '@/theme/themeStore';
 
-function getGreeting(): string {
+function getGreeting(greetings: { morning: string; afternoon: string; evening: string }): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return greetings.morning || 'Good Morning';
+  if (hour < 17) return greetings.afternoon || 'Good Afternoon';
+  return greetings.evening || 'Good Evening';
 }
 
 /* --------------------------------------------------------- HomeHeaderWidget */
@@ -60,10 +66,14 @@ const APP_HEADER_LANGUAGES: Array<{
 
 function HomeHeader() {
   const colors = useThemeColors();
+  const homeCms = useAppScreensCmsStore((s) => s.config.home);
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuth = Boolean(isAuthenticated && user && (user.uid || user.phone));
   const activeProfile = useBirthProfileStore((s) => s.activeProfile);
   const loadProfiles = useBirthProfileStore((s) => s.loadProfiles);
+  const rawUnreadCount = useNotificationStore((s) => s.unreadCount);
+  const unreadNotificationsCount = isAuth ? rawUnreadCount : 0;
   const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
 
   useEffect(() => {
@@ -74,14 +84,17 @@ function HomeHeader() {
 
   const displayName = (isAuthenticated && (activeProfile?.name?.trim() || user?.name?.trim()))
     ? (activeProfile?.name?.trim() || user?.name?.trim() || 'User')
-    : 'Guest';
+    : homeCms.guestName || 'Guest';
   const initial = (displayName[0] || 'G').toUpperCase();
-  const greeting = getGreeting();
+  const greeting = getGreeting(homeCms.greetings);
 
   const selectedLanguage = useLanguageStore((s) => s.selectedLanguage);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const currentLang = APP_HEADER_LANGUAGES.find((l) => l.code === selectedLanguage) || APP_HEADER_LANGUAGES[0];
+  const headerLanguages = (homeCms.languageModal?.languages?.length
+    ? homeCms.languageModal.languages
+    : APP_HEADER_LANGUAGES) as typeof APP_HEADER_LANGUAGES;
+  const currentLang = headerLanguages.find((l) => l.code === selectedLanguage) || headerLanguages[0];
 
   const { location, isLoading, loadCached, detectLocation } = useLocationStore();
 
@@ -91,17 +104,17 @@ function HomeHeader() {
     });
   }, [loadCached, detectLocation]);
 
-  const displayCity = location?.city || activeProfile?.place?.split(',')[0].trim() || user?.pob?.split(',')[0].trim() || 'Mumbai';
+  const displayCity = location?.city || activeProfile?.place?.split(',')[0].trim() || user?.pob?.split(',')[0].trim() || homeCms.defaultCity || 'Mumbai';
 
   const handleLocationPress = () => {
     Alert.alert(
-      'Current Location',
+      homeCms.locationAlertTitle,
       location.formattedAddress
-        ? `${location.formattedAddress}\n\n(Detected via Google Maps)`
-        : `${displayCity}\n\n(Detected via Google Maps)`,
+        ? `${location.formattedAddress}\n\n${homeCms.locationAlertSourceNote}`
+        : `${displayCity}\n\n${homeCms.locationAlertSourceNote}`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Refresh GPS', onPress: () => detectLocation(true) },
+        { text: homeCms.locationAlertCancel, style: 'cancel' },
+        { text: homeCms.locationAlertRefresh, onPress: () => detectLocation(true) },
       ]
     );
   };
@@ -248,6 +261,49 @@ function HomeHeader() {
               {displayCity}
             </Text>
           </Pressable>
+
+          {/* Notifications Bell with Live Unread Badge */}
+          <Pressable
+            testID="home.notifications"
+            onPress={() => push(AppRoutes.notificationsScreen)}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.isLight ? '#FFFFFF' : argb('0FFFFFFF'),
+              borderWidth: 1,
+              borderColor: colors.isLight ? 'rgba(201,168,76,0.32)' : argb('1AC9A84C'),
+              marginLeft: 6,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Notifications${unreadNotificationsCount > 0 ? `, ${unreadNotificationsCount} unread` : ''}`}
+          >
+            <AppIcon name="notifications_outlined" color={colors.goldAccent} size={19} />
+            {unreadNotificationsCount > 0 ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -3,
+                  right: -3,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  paddingHorizontal: 3.5,
+                  backgroundColor: '#CF4444',
+                  borderWidth: 1.5,
+                  borderColor: colors.background,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '800' }}>
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
         </View>
       </View>
 
@@ -303,7 +359,7 @@ function HomeHeader() {
                   <AppIcon name="translate" color={colors.goldAccent} size={17} />
                 </View>
                 <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '800' }}>
-                  Select Language
+                  {homeCms.languageModal.title}
                 </Text>
               </View>
 
@@ -324,12 +380,12 @@ function HomeHeader() {
             </View>
 
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 16, lineHeight: 17 }}>
-              Choose your preferred language for horoscope readings, panchang & AI consultations.
+              {homeCms.languageModal.subtitle}
             </Text>
 
             {/* Language Options List */}
             <View style={{ gap: 8 }}>
-              {APP_HEADER_LANGUAGES.map((lang) => {
+              {headerLanguages.map((lang) => {
                 const isSelected = selectedLanguage === lang.code;
                 return (
                   <Pressable
@@ -411,7 +467,7 @@ function HomeHeader() {
               }}
             >
               <Text style={{ fontSize: 10.5, color: colors.goldAccent, fontWeight: '600', textAlign: 'center' }}>
-                ✦ Entire app and AI Chat will update to your selected language instantly.
+                {homeCms.languageModal.footerNote}
               </Text>
             </View>
           </Pressable>
@@ -656,20 +712,23 @@ const DEFAULT_QUICK_ACTIONS = [
 
 function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
   const colors = useThemeColors();
+  const homeCms = useAppScreensCmsStore((s) => s.config.home);
   const [w, setW] = useState(0);
-  const gap = 12;
-  const padding = 40;
-  const availableWidth = Math.max(w - padding - gap * 2, 0);
-  const cell = w > 0 ? Math.max(availableWidth / 3, 90) : 0;
-  const [actions, setActions] = useState(DEFAULT_QUICK_ACTIONS);
+  const cell = w > 0 ? (w - 24) / 3 : 0;
+  const baseActions = (homeCms.quickActions?.length ? homeCms.quickActions : DEFAULT_QUICK_ACTIONS) as typeof DEFAULT_QUICK_ACTIONS;
+  const [remedyBadgeOverride, setRemedyBadgeOverride] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     async function loadDynamicActions() {
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch(API_ENDPOINTS.services, { signal: controller.signal });
+        const timer = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(`${API_ENDPOINTS.services}?_t=${Date.now()}`, {
+          signal: controller.signal,
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
+        });
         clearTimeout(timer);
         if (res.ok) {
           const data = await res.json();
@@ -678,9 +737,7 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
               (c: any) => c.id === 'cat-remedies' || c.category === 'remedies'
             );
             if (remCat?.badge) {
-              setActions((prev) =>
-                prev.map((a) => (a.id === 'remedies' ? { ...a, badge: remCat.badge } : a))
-              );
+              setRemedyBadgeOverride(remCat.badge);
             }
           }
         }
@@ -692,17 +749,18 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
     };
   }, [refreshKey]);
 
+  const actions = baseActions.map((a) =>
+    a.id === 'remedies' && remedyBadgeOverride ? { ...a, badge: remedyBadgeOverride } : a
+  );
+
   return (
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}>
-        <Text style={{ flex: 1, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>Quick Actions</Text>
-        <Text style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '700' }}>Vedic & AI Tools</Text>
+        <Text style={{ flex: 1, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>{homeCms.quickActionsHeader}</Text>
+        <Text style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '700' }}>{homeCms.quickActionsBadge}</Text>
       </View>
       <View style={{ marginTop: 14, paddingHorizontal: 20 }}>
-        <View
-          style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}
-          onLayout={(e) => setW(e.nativeEvent.layout.width)}
-        >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
           {cell > 0 &&
             actions.map((a) => (
               <Pressable
@@ -712,7 +770,6 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
                 style={{
                   width: cell,
                   height: cell / 1.1,
-                  marginBottom: 12,
                   borderRadius: 20,
                   borderWidth: 1.5,
                   alignItems: 'center',
@@ -774,6 +831,7 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
 /* ---------------------------------------------------- AshtaPariharRemediesCard */
 function AshtaPariharRemediesCard({ refreshKey }: { refreshKey?: number }) {
   const colors = useThemeColors();
+  const homeCms = useAppScreensCmsStore((s) => s.config.home);
   const [remedies, setRemedies] = useState<Remedy[]>(REMEDIES);
 
   useEffect(() => {
@@ -792,10 +850,16 @@ function AshtaPariharRemediesCard({ refreshKey }: { refreshKey?: number }) {
     async function loadRemedies() {
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 6000);
+        const timer = setTimeout(() => controller.abort(), 10000);
+        const ts = Date.now();
+        const noCacheOpts = {
+          signal: controller.signal,
+          cache: 'no-store' as const,
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
+        };
         const [servRes, remRes] = await Promise.all([
-          fetch(API_ENDPOINTS.services, { signal: controller.signal }).catch(() => null),
-          fetch(API_ENDPOINTS.remedies, { signal: controller.signal }).catch(() => null),
+          fetch(`${API_ENDPOINTS.services}?_t=${ts}`, noCacheOpts).catch(() => null),
+          fetch(`${API_ENDPOINTS.remedies}?_t=${ts}`, noCacheOpts).catch(() => null),
         ]);
         clearTimeout(timer);
 
@@ -857,10 +921,10 @@ function AshtaPariharRemediesCard({ refreshKey }: { refreshKey?: number }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
         <View>
           <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>
-            Sacred Vedic Remedies
+            {homeCms.remediesTitle}
           </Text>
           <Text style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '700', marginTop: 2 }}>
-            अष्ट परिहार • Ashta-Digbandhana (8 Directions)
+            {homeCms.remediesSubtitle}
           </Text>
         </View>
         <Pressable
@@ -876,7 +940,7 @@ function AshtaPariharRemediesCard({ refreshKey }: { refreshKey?: number }) {
           }}
         >
           <Text style={{ color: colors.goldAccent, fontSize: 11.5, fontWeight: '700' }}>
-            Explore All 8 ↗
+            {homeCms.remediesViewAll}
           </Text>
         </Pressable>
       </View>
@@ -946,14 +1010,63 @@ const HOROSCOPE_CATEGORIES = [
   { emoji: '👨‍👩‍👧', label: 'Family', score: 77, color: '#2A1A3D', insight: "Mercury's influence brings harmonious family communication. A family gathering will bring joy and resolution.", tip: 'Light a ghee lamp at the family altar' },
 ];
 
-function HoroscopeCards() {
+function HoroscopeCards({ refreshKey }: { refreshKey?: number }) {
   const colors = useThemeColors();
+  const homeCms = useAppScreensCmsStore((s) => s.config.home);
   const [selected, setSelected] = useState(0);
-  const cat = HOROSCOPE_CATEGORIES[selected];
+  const [liveSignData, setLiveSignData] = useState<any>(null);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authUser = useAuthStore((s) => s.user);
+  const activeProfile = useBirthProfileStore((s) => s.activeProfile);
   const isAuth = Boolean(isAuthenticated && authUser && (authUser.uid || authUser.phone));
+
+  const activeSign =
+    activeProfile?.zodiac ||
+    activeProfile?.sign ||
+    authUser?.zodiac ||
+    homeCms.horoscopeDefaultSign ||
+    'Aries';
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLiveHoroscopes()
+      .then((all) => {
+        if (!isMounted || !all || typeof all !== 'object') return;
+        const matchedKey =
+          Object.keys(all).find((k) => k.toLowerCase() === activeSign.toLowerCase()) ||
+          Object.keys(all)[0];
+        if (matchedKey && all[matchedKey]) {
+          setLiveSignData(all[matchedKey]);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [activeSign, refreshKey]);
+
+  const baseCategories = homeCms.horoscopeDefaultCategories?.length
+    ? homeCms.horoscopeDefaultCategories
+    : HOROSCOPE_CATEGORIES.map((c) => ({ ...c, key: c.label.toLowerCase() }));
+
+  const liveCategories = baseCategories.map((c) => {
+    const k = (c.key || c.label || '').toLowerCase();
+    const liveCat = liveSignData?.[k];
+    if (liveCat && typeof liveCat === 'object') {
+      return {
+        ...c,
+        score: typeof liveCat.score === 'number' ? liveCat.score : c.score,
+        insight: liveCat.text || c.insight,
+        tip: liveSignData?.lucky_color
+          ? `Lucky Colour: ${liveSignData.lucky_color}${liveSignData.lucky_number ? ` • Lucky No: ${liveSignData.lucky_number}` : ''}`
+          : c.tip,
+      };
+    }
+    return c;
+  });
+
+  const cat = liveCategories[selected] || liveCategories[0];
 
   const handleAskAIAboutHoroscope = () => {
     if (!isAuth) {
@@ -963,7 +1076,7 @@ function HoroscopeCards() {
     const userDetailTag = [
       authUser?.name ? `for ${authUser.name}` : '',
       authUser?.dob ? `(Born: ${authUser.dob}${authUser.tob ? ` at ${authUser.tob}` : ''}${authUser.pob ? ` in ${authUser.pob}` : ''})` : '',
-      authUser?.zodiac ? `[Sign: ${authUser.zodiac}]` : '',
+      activeSign ? `[Sign: ${activeSign}]` : '',
     ].filter(Boolean).join(' ');
 
     push(AppRoutes.aiChatScreen, {
@@ -974,9 +1087,13 @@ function HoroscopeCards() {
   return (
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}>
-        <Text style={{ flex: 1, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>Today&apos;s Horoscope</Text>
+        <Text style={{ flex: 1, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>
+          {homeCms.horoscopeTitle}
+        </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100, backgroundColor: colors.isLight ? 'rgba(201,168,76,0.15)' : argb('1AC9A84C'), borderWidth: colors.isLight ? 1 : 0, borderColor: colors.goldAccent }}>
-          <Text style={{ color: colors.isLight ? '#7C5205' : '#C9A84C', fontSize: 10, fontWeight: '700' }}>✦ AstroParihar AI</Text>
+          <Text style={{ color: colors.isLight ? '#7C5205' : '#C9A84C', fontSize: 10, fontWeight: '700' }}>
+            {homeCms.horoscopeAiBadge}
+          </Text>
         </View>
       </View>
       <FlatList
@@ -984,7 +1101,7 @@ function HoroscopeCards() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20 }}
-        data={HOROSCOPE_CATEGORIES}
+        data={liveCategories}
         keyExtractor={(c) => c.label}
         renderItem={({ item, index }) => {
           const sel = selected === index;
@@ -1030,7 +1147,9 @@ function HoroscopeCards() {
               <Text style={{ fontSize: 24 }}>{cat.emoji}</Text>
               <View style={{ marginLeft: 10, flex: 1 }}>
                 <Text style={{ color: colors.isLight ? '#1A1A2E' : '#F0EAD6', fontSize: 16, fontWeight: '700' }}>{`${cat.label} Horoscope`}</Text>
-                <Text style={{ color: colors.isLight ? '#5A6A85' : '#7E8BA8', fontSize: 12 }}>Scorpio • Live Vedic Transit</Text>
+                <Text style={{ color: colors.isLight ? '#5A6A85' : '#7E8BA8', fontSize: 12 }}>
+                  {`${activeSign} ${homeCms.horoscopeTransitSuffix}`}
+                </Text>
               </View>
               <View style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
                 <ProgressRing value={cat.score / 100} size={36} strokeWidth={4} color={cat.color} backgroundColor={withAlpha(cat.color, 51)} />
@@ -1070,7 +1189,7 @@ function HoroscopeCards() {
             >
               <AppIcon name="auto_awesome_rounded" color="#FFFFFF" size={13} />
               <Text style={{ marginLeft: 6, color: '#FFFFFF', fontSize: 11.5, fontWeight: '700' }}>
-                {`Ask AI Astrologer about your ${cat.label}`}
+                {fillCmsTemplate(homeCms.horoscopeAskAiTemplate, { category: cat.label })}
               </Text>
             </Pressable>
           </View>
@@ -1093,7 +1212,9 @@ function HoroscopeCards() {
         }}
       >
         <Text style={{ fontSize: 14 }}>🔮</Text>
-        <Text style={{ marginLeft: 8, color: colors.isLight ? '#713B32' : '#C9A84C', fontSize: 13, fontWeight: '700' }}>View Full 12 Signs Horoscope</Text>
+        <Text style={{ marginLeft: 8, color: colors.isLight ? '#713B32' : '#C9A84C', fontSize: 13, fontWeight: '700' }}>
+          {homeCms.horoscopeViewFullButton}
+        </Text>
         <AppIcon name="arrow_forward_ios_rounded" color={colors.isLight ? '#713B32' : '#C9A84C'} size={12} style={{ marginLeft: 6 }} />
       </Pressable>
     </View>
@@ -1103,6 +1224,7 @@ function HoroscopeCards() {
 /* -------------------------------------------------------- AiPromptCardWidget */
 function AiPromptCard() {
   const colors = useThemeColors();
+  const aiPromptCms = useAppScreensCmsStore((s) => s.config.home.aiPrompt);
   const [text, setText] = useState('');
   const handleAsk = (promptText?: string) => {
     const q = (promptText || text).trim();
@@ -1154,7 +1276,7 @@ function AiPromptCard() {
           <View style={{ marginLeft: 12, flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={{ color: colors.isLight ? '#1A1A2E' : '#F0EAD6', fontSize: 17, fontWeight: '800' }}>
-                Ask AstroParihar AI
+                {aiPromptCms.title}
               </Text>
               <View
                 style={{
@@ -1168,18 +1290,18 @@ function AiPromptCard() {
                 }}
               >
                 <Text style={{ color: colors.isLight ? '#991B1B' : '#C9A84C', fontSize: 9, fontWeight: '800' }}>
-                  AI 2.0
+                  {aiPromptCms.badge}
                 </Text>
               </View>
             </View>
             <Text style={{ color: colors.isLight ? '#5A6A85' : '#8A99AD', fontSize: 12, marginTop: 2 }}>
-              Powered by Sacred Vedic Ephemeris & AI
+              {aiPromptCms.subtitle}
             </Text>
           </View>
         </View>
 
         <Text style={{ marginTop: 14, color: colors.isLight ? '#2D3748' : '#DCE5F2', fontSize: 13.5, fontWeight: '600' }}>
-          Have a question about your life or future?
+          {aiPromptCms.questionPrompt}
         </Text>
 
         <View
@@ -1202,7 +1324,7 @@ function AiPromptCard() {
             value={text}
             onChangeText={setText}
             onSubmitEditing={() => handleAsk()}
-            placeholder="Ask about career, love, marriage, remedies..."
+            placeholder={aiPromptCms.inputPlaceholder}
             placeholderTextColor={colors.isLight ? '#8E99A8' : '#6B7A99'}
             style={{ flex: 1, marginLeft: 16, paddingVertical: 12, fontSize: 13, color: colors.isLight ? '#1A1A2E' : '#F0EAD6' }}
           />
@@ -1225,11 +1347,7 @@ function AiPromptCard() {
 
         {/* Quick Question Pills */}
         <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {[
-            '💼 Job Promotion in 2027?',
-            '💍 Marriage Timing?',
-            '🪐 Shani Sade Sati Remedy',
-          ].map((pill, pIdx) => (
+          {(aiPromptCms.quickPills || []).map((pill, pIdx) => (
             <Pressable
               key={pIdx}
               onPress={() => handleAsk(pill)}
@@ -1268,7 +1386,7 @@ function AiPromptCard() {
         >
           <AppIcon name="auto_awesome_rounded" color="#FFFFFF" size={16} />
           <Text style={{ marginLeft: 6, color: '#FFFFFF', fontSize: 13.5, fontWeight: '700' }}>
-            Ask AI Astrologer
+            {aiPromptCms.ctaButton}
           </Text>
         </Pressable>
       </LinearGradient>
@@ -1285,6 +1403,7 @@ function PersonalisedRecs({
   aiAstrologers?: LiveAstrologer[];
 }) {
   const colors = useThemeColors();
+  const homeCms = useAppScreensCmsStore((s) => s.config.home);
   const formatRate = useCurrencyStore((s) => s.formatRate);
   const topAi = aiAstrologers[0] || DEFAULT_AI_ASTROLOGERS[0];
   const topReal = realAstrologers[0];
@@ -1292,22 +1411,29 @@ function PersonalisedRecs({
   const dynamicRecs = [
     {
       emoji: '🔮',
-      title: `Talk to AI Astrologer: ${topAi.name}`,
-      subtitle: `${topAi.specialty} • Instant Answers with AstroParihar AI`,
-      tag: 'AI Guru',
+      title: `${homeCms.recommendedAiTitlePrefix} ${topAi.name}`,
+      subtitle: `${topAi.specialty} • ${homeCms.recommendedAiSubtitleSuffix}`,
+      tag: homeCms.recommendedAiTag,
       tagColor: '#C9A84C',
       tagBgLight: '#FFF8EE',
       tagBorderLight: 'rgba(201,168,76,0.5)',
       tagTextLight: '#7C5205',
-      onPress: () => push(AppRoutes.aiChatScreen, { astrologerId: topAi.id, astrologerName: topAi.name, avatarUrl: topAi.imageUrl }),
+      onPress: () =>
+        push(AppRoutes.aiChatScreen, {
+          astrologerId: topAi.id,
+          astrologerName: topAi.name,
+          avatarUrl: topAi.imageUrl,
+          ...(topAi.voiceGender ? { voiceGender: topAi.voiceGender } : {}),
+          ...(topAi.voiceId ? { voiceId: topAi.voiceId } : {}),
+        }),
     },
     ...(topReal
       ? [
           {
             emoji: '👨‍🔮',
-            title: `Live Consultation: ${topReal.name}`,
+            title: `${homeCms.recommendedRealTitlePrefix} ${topReal.name}`,
             subtitle: `${topReal.specialty} • ${topReal.experience} • ${formatRate(topReal.price)}`,
-            tag: topReal.isOnline ? 'Live Now' : 'Verified Guru',
+            tag: topReal.isOnline ? homeCms.recommendedRealOnlineTag : homeCms.recommendedRealVerifiedTag,
             tagColor: '#2D9E6B',
             tagBgLight: '#ECFDF5',
             tagBorderLight: '#A7F3D0',
@@ -1316,35 +1442,24 @@ function PersonalisedRecs({
           },
         ]
       : []),
-    {
-      emoji: '🪐',
-      title: 'Your Saturn Period is Approaching',
-      subtitle: 'Sade Sati begins in 8 months — prepare with remedies',
-      tag: 'Dasha Alert',
-      tagColor: '#CF4444',
-      tagBgLight: '#FEF2F2',
-      tagBorderLight: '#FECACA',
-      tagTextLight: '#B91C1C',
-      onPress: () => push(AppRoutes.remediesScreen),
-    },
-    {
-      emoji: '❤️',
-      title: '36 Guna Kundli Milan & Compatibility',
-      subtitle: 'Check Ashtakoot planetary harmony for marriage',
-      tag: 'Recommended',
-      tagColor: '#1A3D5C',
-      tagBgLight: '#EFF6FF',
-      tagBorderLight: '#BFDBFE',
-      tagTextLight: '#1D4ED8',
-      onPress: () => push(AppRoutes.matchKundliScreen),
-    },
+    ...(homeCms.recommendedStaticCards || []).map((card) => ({
+      emoji: card.emoji,
+      title: card.title,
+      subtitle: card.subtitle,
+      tag: card.tag,
+      tagColor: card.tagColor || '#713B32',
+      tagBgLight: withAlpha(card.tagColor || '#713B32', 18),
+      tagBorderLight: withAlpha(card.tagColor || '#713B32', 55),
+      tagTextLight: card.tagColor || '#713B32',
+      onPress: () => push((card.route as any) || AppRoutes.remediesScreen),
+    })),
   ];
 
   return (
     <View>
       <View style={{ paddingHorizontal: 20 }}>
         <Text numberOfLines={1} style={{ color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>
-          Recommended For You
+          {homeCms.recommendedTitle}
         </Text>
       </View>
       <View style={{ height: 14 }} />
@@ -1382,7 +1497,7 @@ function PersonalisedRecs({
           >
             <Text style={{ fontSize: 22 }}>{r.emoji}</Text>
           </View>
-          <View style={{ flex: 1, marginLeft: 14, minWidth: 0 }}>
+          <View style={{ flex: 1, marginLeft: 14 }}>
             <View
               style={{
                 alignSelf: 'flex-start',
@@ -1404,10 +1519,10 @@ function PersonalisedRecs({
                 {r.tag}
               </Text>
             </View>
-            <Text numberOfLines={2} ellipsizeMode="tail" style={{ marginTop: 4, color: colors.textPrimary, fontSize: 14, fontWeight: '700', lineHeight: 18 }}>
+            <Text numberOfLines={1} style={{ marginTop: 4, color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>
               {r.title}
             </Text>
-            <Text numberOfLines={2} ellipsizeMode="tail" style={{ marginTop: 2, color: colors.isLight ? '#5A6A85' : '#8A99AD', fontSize: 12, lineHeight: 16 }}>
+            <Text numberOfLines={1} style={{ marginTop: 2, color: colors.isLight ? '#5A6A85' : '#8A99AD', fontSize: 12 }}>
               {r.subtitle}
             </Text>
           </View>
@@ -1419,16 +1534,11 @@ function PersonalisedRecs({
 }
 
 /* -------------------------------------------- RealAstrologersCarouselWidget */
-function RealAstrologersCarousel({
-  realAstrologers = [],
-  isLoading = false,
-}: {
-  realAstrologers?: LiveAstrologer[];
-  isLoading?: boolean;
-}) {
+function RealAstrologersCarousel({ realAstrologers = [] }: { realAstrologers?: LiveAstrologer[] }) {
   const colors = useThemeColors();
+  const realCms = useAppScreensCmsStore((s) => s.config.home.realAstrologers);
   const formatRate = useCurrencyStore((s) => s.formatRate);
-  const displayList = realAstrologers || [];
+  const displayList = realAstrologers && realAstrologers.length > 0 ? realAstrologers : DEFAULT_REAL_ASTROLOGERS;
   const onlineCount = displayList.filter((a) => a.isOnline).length;
 
   return (
@@ -1436,16 +1546,16 @@ function RealAstrologersCarousel({
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
         <View style={{ flex: 1, marginRight: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '800' }}>Talk to Astrologers</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '800' }}>{realCms.title}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 100, backgroundColor: colors.isLight ? '#DCFCE7' : argb('1A3DCB7A'), borderWidth: colors.isLight ? 1 : 0, borderColor: '#86EFAC' }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.isLight ? '#16A34A' : '#3DCB7A' }} />
               <Text style={{ marginLeft: 4, color: colors.isLight ? '#15803D' : '#3DCB7A', fontSize: 11, fontWeight: '700' }}>
-                {`${onlineCount} Online`}
+                {`${onlineCount} ${realCms.onlineSuffix}`}
               </Text>
             </View>
           </View>
           <Text style={{ color: colors.isLight ? '#7C5205' : colors.goldAccent, fontSize: 11, fontWeight: '600', marginTop: 2 }}>
-            Authentic Human Gurus from Backend Onboarding
+            {realCms.subtitle}
           </Text>
         </View>
         <Pressable
@@ -1460,7 +1570,7 @@ function RealAstrologersCarousel({
             borderColor: colors.isLight ? 'rgba(201,168,76,0.35)' : 'rgba(201,168,76,0.25)',
           }}
         >
-          <Text style={{ color: colors.isLight ? '#713B32' : '#C9A84C', fontSize: 12, fontWeight: '700' }}>View All ›</Text>
+          <Text style={{ color: colors.isLight ? '#713B32' : '#C9A84C', fontSize: 12, fontWeight: '700' }}>{realCms.viewAllLabel}</Text>
         </Pressable>
       </View>
 
@@ -1471,58 +1581,35 @@ function RealAstrologersCarousel({
         contentContainerStyle={{ paddingHorizontal: 20 }}
       >
         {displayList.length === 0 ? (
-          isLoading ? (
-            <View style={{ flexDirection: 'row', gap: 14, paddingVertical: 4 }}>
-              {[1, 2, 3].map((k) => (
-                <View
-                  key={k}
-                  style={{
-                    width: 280,
-                    height: 124,
-                    borderRadius: 20,
-                    backgroundColor: colors.isLight ? '#FBF8F2' : 'rgba(201,168,76,0.06)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.isLight ? 'rgba(201,168,76,0.25)' : 'rgba(201,168,76,0.15)',
-                    flexDirection: 'row',
-                    padding: 16,
-                  }}
-                >
-                  <ActivityIndicator size="small" color="#C9A84C" />
-                  <View style={{ marginLeft: 14 }}>
-                    <Text style={{ color: colors.goldAccent, fontSize: 13, fontWeight: '700' }}>
-                      Connecting Gurus...
-                    </Text>
-                    <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
-                      Loading Vedic profiles
-                    </Text>
-                  </View>
+          <View style={{ flexDirection: 'row', gap: 14, paddingVertical: 4 }}>
+            {[1, 2, 3].map((k) => (
+              <View
+                key={k}
+                style={{
+                  width: 280,
+                  height: 124,
+                  borderRadius: 20,
+                  backgroundColor: colors.isLight ? '#FBF8F2' : 'rgba(201,168,76,0.06)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: colors.isLight ? 'rgba(201,168,76,0.25)' : 'rgba(201,168,76,0.15)',
+                  flexDirection: 'row',
+                  padding: 16,
+                }}
+              >
+                <ActivityIndicator size="small" color="#C9A84C" />
+                <View style={{ marginLeft: 14 }}>
+                  <Text style={{ color: colors.goldAccent, fontSize: 13, fontWeight: '700' }}>
+                    {realCms.connectingTitle}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
+                    {realCms.connectingSubtitle}
+                  </Text>
                 </View>
-              ))}
-            </View>
-          ) : (
-            <View
-              style={{
-                width: 280,
-                height: 124,
-                borderRadius: 20,
-                backgroundColor: colors.isLight ? '#FBF8F2' : 'rgba(201,168,76,0.06)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: colors.isLight ? 'rgba(201,168,76,0.25)' : 'rgba(201,168,76,0.15)',
-                padding: 18,
-              }}
-            >
-              <Text style={{ color: colors.goldAccent, fontSize: 13, fontWeight: '700', textAlign: 'center' }}>
-                Live astrologers are syncing.
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 4, textAlign: 'center' }}>
-                Please tap refresh to retry.
-              </Text>
-            </View>
-          )
+              </View>
+            ))}
+          </View>
         ) : (
           displayList.map((a) => {
           const formattedName = (a.name || 'Astrologer')
@@ -1613,7 +1700,7 @@ function RealAstrologersCarousel({
                 >
                   <AppIcon name="verified_rounded" color={colors.isLight ? '#B45309' : '#C9A84C'} size={8} />
                   <Text style={{ marginLeft: 2, color: colors.isLight ? '#B45309' : '#F0EAD6', fontSize: 8, fontWeight: '700' }}>
-                    Verified
+                    {realCms.verifiedBadge}
                   </Text>
                 </View>
               </View>
@@ -1657,7 +1744,7 @@ function RealAstrologersCarousel({
                   >
                     <AppIcon name="call_rounded" color="#FFFFFF" size={11} />
                     <Text style={{ marginLeft: 4, color: '#FFFFFF', fontSize: 10, fontWeight: '800', letterSpacing: 0.4 }}>
-                      Consult Now
+                      {realCms.consultButton}
                     </Text>
                   </View>
                 </View>
@@ -1673,6 +1760,7 @@ function RealAstrologersCarousel({
 /* ---------------------------------------------- AiAstrologersCarouselWidget */
 function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAstrologer[] }) {
   const colors = useThemeColors();
+  const aiCms = useAppScreensCmsStore((s) => s.config.home.aiAstrologers);
   const formatRate = useCurrencyStore((s) => s.formatRate);
   const aiChatPrice = useCurrencyStore((s) => s.pricingSettings.aiChatPricePerMinute) || 25;
   const displayList = aiAstrologers && aiAstrologers.length > 0 ? aiAstrologers : DEFAULT_AI_ASTROLOGERS;
@@ -1682,13 +1770,13 @@ function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAst
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
         <View style={{ flex: 1, marginRight: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '800' }}>✦ 24/7 AI Astrologers</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '800' }}>{aiCms.title}</Text>
             <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 100, backgroundColor: '#713B32', borderWidth: 0.5, borderColor: '#C9A84C' }}>
-              <Text style={{ color: '#F0EAD6', fontSize: 10, fontWeight: '800' }}>Instant</Text>
+              <Text style={{ color: '#F0EAD6', fontSize: 10, fontWeight: '800' }}>{aiCms.instantBadge}</Text>
             </View>
           </View>
           <Text style={{ color: colors.isLight ? '#7C5205' : colors.goldAccent, fontSize: 11, fontWeight: '600', marginTop: 2 }}>
-            Sub-Second Vedic Calculations Powered by AstroParihar AI
+            {aiCms.subtitle}
           </Text>
         </View>
         <Pressable
@@ -1703,7 +1791,7 @@ function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAst
             borderColor: '#C9A84C',
           }}
         >
-          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Chat AI ›</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>{aiCms.viewAllLabel}</Text>
         </Pressable>
       </View>
 
@@ -1722,6 +1810,8 @@ function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAst
                 astrologerId: a.id,
                 astrologerName: a.name,
                 avatarUrl: a.imageUrl,
+                ...(a.voiceGender ? { voiceGender: a.voiceGender } : {}),
+                ...(a.voiceId ? { voiceId: a.voiceId } : {}),
               });
             }}
             style={{
@@ -1805,7 +1895,7 @@ function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAst
                 </Text>
                 <Text style={{ marginHorizontal: 4, color: colors.textMuted, fontSize: 10 }}>•</Text>
                 <Text style={{ color: colors.isLight ? '#15803D' : '#3DCB7A', fontSize: 10, fontWeight: '700' }}>
-                  {'<1s reply'}
+                  {aiCms.replySpeedBadge}
                 </Text>
               </View>
 
@@ -1825,7 +1915,7 @@ function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAst
                 >
                   <AppIcon name="auto_awesome_rounded" color="#FFFFFF" size={11} />
                   <Text style={{ marginLeft: 4, color: '#FFFFFF', fontSize: 10, fontWeight: '800', letterSpacing: 0.4 }}>
-                    Chat AI
+                    {aiCms.chatButton}
                   </Text>
                 </View>
               </View>
@@ -1914,6 +2004,7 @@ function resolvePromoRoute(rawRoute?: string, btnLabel?: string, title?: string)
 /* ------------------------------------------- Promotions and Offers Section */
 function PromotionsOffersSection({ refreshKey }: { refreshKey?: number }) {
   const colors = useThemeColors();
+  const promoCms = useAppScreensCmsStore((s) => s.config.home.promotions);
   const { currencyCode, formatPrice } = useCurrencyStore();
   const [promotions, setPromotions] = useState<DynamicPromotion[]>([]);
   const scrollRef = React.useRef<ScrollView>(null);
@@ -1944,9 +2035,9 @@ function PromotionsOffersSection({ refreshKey }: { refreshKey?: number }) {
       {/* Header */}
       <View style={{ paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8 }}>
-          <Text style={{ fontSize: 16 }}>🎁</Text>
+          <Text style={{ fontSize: 16 }}>{promoCms.emoji}</Text>
           <Text numberOfLines={1} ellipsizeMode="tail" style={{ marginLeft: 6, color: colors.textPrimary, fontSize: 16, fontWeight: '800' }}>
-            Promotions & Offers
+            {promoCms.title}
           </Text>
         </View>
         <Pressable
@@ -1955,7 +2046,7 @@ function PromotionsOffersSection({ refreshKey }: { refreshKey?: number }) {
           style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0 }}
         >
           <Text style={{ color: colors.goldAccent, fontSize: 12, fontWeight: '700' }}>
-            View All Offers
+            {promoCms.viewAllLabel}
           </Text>
           <AppIcon name="chevron_right_rounded" color={colors.goldAccent} size={16} />
         </Pressable>
@@ -2138,6 +2229,7 @@ function PromotionsOffersSection({ refreshKey }: { refreshKey?: number }) {
 function StickyHomeCTAs() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const stickyCms = useAppScreensCmsStore((s) => s.config.home.stickyCtas);
 
   return (
     <View
@@ -2188,7 +2280,7 @@ function StickyHomeCTAs() {
         >
           <AppIcon name="auto_awesome_rounded" color="#FFFFFF" size={15} />
           <Text numberOfLines={1} ellipsizeMode="tail" style={{ marginLeft: 6, color: '#FFFFFF', fontSize: 11.5, fontWeight: '800' }}>
-            Chat with AI Astrologer
+            {stickyCms.chatAiLabel}
           </Text>
         </Pressable>
 
@@ -2214,7 +2306,7 @@ function StickyHomeCTAs() {
         >
           <AppIcon name="call_rounded" color="#FFFFFF" size={15} />
           <Text numberOfLines={1} ellipsizeMode="tail" style={{ marginLeft: 6, color: '#FFFFFF', fontSize: 11.5, fontWeight: '800' }}>
-            Call Astrologer
+            {stickyCms.callHumanLabel}
           </Text>
         </Pressable>
       </View>
@@ -2227,60 +2319,69 @@ export default function HomeDashboardScreen() {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
-  const [realAstrologers, setRealAstrologers] = useState<LiveAstrologer[]>([]);
+  const [realAstrologers, setRealAstrologers] = useState<LiveAstrologer[]>(DEFAULT_REAL_ASTROLOGERS);
   const [aiAstrologers, setAiAstrologers] = useState<LiveAstrologer[]>(DEFAULT_AI_ASTROLOGERS);
-  const [realAstrologersLoading, setRealAstrologersLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadData = async () => {
+  const loadData = async (forceFresh = false) => {
     try {
       const [realList, aiList] = await Promise.all([
-        fetchRealAstrologers(),
-        fetchAiAstrologers(),
+        fetchRealAstrologers(forceFresh),
+        fetchAiAstrologers(forceFresh),
       ]);
-      if (realList) setRealAstrologers(realList);
+      if (Array.isArray(realList)) setRealAstrologers(realList);
       if (aiList && aiList.length > 0) setAiAstrologers(aiList);
     } catch { }
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    setRealAstrologersLoading(true);
-
     // 1. Instantly load cached real astrologers from AsyncStorage for 0ms initial render
-    AsyncStorage.getItem('astroparihar_real_astrologers_cache').then((cached) => {
-      if (!isMounted || !cached) return;
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setRealAstrologers((prev) => (prev.length === 0 ? parsed : prev));
-        }
-      } catch {}
+    AsyncStorage.getItem(STORAGE_REAL_ASTROLOGERS_KEY).then((cached) => {
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setRealAstrologers((prev) => (prev.length === 0 ? parsed : prev));
+          }
+        } catch {}
+      }
     });
 
-    // 2. Fetch fresh live data and poll gently at 25s intervals to protect backend concurrency
-    loadData().finally(() => {
-      if (isMounted) setRealAstrologersLoading(false);
+    // 2. Fetch fresh live data and poll gently at 25s intervals
+    loadData(true);
+    const poll = setInterval(() => loadData(true), 25000);
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        setRefreshKey((k) => k + 1);
+        loadData(true);
+      }
     });
-
-    const poll = setInterval(() => {
-      setRealAstrologersLoading(true);
-      loadData().finally(() => {
-        if (isMounted) setRealAstrologersLoading(false);
-      });
-    }, 25000);
-
     return () => {
-      isMounted = false;
       clearInterval(poll);
+      appStateSub.remove();
     };
   }, []);
+
+  const hasMountedHomeRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasMountedHomeRef.current) {
+        hasMountedHomeRef.current = true;
+        return;
+      }
+      setRefreshKey((k) => k + 1);
+      useAppScreensCmsStore.getState().fetchConfig(true);
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
     setRefreshKey((k) => k + 1);
-    await Promise.all([loadData(), new Promise((r) => setTimeout(r, 600))]);
+    await Promise.all([
+      loadData(true),
+      useAppScreensCmsStore.getState().fetchConfig(true),
+      new Promise((r) => setTimeout(r, 600)),
+    ]);
     setRefreshing(false);
   };
 
@@ -2299,13 +2400,13 @@ export default function HomeDashboardScreen() {
         <QuickActionsGrid refreshKey={refreshKey} />
         <AshtaPariharRemediesCard refreshKey={refreshKey} />
         <View style={{ height: 24 }} />
-        <HoroscopeCards />
+        <HoroscopeCards refreshKey={refreshKey} />
         <View style={{ height: 24 }} />
         <AiPromptCard />
         <View style={{ height: 24 }} />
         <PersonalisedRecs realAstrologers={realAstrologers} aiAstrologers={aiAstrologers} />
         <View style={{ height: 24 }} />
-        <RealAstrologersCarousel realAstrologers={realAstrologers} isLoading={realAstrologersLoading} />
+        <RealAstrologersCarousel realAstrologers={realAstrologers} />
         <View style={{ height: 24 }} />
         <AiAstrologersCarousel aiAstrologers={aiAstrologers} />
         {/* Generous bottom spacing so content never cuts off behind sticky CTAs & floating nav */}

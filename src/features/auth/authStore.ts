@@ -119,12 +119,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await AsyncStorage.setItem(userKey, JSON.stringify(detailsToSave));
         if (phoneKey) await AsyncStorage.setItem(phoneKey, JSON.stringify(detailsToSave));
         await AsyncStorage.setItem('astroparihar_user_birth_details', JSON.stringify(detailsToSave));
-        try {
-          const { heartbeatSession } = await import('@/services/sessionService');
-          await heartbeatSession(user.uid, user.phone);
-          const { registerPushTokenIfAuthenticated } = await import('@/services/notificationService');
-          await registerPushTokenIfAuthenticated();
-        } catch {}
+
+        // Register real active device session in backend
+        import('@/services/sessionService')
+          .then(({ registerOrHeartbeatSession }) => registerOrHeartbeatSession())
+          .catch(() => {});
       } else {
         await AsyncStorage.removeItem(STORAGE_USER_KEY);
         await AsyncStorage.removeItem(STORAGE_TOKEN_KEY);
@@ -166,17 +165,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    const currentUser = get().user;
-    try {
-      if (currentUser?.uid || currentUser?.phone) {
-        const { getOrCreateSessionId, revokeSession, clearSessionId } = await import('@/services/sessionService');
-        const sessionId = await getOrCreateSessionId();
-        await revokeSession(currentUser.uid, currentUser.phone, sessionId);
-        await clearSessionId();
-      }
-      const { clearNotificationState } = await import('@/services/notificationService');
-      await clearNotificationState();
-    } catch {}
+    const prevUser = get().user;
     set({
       user: null,
       token: null,
@@ -185,8 +174,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
     try {
       try {
+        const { markCurrentSessionLoggedOut } = await import('@/services/sessionService');
+        await markCurrentSessionLoggedOut(prevUser?.uid, prevUser?.phone);
+      } catch {}
+
+      try {
         const { useBirthProfileStore } = await import('@/services/birthProfileStore');
         await useBirthProfileStore.getState().clearProfiles();
+      } catch {}
+
+      try {
+        const { useNotificationStore } = await import('@/services/notificationStore');
+        await useNotificationStore.getState().resetForGuest();
       } catch {}
 
       // Clear all active user session and cached chat keys so guest mode is 100% clean
@@ -198,6 +197,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         k.startsWith('astroparihar_user_birth_details') ||
         k.startsWith('astroparihar_wallet_') ||
         k.startsWith('astroparihar_report_draft') ||
+        k.startsWith('astroparihar_notifications_') ||
+        k === 'astroparihar_push_token_v1' ||
         k === STORAGE_USER_KEY ||
         k === STORAGE_TOKEN_KEY
       );

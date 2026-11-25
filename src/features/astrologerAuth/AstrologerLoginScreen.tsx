@@ -36,6 +36,7 @@ import { AppRoutes, go, pop, push, useExtra } from '@/navigation/routes';
 import { AppColors, withAlpha } from '@/theme/colors';
 import { AppLanguage, useLanguageStore } from '@/theme/languageStore';
 import { useThemeColors } from '@/theme/themeStore';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 
 const LANG_CODE_MAP: Record<AppLanguage, string> = {
   English: 'EN',
@@ -69,15 +70,19 @@ const COUNTRY_CODES = [
 export const ASTRO_SESSION_KEY = 'astro_verified_session';
 export const LOCAL_APPLICATIONS_KEY = 'astroparihar_local_astrologer_applications';
 
-type ErrorType = 'not_registered' | 'pending_approval' | 'rejected' | 'general' | null;
+type ErrorType = 'not_registered' | 'pending_approval' | 'rejected' | 'suspended' | 'general' | null;
 
 export default function AstrologerLoginScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const cms = useAppScreensCmsStore((s) => s.config.astrologerLogin);
+  const countryCodes = cms.countryCodes?.length ? cms.countryCodes : COUNTRY_CODES;
+  const portalLanguages = cms.portalLanguages?.length ? cms.portalLanguages : PORTAL_LANGUAGE_OPTIONS;
+  const supportEmail = cms.adminSupportEmail || 'astropariharuk@gmail.com';
   const extra = useExtra<{ phone?: string }>();
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
+  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]);
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [phone, setPhone] = useState(extra?.phone ? extra.phone.replace(/\D/g, '').slice(-10) : '');
   const [otp, setOtp] = useState<string[]>(['', '', '', '']);
@@ -168,6 +173,13 @@ export default function AstrologerLoginScreen() {
           setErrorType('not_registered');
           setError(data.error || 'Mobile number is not registered as an astrologer on AstroParihar.');
         }
+      } else if (data.suspended === true || data.deactivated === true) {
+        setErrorType('suspended');
+        setApplicationStatus(data.suspended ? 'Suspended' : 'Deactivated');
+        setError(
+          data.error ||
+            'Your astrologer account has been suspended or deactivated by the administrator. Dashboard access is disabled.'
+        );
       } else if (data.registered === true && data.approved === false) {
         const dStatus = String(data.status || '').toLowerCase();
         if (dStatus.includes('reject') || dStatus.includes('decline')) {
@@ -284,6 +296,14 @@ export default function AstrologerLoginScreen() {
           setShowSuccessPopup(false);
           go(AppRoutes.astrologerDashboardScreen);
         }, 1600);
+      } else if (data.suspended === true || data.deactivated === true) {
+        setStep('phone');
+        setErrorType('suspended');
+        setApplicationStatus(data.suspended ? 'Suspended' : 'Deactivated');
+        setError(
+          data.error ||
+            'Your astrologer account has been suspended or deactivated by the administrator. Dashboard access is disabled.'
+        );
       } else {
         setErrorType('general');
         setError(data.error || 'Invalid OTP. Please check and try again.');
@@ -301,8 +321,8 @@ export default function AstrologerLoginScreen() {
   };
 
   const openContactAdmin = () => {
-    Linking.openURL('mailto:astropariharuk@gmail.com?subject=Astrologer%20Portal%20Support').catch(() => {
-      showSnackBar('Admin Email: astropariharuk@gmail.com');
+    Linking.openURL(`mailto:${supportEmail}?subject=Astrologer%20Portal%20Support`).catch(() => {
+      showSnackBar(`Admin Email: ${supportEmail}`);
     });
   };
 
@@ -314,7 +334,7 @@ export default function AstrologerLoginScreen() {
     >
       <StatusBar style={colors.isLight ? 'dark' : 'light'} />
       <AppBar
-        title="Astrologer Portal"
+        title={cms.appBarTitle || 'Astrologer Portal'}
         onBack={pop}
         testIDPrefix="astrologerLogin.appBar"
         actions={[
@@ -398,7 +418,9 @@ export default function AstrologerLoginScreen() {
                   marginTop: 12,
                 }}
               >
-                {step === 'phone' ? 'Welcome to Astrologer Portal' : 'OTP Verification'}
+                {step === 'phone'
+                  ? (cms.step1Kicker || 'Welcome to Astrologer Portal')
+                  : (cms.step2Kicker || 'OTP Verification')}
               </Text>
               <Text
                 style={{
@@ -409,7 +431,9 @@ export default function AstrologerLoginScreen() {
                   marginTop: 4,
                 }}
               >
-                {step === 'phone' ? 'Sign In for Astrologers' : 'Enter Verification OTP'}
+                {step === 'phone'
+                  ? (cms.step1Title || 'Sign In for Astrologers')
+                  : (cms.step2Title || 'Enter Verification OTP')}
               </Text>
               <Text
                 style={{
@@ -420,8 +444,8 @@ export default function AstrologerLoginScreen() {
                 }}
               >
                 {step === 'phone'
-                  ? 'Enter your registered mobile number to receive a 4-digit verification code.'
-                  : `Verification code sent to ${fullPhoneNumber}`}
+                  ? (cms.step1Subtitle || 'Enter your registered mobile number to receive a 4-digit verification code.')
+                  : `${cms.step2SubtitlePrefix || 'Verification code sent to '}${fullPhoneNumber}`}
               </Text>
             </View>
 
@@ -438,7 +462,7 @@ export default function AstrologerLoginScreen() {
                     marginBottom: 8,
                   }}
                 >
-                  Registered Mobile Number
+                  {cms.mobileLabel || 'Registered Mobile Number'}
                 </Text>
 
                 <View
@@ -484,7 +508,7 @@ export default function AstrologerLoginScreen() {
                         setErrorType(null);
                       }
                     }}
-                    placeholder="98765 43210"
+                    placeholder={cms.mobilePlaceholder || '98765 43210'}
                     placeholderTextColor={colors.textMuted}
                     keyboardType="phone-pad"
                     maxLength={10}
@@ -501,7 +525,7 @@ export default function AstrologerLoginScreen() {
                     ]}
                   >
                     <ScrollView style={{ maxHeight: 160 }} nestedScrollEnabled>
-                      {COUNTRY_CODES.map((item) => (
+                      {countryCodes.map((item) => (
                         <Pressable
                           key={item.code}
                           onPress={() => {
@@ -554,7 +578,7 @@ export default function AstrologerLoginScreen() {
                             fontWeight: '800',
                           }}
                         >
-                          Account Not Found — You are not a registered astrologer
+                          {cms.banners?.notRegisteredTitle || 'Account Not Found — You are not a registered astrologer'}
                         </Text>
                         <Text
                           style={{
@@ -577,7 +601,7 @@ export default function AstrologerLoginScreen() {
                           >
                             <AppIcon name="how_to_reg" size={15} color="#FFFFFF" />
                             <Text style={{ color: '#FFFFFF', fontSize: 12.5, fontWeight: '700', marginLeft: 6 }}>
-                              Apply to Join Panel
+                              {cms.banners?.applyNowBtn || 'Apply to Join Panel'}
                             </Text>
                           </Pressable>
 
@@ -605,7 +629,7 @@ export default function AstrologerLoginScreen() {
                                 marginLeft: 6,
                               }}
                             >
-                              Contact Admin
+                              {cms.banners?.contactAdminBtn || 'Contact Admin'}
                             </Text>
                           </Pressable>
                         </View>
@@ -652,7 +676,7 @@ export default function AstrologerLoginScreen() {
                               fontWeight: '800',
                             }}
                           >
-                            Application Pending Approval
+                            {cms.banners?.pendingTitle || 'Application Pending Approval'}
                           </Text>
                           {applicationStatus ? (
                             <View
@@ -693,7 +717,7 @@ export default function AstrologerLoginScreen() {
                             ...lh(11.5, 1.4),
                           }}
                         >
-                          Our Vedic panel typically reviews applications within 24–48 hours. Once approved, you can log in directly using this mobile number.
+                          {cms.banners?.pendingNote || 'Our Vedic panel typically reviews applications within 24–48 hours. Once approved, you can log in directly using this mobile number.'}
                         </Text>
 
                         <View style={{ flexDirection: 'row', marginTop: 12 }}>
@@ -720,7 +744,85 @@ export default function AstrologerLoginScreen() {
                                 marginLeft: 6,
                               }}
                             >
-                              Contact Admin
+                              {cms.banners?.contactAdminBtn || 'Contact Admin'}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                ) : null}
+
+                {error && errorType === 'suspended' ? (
+                  <View
+                    testID="astrologerLogin.suspendedBanner"
+                    style={[
+                      styles.statusCard,
+                      {
+                        backgroundColor: colors.isLight ? '#FEF2F2' : 'rgba(220, 38, 38, 0.16)',
+                        borderColor: colors.isLight ? '#FCA5A5' : 'rgba(220, 38, 38, 0.5)',
+                      },
+                    ]}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                      <View
+                        style={[
+                          styles.statusIconBox,
+                          {
+                            backgroundColor: colors.isLight ? '#FEE2E2' : 'rgba(220, 38, 38, 0.25)',
+                          },
+                        ]}
+                      >
+                        <AppIcon name="block" size={20} color="#DC2626" />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                          <Text
+                            style={{
+                              color: colors.isLight ? '#991B1B' : '#FCA5A5',
+                              fontSize: 14,
+                              fontWeight: '800',
+                            }}
+                          >
+                            {applicationStatus === 'Deactivated'
+                              ? (cms.banners?.deactivatedTitle || 'Account Deactivated by Admin')
+                              : (cms.banners?.suspendedTitle || 'Account Suspended by Admin')}
+                          </Text>
+                        </View>
+                        <Text
+                          style={{
+                            color: colors.isLight ? '#B91C1C' : '#FECACA',
+                            marginTop: 4,
+                            ...lh(12.5, 1.45),
+                          }}
+                        >
+                          {error}
+                        </Text>
+                        <View style={{ flexDirection: 'row', marginTop: 12 }}>
+                          <Pressable
+                            onPress={openContactAdmin}
+                            style={[
+                              styles.bannerSecondaryBtn,
+                              {
+                                backgroundColor: colors.surface,
+                                borderColor: colors.isLight ? '#FCA5A5' : 'rgba(252, 165, 165, 0.4)',
+                              },
+                            ]}
+                          >
+                            <AppIcon
+                              name="mail_outline"
+                              size={15}
+                              color={colors.isLight ? '#991B1B' : '#FCA5A5'}
+                            />
+                            <Text
+                              style={{
+                                color: colors.isLight ? '#991B1B' : '#FCA5A5',
+                                fontSize: 12.5,
+                                fontWeight: '700',
+                                marginLeft: 6,
+                              }}
+                            >
+                              {cms.banners?.contactAdminSupportBtn || 'Contact Admin Support'}
                             </Text>
                           </Pressable>
                         </View>
@@ -759,7 +861,7 @@ export default function AstrologerLoginScreen() {
                             fontWeight: '800',
                           }}
                         >
-                          Application Rejected
+                          {cms.banners?.rejectedTitle || 'Application Rejected'}
                         </Text>
                         <Text
                           style={{
@@ -777,7 +879,7 @@ export default function AstrologerLoginScreen() {
                             ...lh(11.5, 1.4),
                           }}
                         >
-                          Your astrologer application was reviewed and declined by the administrative committee. If you feel this was in error, please contact admin support.
+                          {cms.banners?.rejectedNote || 'Your astrologer application was reviewed and declined by the administrative committee. If you feel this was in error, please contact admin support.'}
                         </Text>
 
                         <View style={{ flexDirection: 'row', marginTop: 12 }}>
@@ -804,7 +906,7 @@ export default function AstrologerLoginScreen() {
                                 marginLeft: 6,
                               }}
                             >
-                              Contact Admin Support
+                              {cms.banners?.contactAdminSupportBtn || 'Contact Admin Support'}
                             </Text>
                           </Pressable>
                         </View>
@@ -840,7 +942,7 @@ export default function AstrologerLoginScreen() {
 
                 <ElevatedButton
                   testID="astrologerLogin.sendOtpButton"
-                  label={loading ? 'Checking & Sending OTP...' : 'Send Verification OTP'}
+                  label={loading ? (cms.sendingOtpBtn || 'Checking & Sending OTP...') : (cms.sendOtpBtn || 'Send Verification OTP')}
                   onPress={handleSendOtp}
                   disabled={loading || cleanDigits.length < 10}
                   loading={loading}
@@ -859,7 +961,7 @@ export default function AstrologerLoginScreen() {
                   ]}
                 >
                   <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>
-                    Not an onboarded astrologer yet?
+                    {cms.notOnboardedPrompt || 'Not an onboarded astrologer yet?'}
                   </Text>
                   <Pressable
                     testID="astrologerLogin.footerApplyLink"
@@ -881,7 +983,7 @@ export default function AstrologerLoginScreen() {
                         marginLeft: 8,
                       }}
                     >
-                      Apply to Join Astrologer Panel →
+                      {cms.applyButton || 'Apply to Join Astrologer Panel →'}
                     </Text>
                   </Pressable>
                 </View>
@@ -943,7 +1045,7 @@ export default function AstrologerLoginScreen() {
                 <View style={{ alignItems: 'center', marginTop: 16 }}>
                   {timer > 0 ? (
                     <Text style={{ color: colors.textMuted, fontSize: 12.5 }}>
-                      Resend OTP in{' '}
+                      {cms.resendPrefix || 'Resend OTP in '}
                       <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{timer}s</Text>
                     </Text>
                   ) : (
@@ -956,7 +1058,7 @@ export default function AstrologerLoginScreen() {
                           textDecorationLine: 'underline',
                         }}
                       >
-                        Resend Verification OTP
+                        {cms.resendBtn || 'Resend Verification OTP'}
                       </Text>
                     </Pressable>
                   )}
@@ -964,7 +1066,7 @@ export default function AstrologerLoginScreen() {
 
                 <ElevatedButton
                   testID="astrologerLogin.verifyOtpButton"
-                  label={loading ? 'Verifying...' : 'Verify & Enter Portal'}
+                  label={loading ? (cms.verifyingBtn || 'Verifying...') : (cms.verifyBtn || 'Verify & Enter Portal')}
                   onPress={handleVerifyOtp}
                   disabled={loading || otp.join('').length < 4}
                   loading={loading}
@@ -985,7 +1087,7 @@ export default function AstrologerLoginScreen() {
                   style={{ marginTop: 16, alignSelf: 'center', paddingVertical: 6 }}
                 >
                   <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                    ← Edit mobile number
+                    {cms.editMobileBtn || '← Edit mobile number'}
                   </Text>
                 </Pressable>
               </>
@@ -1025,7 +1127,7 @@ export default function AstrologerLoginScreen() {
               textAlign: 'center',
             }}
           >
-            {`Namaste, ${astrologerName} Ji! 🙏`}
+            {`${cms.successDialog?.namastePrefix || 'Namaste, '}${astrologerName}${cms.successDialog?.namasteSuffix || ' Ji! 🙏'}`}
           </Text>
           <Text
             style={{
@@ -1035,7 +1137,7 @@ export default function AstrologerLoginScreen() {
               marginTop: 6,
             }}
           >
-            OTP Verified Successfully. Entering your Astrologer Portal...
+            {cms.successDialog?.subtitle || 'OTP Verified Successfully. Entering your Astrologer Portal...'}
           </Text>
         </View>
       </Dialog>
@@ -1047,13 +1149,13 @@ export default function AstrologerLoginScreen() {
       >
         <SheetContainer style={{ padding: 20 }}>
           <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '800', marginBottom: 12 }}>
-            Select Language
+            {cms.languageSheetTitle || 'Select Language'}
           </Text>
-          {PORTAL_LANGUAGE_OPTIONS.map((lang) => (
+          {portalLanguages.map((lang) => (
             <Pressable
               key={lang.code}
               onPress={() => {
-                setGlobalLanguage(lang.code);
+                setGlobalLanguage(lang.code as AppLanguage);
                 setShowLanguageSheet(false);
               }}
               style={{

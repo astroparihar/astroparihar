@@ -4,6 +4,9 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, useWindowDimensions, View } from 'react-native';
 import { useAuthStore } from '@/features/auth/authStore';
 import { AppRoutes, go } from '@/navigation/routes';
+import { resolveMediaUrl } from '@/config/api';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
+import { Text } from '@/components/Text';
 import { withAlpha } from '@/theme/colors';
 import { useThemeColors } from '@/theme/themeStore';
 
@@ -20,6 +23,7 @@ export default function SplashScreen() {
   const loadAuth = useAuthStore((s) => s.load);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasCompletedOnboarding = useAuthStore((s) => s.hasCompletedOnboarding);
+  const splashCms = useAppScreensCmsStore((s) => s.config.splash);
 
   // Entrance animations: Fade in & smooth subtle scale
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -92,7 +96,7 @@ export default function SplashScreen() {
       } else {
         go(AppRoutes.onboardingScreen);
       }
-    }, 3100);
+    }, Math.max(1200, Number(splashCms.durationMs) || 3100));
 
     return () => {
       clearTimeout(timer);
@@ -107,10 +111,10 @@ export default function SplashScreen() {
     outputRange: ['0deg', '360deg'],
   });
 
-  // Increase overall splash sizing for better visibility without altering the composition
-  const wheelSize = Math.min(width * 0.82, height * 0.5, 360);
-  const emblemSize = wheelSize * 0.34;
-  const logoWidth = Math.min(width * 0.82, 320);
+  // Calculate balanced proportions with comfortable margins on any screen size
+  const wheelSize = Math.min(width * 0.78, height * 0.42, 300);
+  const emblemSize = wheelSize * 0.334;
+  const logoWidth = Math.min(width * 0.68, 260);
   const logoHeight = logoWidth * (231 / 423);
 
   return (
@@ -173,11 +177,15 @@ export default function SplashScreen() {
             }}
           >
             <Image
-              source={require('@/../assets/images/ashta_parihar_wheel_outer.png')}
+              source={
+                splashCms.wheelImageUrl
+                  ? { uri: resolveMediaUrl(splashCms.wheelImageUrl) }
+                  : require('@/../assets/images/ashta_parihar_wheel_outer.png')
+              }
               style={{ width: '100%', height: '100%' }}
               contentFit="contain"
               priority="high"
-              accessibilityLabel="Ashta Parihar 8 Remedies Wheel"
+              accessibilityLabel={splashCms.wheelAlt || 'Ashta Parihar 8 Remedies Wheel'}
             />
           </Animated.View>
 
@@ -188,9 +196,11 @@ export default function SplashScreen() {
               width: emblemSize,
               height: emblemSize,
               borderRadius: emblemSize / 2,
+              overflow: 'hidden',
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 10,
+              backgroundColor: 'transparent',
               shadowColor: colors.goldAccent,
               shadowOpacity: 0.35,
               shadowRadius: 6,
@@ -198,25 +208,47 @@ export default function SplashScreen() {
             }}
           >
             <Image
-              source={require('@/../assets/images/app_logo_emblem.png')}
-              style={{ width: '100%', height: '100%' }}
+              source={
+                splashCms.emblemImageUrl
+                  ? { uri: resolveMediaUrl(splashCms.emblemImageUrl) }
+                  : require('@/../assets/images/app_logo_emblem.png')
+              }
+              style={{ width: '100%', height: '100%', borderRadius: emblemSize / 2 }}
               contentFit="contain"
               priority="high"
-              accessibilityLabel="AstroParihar Center Sacred Emblem"
+              accessibilityLabel={splashCms.emblemAlt || 'AstroParihar Center Sacred Emblem'}
             />
           </View>
         </View>
 
         {/* Below the Wheel: AstroParihar Text-Only Logo (Hand emblem removed) */}
-        <View style={{ width: logoWidth, height: logoHeight, marginTop: 30, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: logoWidth, height: logoHeight, marginTop: 24, alignItems: 'center', justifyContent: 'center' }}>
           <Image
-            source={require('@/../assets/images/app_logo_text.png')}
+            source={
+              splashCms.textLogoImageUrl
+                ? { uri: resolveMediaUrl(splashCms.textLogoImageUrl) }
+                : require('@/../assets/images/app_logo_text.png')
+            }
             style={{ width: '100%', height: '100%' }}
             contentFit="contain"
             priority="high"
-            accessibilityLabel="AstroParihar Text Logo"
+            accessibilityLabel={splashCms.logoAlt || 'AstroParihar Text Logo'}
           />
         </View>
+        {splashCms.tagline ? (
+          <Text
+            style={{
+              marginTop: 10,
+              color: colors.goldAccent,
+              fontSize: 12.5,
+              fontWeight: '600',
+              textAlign: 'center',
+              letterSpacing: 0.4,
+            }}
+          >
+            {splashCms.tagline}
+          </Text>
+        ) : null}
       </Animated.View>
     </View>
   );

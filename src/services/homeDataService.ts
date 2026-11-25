@@ -27,6 +27,8 @@ export interface LiveAstrologer {
   price: number;
   isOnline: boolean;
   isAi: boolean;
+  voiceGender?: 'male' | 'female';
+  voiceId?: string;
   imageUrl: string;
   languages: string;
   semanticLabel?: string;
@@ -44,8 +46,8 @@ export interface LiveAstrologer {
 }
 
 const STORAGE_INSIGHTS_KEY = 'astroparihar_cosmic_insights_cache';
-const STORAGE_REAL_ASTROLOGERS_KEY = 'astroparihar_real_astrologers_cache';
-const STORAGE_AI_ASTROLOGERS_KEY = 'astroparihar_ai_astrologers_cache';
+export const STORAGE_REAL_ASTROLOGERS_KEY = 'astroparihar_real_astrologers_cache';
+export const STORAGE_AI_ASTROLOGERS_KEY = 'astroparihar_ai_astrologers_cache';
 const STORAGE_ASTROLOGERS_KEY = 'astroparihar_home_astrologers_cache';
 
 export const DEFAULT_COSMIC_INSIGHTS: CosmicInsight[] = [
@@ -101,6 +103,8 @@ export const DEFAULT_AI_ASTROLOGERS: LiveAstrologer[] = [
     price: 25,
     isOnline: true,
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'ash',
     imageUrl: 'https://astroparihar.com/assets/images/ai-astrologers/acharya-devavrat.png',
     languages: 'English, Hindi, Telugu, Tamil, Kannada',
     semanticLabel: 'Revered Vedic Acharya with sacred saffron robes',
@@ -115,6 +119,8 @@ export const DEFAULT_AI_ASTROLOGERS: LiveAstrologer[] = [
     price: 25,
     isOnline: true,
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'onyx',
     imageUrl: 'https://astroparihar.com/assets/images/ai-astrologers/acharya-joshi.png',
     languages: 'Hindi, English, Marathi, Sanskrit',
     semanticLabel: 'Authority on Vedic Dosh Nivaran from Ujjain',
@@ -129,6 +135,8 @@ export const DEFAULT_AI_ASTROLOGERS: LiveAstrologer[] = [
     price: 25,
     isOnline: true,
     isAi: true,
+    voiceGender: 'female',
+    voiceId: 'coral',
     imageUrl: 'https://astroparihar.com/assets/images/ai-astrologers/astro-ananya.png',
     languages: 'English, Hindi, Telugu, Tamil',
     semanticLabel: 'Nadi & Kundli Seer, Relationship Expert',
@@ -143,6 +151,8 @@ export const DEFAULT_AI_ASTROLOGERS: LiveAstrologer[] = [
     price: 25,
     isOnline: true,
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'echo',
     imageUrl: 'https://astroparihar.com/assets/images/ai-astrologers/arjun-pandit.png',
     languages: 'English, Hindi, Gujarati, Marathi',
     semanticLabel: 'Vedic Kundli Prodigy & Financial Strategist',
@@ -157,9 +167,92 @@ export const DEFAULT_AI_ASTROLOGERS: LiveAstrologer[] = [
     price: 25,
     isOnline: true,
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'onyx',
     imageUrl: 'https://astroparihar.com/assets/images/ai-astrologers/swami-ji.png',
     languages: 'English, Hindi, Telugu, Sanskrit',
     semanticLabel: 'Elderly Indian sage with white beard and traditional orange robes',
+  },
+];
+
+export const DEFAULT_REAL_ASTROLOGERS: LiveAstrologer[] = [
+  {
+    id: '8No3bTeCRKRdQ2c1AVXi9ZGvSGc2',
+    name: 'Sharma',
+    specialty: 'Numerology & Vedic Parihara',
+    experience: '12+ Yrs',
+    rating: 4.9,
+    reviews: '2847',
+    consultations: '12480',
+    price: 20,
+    isOnline: true,
+    isAi: false,
+    imageUrl: 'https://ui-avatars.com/api/?name=Sharma&background=713B32&color=fff&size=512',
+    languages: 'English, Hindi, Telugu',
+    semanticLabel: 'Sharma - Verified Vedic Astrologer',
+    bio: 'Sharma is a renowned Vedic astrologer with 12 years of dedicated practice. Specializes in accurate predictions and Parihara remedies.',
+    about: 'Sharma is a renowned Vedic astrologer with 12 years of dedicated practice.',
+    education: 'M.A. Jyotish Shastra, Banaras Hindu University',
+    certifications: ['Jyotish Acharya', 'KP Astrology Certified'],
+    learningSource: 'institution',
+    dailyHours: '6',
+    city: 'Warangal',
+    badge: 'Top Rated',
+    status: 'approved',
+    showOnWebsite: true,
+    isPublished: true,
+  },
+  {
+    id: 'AaQbqgvOUOMifZi4Sg0YUxJvBDJ2',
+    name: 'Raj Vishwa',
+    specialty: 'Vastu, Numerology, Vedic',
+    experience: '20+ Yrs',
+    rating: 4.9,
+    reviews: '2847',
+    consultations: '12480',
+    price: 25,
+    isOnline: true,
+    isAi: false,
+    imageUrl: 'https://ui-avatars.com/api/?name=Raj+Vishwa&background=713B32&color=fff&size=512',
+    languages: 'English, Telugu, Tamil, Hindi',
+    semanticLabel: 'Raj Vishwa - Verified Vedic Astrologer',
+    bio: 'Raj Vishwa is a verified Vedic Astrologer providing personalized astrological guidance.',
+    about: 'Raj Vishwa is a verified Vedic Astrologer providing personalized astrological guidance.',
+    education: 'University',
+    certifications: [],
+    learningSource: 'University',
+    dailyHours: '4',
+    city: 'London',
+    badge: 'Top Rated',
+    status: 'approved',
+    showOnWebsite: true,
+    isPublished: true,
+  },
+  {
+    id: 'ast-1789887155087',
+    name: 'Sandy',
+    specialty: 'Vedic Jyotish & Kundli',
+    experience: '12+ Yrs',
+    rating: 4.9,
+    reviews: '1420',
+    consultations: '3200',
+    price: 25,
+    isOnline: true,
+    isAi: false,
+    imageUrl: 'https://ui-avatars.com/api/?name=Sandy&background=713B32&color=fff&size=512',
+    languages: 'English, Telugu, Hindi',
+    semanticLabel: 'Sandy - Verified Vedic Astrologer',
+    bio: 'Sandy is a verified Vedic Astrologer providing personalized astrological guidance.',
+    about: 'Sandy is a verified Vedic Astrologer providing personalized astrological guidance.',
+    education: 'Vedic Academy',
+    certifications: [],
+    learningSource: '',
+    dailyHours: '6',
+    city: 'New Delhi, India',
+    badge: 'VERIFIED',
+    status: 'active',
+    showOnWebsite: true,
+    isPublished: true,
   },
 ];
 
@@ -252,8 +345,12 @@ export async function getDynamicPromotions(): Promise<DynamicPromotion[]> {
     // 2. Fetch live banners from dashboard API
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 3500);
-      const res = await fetch(API_ENDPOINTS.banners, { signal: controller.signal });
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(`${API_ENDPOINTS.banners}?_t=${Date.now()}`, {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
+      });
       clearTimeout(timer);
 
       if (res.ok) {
@@ -291,11 +388,6 @@ export async function getDynamicPromotions(): Promise<DynamicPromotion[]> {
             };
           });
 
-          if (mapped.length === 0) {
-            await AsyncStorage.setItem(STORAGE_PROMOTIONS_KEY, JSON.stringify(DEFAULT_DYNAMIC_PROMOTIONS));
-            return DEFAULT_DYNAMIC_PROMOTIONS;
-          }
-
           await AsyncStorage.setItem(STORAGE_PROMOTIONS_KEY, JSON.stringify(mapped));
           return mapped;
         }
@@ -303,10 +395,7 @@ export async function getDynamicPromotions(): Promise<DynamicPromotion[]> {
     } catch {}
 
     // Fallback to cache if available
-    if (parsedCache !== null) {
-      const safeCache = parsedCache.filter((b) => b.active !== false);
-      return safeCache.length > 0 ? safeCache : DEFAULT_DYNAMIC_PROMOTIONS;
-    }
+    if (parsedCache !== null) return parsedCache;
   } catch (err) {
     console.warn('Error reading dynamic promotions:', err);
   }
@@ -331,17 +420,17 @@ export async function getDynamicCosmicInsights(): Promise<CosmicInsight[]> {
     // 2. Try Next.js API endpoint
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 3500);
-      const res = await fetch(API_ENDPOINTS.cosmicInsights, {
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(`${API_ENDPOINTS.cosmicInsights}?_t=${Date.now()}`, {
         signal: controller.signal,
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
       });
       clearTimeout(timer);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.insights)) {
-          // Accurately respect turned off cards (active === false) and map routes properly.
-          // If the backend has intentionally disabled everything, fallback to the default content rather than
-          // rendering an empty dashboard section on Android and web builds.
+          // Accurately respect turned off cards (active === false) and map routes properly
           const active = data.insights
             .filter((c: CosmicInsight) => c.active !== false)
             .map((c: CosmicInsight, idx: number) => {
@@ -355,12 +444,6 @@ export async function getDynamicCosmicInsights(): Promise<CosmicInsight[]> {
               }
               return { ...c, ctaAction: action };
             });
-
-          if (active.length === 0) {
-            await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(DEFAULT_COSMIC_INSIGHTS));
-            return DEFAULT_COSMIC_INSIGHTS;
-          }
-
           await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(active));
           return active;
         }
@@ -405,20 +488,13 @@ export async function getDynamicCosmicInsights(): Promise<CosmicInsight[]> {
             };
           });
           const active = list.filter((c: CosmicInsight) => c.active !== false);
-          if (active.length === 0) {
-            await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(DEFAULT_COSMIC_INSIGHTS));
-            return DEFAULT_COSMIC_INSIGHTS;
-          }
           await AsyncStorage.setItem(STORAGE_INSIGHTS_KEY, JSON.stringify(active));
           return active;
         }
       }
     } catch {}
 
-    if (parsedCache !== null) {
-      const safeCache = parsedCache.filter((c) => c.active !== false);
-      return safeCache.length > 0 ? safeCache : DEFAULT_COSMIC_INSIGHTS;
-    }
+    if (parsedCache !== null) return parsedCache;
   } catch (err) {
     console.warn('Error reading cosmic insights:', err);
   }
@@ -426,28 +502,49 @@ export async function getDynamicCosmicInsights(): Promise<CosmicInsight[]> {
   return DEFAULT_COSMIC_INSIGHTS;
 }
 
-async function fetchDirectFirestoreRealAstrologers(): Promise<LiveAstrologer[]> {
+const ALLOWED_PUBLIC_ASTROLOGER_STATUSES = [
+  'approved',
+  'active',
+  'probation',
+  'verified',
+  'full_time',
+  'full-time active',
+];
+
+async function fetchDirectFirestoreRealAstrologers(): Promise<{
+  ok: boolean;
+  items: LiveAstrologer[];
+}> {
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4500);
+    const timer = setTimeout(() => controller.abort(), 7000);
+    // IMPORTANT: Do NOT append custom query params like `&_t=...` to Firestore REST API
+    // because Google Firestore rejects unknown query parameters with HTTP 400 INVALID_ARGUMENT.
     const res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/astroparihar-85e2d/databases/(default)/documents/astrologers?pageSize=100&_t=${Date.now()}`,
+      'https://firestore.googleapis.com/v1/projects/astroparihar-85e2d/databases/(default)/documents/astrologers?pageSize=100',
       {
         signal: controller.signal,
+        cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
       }
     );
     clearTimeout(timer);
-    if (!res.ok) return [];
+    if (!res.ok) return { ok: false, items: [] };
     const json = await res.json();
-    if (!Array.isArray(json.documents)) return [];
+    if (!Array.isArray(json.documents)) return { ok: true, items: [] };
 
     const allVerified: LiveAstrologer[] = [];
     for (const doc of json.documents) {
       const id = doc.name ? doc.name.split('/').pop() : '';
       const f = doc.fields || {};
-      const status = f.status?.stringValue || '';
-      if (!['approved', 'active', 'probation', 'verified'].includes(status)) continue;
+      const status = String(f.status?.stringValue || '').toLowerCase().trim();
+      if (!ALLOWED_PUBLIC_ASTROLOGER_STATUSES.includes(status)) continue;
+
+      // Strictly hide suspended, deactivated, or dashboard-locked astrologers
+      if (f.isSuspended?.booleanValue === true) continue;
+      if (f.isActive?.booleanValue === false) continue;
+      if (f.dashboardDisabled?.booleanValue === true) continue;
+      if (f.showOnWebsite?.booleanValue === false || f.isPublished?.booleanValue === false) continue;
 
       const rawName = f.name?.stringValue || 'Astrologer';
       const cleanName = rawName
@@ -467,7 +564,7 @@ async function fetchDirectFirestoreRealAstrologers(): Promise<LiveAstrologer[]> 
         skillsArr = [f.speciality?.stringValue || f.specialization?.stringValue];
       }
 
-      const specialty = skillsArr.length > 0 ? skillsArr.join(', ') : '';
+      const specialty = skillsArr.length > 0 ? skillsArr.join(', ') : 'Vedic Astrology';
 
       let expNum = f.experienceYears?.integerValue
         ? parseInt(f.experienceYears.integerValue, 10)
@@ -485,12 +582,13 @@ async function fetchDirectFirestoreRealAstrologers(): Promise<LiveAstrologer[]> 
         f.amount?.stringValue ||
         f.pricePerMinute?.integerValue ||
         f.pricePerMinute?.stringValue ||
+        f.pricePerMin?.integerValue ||
         f.price?.integerValue;
-      const price = rawPrice ? parseInt(String(rawPrice), 10) || 0 : 0;
+      const price = rawPrice ? parseInt(String(rawPrice), 10) || 25 : 25;
 
       const rating =
         f.rating?.doubleValue ||
-        (f.rating?.integerValue ? parseFloat(f.rating.integerValue) : 0);
+        (f.rating?.integerValue ? parseFloat(f.rating.integerValue) : 4.9);
 
       const reviewsCount =
         f.reviewsCount?.integerValue ||
@@ -504,7 +602,7 @@ async function fetchDirectFirestoreRealAstrologers(): Promise<LiveAstrologer[]> 
         f.completedConsultations?.integerValue ||
         '0';
 
-      let languages = '';
+      let languages = 'English, Hindi';
       if (f.languages?.stringValue) {
         languages = f.languages.stringValue;
       } else if (f.languages?.arrayValue?.values) {
@@ -541,19 +639,12 @@ async function fetchDirectFirestoreRealAstrologers(): Promise<LiveAstrologer[]> 
           .filter(Boolean);
       }
 
-      const showOnWebsite =
-        f.showOnWebsite?.booleanValue !== undefined
-          ? f.showOnWebsite.booleanValue
-          : f.isPublished?.booleanValue !== undefined
-          ? f.isPublished.booleanValue
-          : true;
-
       allVerified.push({
         id: id || cleanName.toLowerCase(),
         name: cleanName,
         specialty,
-        experience: expNum > 0 ? `${expNum}+ Yrs` : '',
-        rating: rating > 0 ? Number(rating.toFixed(2)) : 0,
+        experience: expNum > 0 ? `${expNum}+ Yrs` : '10+ Yrs',
+        rating: rating > 0 ? Number(rating.toFixed(2)) : 4.9,
         reviews: String(reviewsCount),
         consultations: String(totalConsultations),
         price,
@@ -571,17 +662,76 @@ async function fetchDirectFirestoreRealAstrologers(): Promise<LiveAstrologer[]> 
         city,
         badge,
         status,
-        showOnWebsite,
-        isPublished: showOnWebsite,
+        showOnWebsite: true,
+        isPublished: true,
       });
     }
 
-    const published = allVerified.filter((a) => a.showOnWebsite !== false);
-    const list = published.length > 0 ? published : allVerified;
     // Sort online astrologers first so live status changes immediately reflect at the top
-    return list.sort((a, b) => Number(b.isOnline) - Number(a.isOnline));
+    return {
+      ok: true,
+      items: allVerified.sort((a, b) => Number(b.isOnline) - Number(a.isOnline)),
+    };
   } catch {
-    return [];
+    return { ok: false, items: [] };
+  }
+}
+
+async function fetchBackendRealAstrologers(): Promise<{
+  ok: boolean;
+  items: LiveAstrologer[];
+}> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7000);
+    const res = await fetch(`${API_ENDPOINTS.astrologers}?type=real`, {
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+    clearTimeout(timer);
+    if (!res.ok) return { ok: false, items: [] };
+    const data = await res.json();
+    if (!data?.success) return { ok: false, items: [] };
+
+    const rawList: any[] = Array.isArray(data.realAstrologers)
+      ? data.realAstrologers
+      : Array.isArray(data.astrologers)
+      ? data.astrologers
+      : [];
+
+    const mapped: LiveAstrologer[] = rawList
+      .filter((a) => a && !a.isAi && a.isSuspended !== true && a.isActive !== false)
+      .map((a) => ({
+        id: String(a.id || a.name),
+        name: String(a.name || 'Astrologer'),
+        specialty: String(a.specialty || 'Vedic Astrology'),
+        experience: String(a.experience || '10+ Yrs'),
+        rating: Number(a.rating) || 4.9,
+        reviews: String(a.reviews ?? '0'),
+        consultations: String(a.consultations ?? a.reviews ?? '0'),
+        price: Number(a.price) || 25,
+        isOnline: Boolean(a.isOnline),
+        isAi: false,
+        imageUrl: resolveMediaUrl(a.imageUrl),
+        languages: String(a.languages || 'English, Hindi'),
+        semanticLabel: `${a.name || 'Astrologer'} - Verified Astrologer`,
+        bio: a.bio || a.about || '',
+        about: a.about || a.bio || '',
+        education: a.education || '',
+        certifications: Array.isArray(a.certifications) ? a.certifications : [],
+        learningSource: a.learningSource || '',
+        dailyHours: a.dailyHours || '',
+        city: a.city || '',
+        badge: a.badge || 'VERIFIED',
+        status: a.status || 'approved',
+        showOnWebsite: true,
+        isPublished: true,
+      }))
+      .sort((a, b) => Number(b.isOnline) - Number(a.isOnline));
+
+    return { ok: true, items: mapped };
+  } catch {
+    return { ok: false, items: [] };
   }
 }
 
@@ -599,7 +749,7 @@ async function fetchDirectFirestoreAiAstrologers(): Promise<LiveAstrologer[]> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4500);
     const res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/astroparihar-85e2d/databases/(default)/documents/ai_astrologers?pageSize=50`,
+      `https://firestore.googleapis.com/v1/projects/astroparihar-85e2d/databases/(default)/documents/ai_astrologers?pageSize=200`,
       {
         signal: controller.signal,
         headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
@@ -639,6 +789,10 @@ async function fetchDirectFirestoreAiAstrologers(): Promise<LiveAstrologer[]> {
       const rawAvatar = f.avatar?.stringValue || '/assets/images/ai-astrologers/acharya-devavrat.png';
       const imageUrl = resolveMediaUrl(rawAvatar);
       const isOnline = f.availability?.stringValue !== 'offline';
+      const rawVoiceGender = String(f.voiceGender?.stringValue || '').toLowerCase().trim();
+      const voiceGender: 'male' | 'female' = rawVoiceGender === 'female' ? 'female' : 'male';
+      const voiceId =
+        f.voiceId?.stringValue || (voiceGender === 'female' ? 'coral' : 'ash');
 
       aiList.push({
         id: id || name.toLowerCase().replace(/\s+/g, '-'),
@@ -651,6 +805,8 @@ async function fetchDirectFirestoreAiAstrologers(): Promise<LiveAstrologer[]> {
         price: dynamicAiRate,
         isOnline,
         isAi: true,
+        voiceGender,
+        voiceId,
         imageUrl,
         languages,
         semanticLabel: `${name} - AI Vedic Astrologer`,
@@ -694,13 +850,28 @@ export async function fetchRealAstrologers(forceFresh = false): Promise<LiveAstr
         } catch {}
       }
 
-      // 2. Direct Firestore REST dynamic sync
-      const directLive = await fetchDirectFirestoreRealAstrologers();
-      if (directLive.length > 0) {
-        memoryCachedRealAstrologers = directLive;
+      // 2. Direct Firestore REST dynamic sync (with backend API fallback)
+      const directRes = await fetchDirectFirestoreRealAstrologers();
+      if (directRes.ok) {
+        memoryCachedRealAstrologers = directRes.items;
         lastRealFetchTime = Date.now();
-        await AsyncStorage.setItem(STORAGE_REAL_ASTROLOGERS_KEY, JSON.stringify(directLive));
-        return directLive;
+        await AsyncStorage.setItem(
+          STORAGE_REAL_ASTROLOGERS_KEY,
+          JSON.stringify(directRes.items)
+        ).catch(() => {});
+        return directRes.items;
+      }
+
+      // 3. Fallback to AstroParihar backend API if direct Firestore REST failed
+      const apiRes = await fetchBackendRealAstrologers();
+      if (apiRes.ok) {
+        memoryCachedRealAstrologers = apiRes.items;
+        lastRealFetchTime = Date.now();
+        await AsyncStorage.setItem(
+          STORAGE_REAL_ASTROLOGERS_KEY,
+          JSON.stringify(apiRes.items)
+        ).catch(() => {});
+        return apiRes.items;
       }
 
       if (memoryCachedRealAstrologers && memoryCachedRealAstrologers.length > 0) {
@@ -712,7 +883,9 @@ export async function fetchRealAstrologers(forceFresh = false): Promise<LiveAstr
       inFlightRealPromise = null;
     }
 
-    return memoryCachedRealAstrologers || [];
+    return (memoryCachedRealAstrologers && memoryCachedRealAstrologers.length > 0)
+      ? memoryCachedRealAstrologers
+      : DEFAULT_REAL_ASTROLOGERS;
   })();
 
   return inFlightRealPromise;

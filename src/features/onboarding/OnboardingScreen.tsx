@@ -15,6 +15,7 @@ import { lh, Text } from '@/components/Text';
 import { API_ENDPOINTS, resolveMediaUrl } from '@/config/api';
 import { useAuthStore } from '@/features/auth/authStore';
 import { AppRoutes, go } from '@/navigation/routes';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { withAlpha } from '@/theme/colors';
 import { useThemeColors } from '@/theme/themeStore';
 
@@ -131,16 +132,20 @@ export default function OnboardingScreen() {
             if (Array.isArray(parsed) && parsed.length > 0) {
               setSlides(parsed);
             }
-          } catch {}
+          } catch { }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Fetch dynamic slides from Admin Dashboard API
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-    fetch(DYNAMIC_API_URL, { signal: controller.signal })
+    fetch(`${DYNAMIC_API_URL}?_t=${Date.now()}`, {
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
+    })
       .then((res) => res.json())
       .then((json) => {
         clearTimeout(timeout);
@@ -159,7 +164,7 @@ export default function OnboardingScreen() {
 
           if (activeSlides.length > 0) {
             setSlides(activeSlides);
-            AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(activeSlides)).catch(() => {});
+            AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(activeSlides)).catch(() => { });
           }
         }
       })
@@ -178,6 +183,7 @@ export default function OnboardingScreen() {
   };
 
   const setOnboardingCompleted = useAuthStore((s) => s.setOnboardingCompleted);
+  const onboardingCms = useAppScreensCmsStore((s) => s.config.onboarding);
 
   const nextPage = () => {
     if (currentPage < slides.length - 1) {
@@ -220,7 +226,11 @@ export default function OnboardingScreen() {
           </View>
           <ElevatedButton
             testID="onboarding.next"
-            label={currentPage < slides.length - 1 ? 'Continue' : 'Get Started'}
+            label={
+              currentPage < slides.length - 1
+                ? onboardingCms.continueButton
+                : onboardingCms.getStartedButton
+            }
             onPress={nextPage}
             style={{ marginTop: 24, alignSelf: 'stretch' }}
             paddingV={18}
@@ -234,9 +244,9 @@ export default function OnboardingScreen() {
             style={{ marginTop: 16, alignItems: 'center' }}
           >
             <Text style={{ fontSize: 14, color: colors.textMuted }}>
-              Already have an account?{' '}
+              {onboardingCms.alreadyHaveAccountText}{' '}
               <Text style={{ color: colors.goldAccent, fontWeight: '700', textDecorationLine: 'underline', fontSize: 14 }}>
-                Sign In
+                {onboardingCms.signInLinkText}
               </Text>
             </Text>
           </Pressable>

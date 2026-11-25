@@ -7,13 +7,13 @@
  * - Unified professional Vedic theme with high-contrast text and zero visual clutter.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  AppState,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -27,7 +27,7 @@ import { ElevatedButton } from '@/components/common';
 import { BottomSheet, showSnackBar } from '@/components/overlays';
 import { FamilyProfileSwitcherModal } from '@/components/FamilyProfileSwitcherModal';
 import { LocationSearchInput } from '@/components/LocationSearchInput';
-import { formatDobToDDMMYYYY, formatTimeOfDay, normalizeDobForApi, normalizeTimeForApi, parseDobToDate, parseTimeToDate, pickDate, pickTime } from '@/components/pickers';
+import { formatDobToDDMMYYYY, formatTimeOfDay, parseDobToDate, parseTimeToDate, pickDate, pickTime } from '@/components/pickers';
 import { Text, TextInput } from '@/components/Text';
 import { API_ENDPOINTS } from '@/config/api';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -37,6 +37,8 @@ import { useBirthProfileStore } from '@/services/birthProfileStore';
 import { requestPermanentAccountDeletion } from '@/services/accountDeletionService';
 import packageJson from '../../../package.json';
 import { useCurrencyStore } from '@/services/currencyStore';
+import { useNotificationStore } from '@/services/notificationStore';
+import { useSupportLegalStore } from '@/services/supportLegalStore';
 import { getWalletBalance, subscribeWallet } from '@/services/walletService';
 import { AppColors, withAlpha } from '@/theme/colors';
 import { AppLanguage, useLanguageStore, useTranslation } from '@/theme/languageStore';
@@ -126,14 +128,31 @@ export interface DynamicProfileConfig {
   helplineHoursPrefix?: string;
   helplineHours: string;
 
-  // Sign In / Out
+  // Sign In / Out & Delete Account
   signOutButtonText?: string;
   signOutConfirmTitle?: string;
   signOutConfirmMessage?: string;
   cancelButtonText?: string;
+  deleteAccountButtonText?: string;
+  deleteAccountConfirmTitle?: string;
+  deleteAccountConfirmMessage?: string;
+  deleteAccountSuccessTitle?: string;
+  deleteAccountSuccessMessage?: string;
+
+  // Birth Details & Guest Card Labels
+  birthDetailsCardTitle?: string;
+  birthDetailsCardSubtitle?: string;
+  editButtonLabel?: string;
+  switchProfileSuffix?: string;
+  guestCardTitle?: string;
+  guestCardSubtitle?: string;
+  guestCardNotice?: string;
+  guestCardFeatures?: string[];
+  selectLanguageTitle?: string;
 
   // Edit Profile Sheet
   editProfileTitle?: string;
+  editProfileSubtitle?: string;
   editNameLabel?: string;
   editPhoneOrEmailLabel?: string;
   editDobLabel?: string;
@@ -218,7 +237,8 @@ export const DEFAULT_PROFILE_CONFIG: DynamicProfileConfig = {
         { id: 'kundliReports', order: 4, labelKey: 'profile.kundliReports', defaultLabel: 'Reports & Guides', subtitle: 'Vedic consultation summaries, Parihara & PDF guides', icon: 'description_outlined', route: AppRoutes.kundliReportsScreen, active: true },
         { id: 'matchReports', order: 5, labelKey: 'profile.matchReports', defaultLabel: 'Match Reports', subtitle: '36 Guna Ashtakoot matrimonial reports', icon: 'favorite_border', route: AppRoutes.matchReportsScreen, active: true },
         { id: 'panchangReports', order: 6, labelKey: 'profile.panchangReports', defaultLabel: 'Panchang & Muhurat', subtitle: 'Daily Vedic almanac, tithi & auspicious timings', icon: 'calendar_today_outlined', route: AppRoutes.panchangScreen, active: true },
-        { id: 'consultationHistory', order: 7, labelKey: 'profile.consultationHistory', defaultLabel: 'Consultation History', subtitle: 'Past audio, video & AI chat recordings', icon: 'history', route: AppRoutes.consultationHistoryScreen, active: true },
+        { id: 'savedAstrologers', order: 7, labelKey: 'profile.savedAstrologers', defaultLabel: 'Saved Astrologers', subtitle: 'Your favorite verified Vedic consultants', icon: 'star_outline', route: AppRoutes.savedAstrologersScreen, active: true },
+        { id: 'consultationHistory', order: 8, labelKey: 'profile.consultationHistory', defaultLabel: 'Consultation History', subtitle: 'Past audio, video & AI chat recordings', icon: 'history', route: AppRoutes.consultationHistoryScreen, active: true },
       ],
     },
     {
@@ -230,6 +250,8 @@ export const DEFAULT_PROFILE_CONFIG: DynamicProfileConfig = {
       items: [
         { id: 'wallet', order: 1, labelKey: 'profile.wallet', defaultLabel: 'Wallet', subtitle: 'View balance, add funds & recharge offers', icon: 'account_balance_wallet_outlined', route: AppRoutes.walletScreen, active: true },
         { id: 'transactions', order: 2, labelKey: 'profile.transactions', defaultLabel: 'Transactions', subtitle: 'Detailed billing history & payment receipts', icon: 'receipt_long_outlined', route: AppRoutes.walletScreen, active: true },
+        { id: 'paymentMethods', order: 3, labelKey: 'profile.paymentMethods', defaultLabel: 'Payment Methods', subtitle: 'UPI, Cards, Netbanking & Saved options', icon: 'credit_card_outlined', route: AppRoutes.walletScreen, active: true },
+        { id: 'notifications', order: 4, labelKey: 'profile.notifications', defaultLabel: 'Notifications', subtitle: 'Daily horoscopes, muhurat & chat alerts', icon: 'notifications_outlined', route: AppRoutes.notificationsScreen, active: true },
       ],
     },
     {
@@ -242,7 +264,8 @@ export const DEFAULT_PROFILE_CONFIG: DynamicProfileConfig = {
         { id: 'language', order: 1, labelKey: 'profile.language', defaultLabel: 'Language', subtitle: 'Choose Telugu, Hindi, English, Tamil, etc.', icon: 'translate', route: AppRoutes.languageScreen, action: 'languageModal', active: true },
         { id: 'theme', order: 2, labelKey: 'profile.theme', defaultLabel: 'Theme', subtitle: 'Switch between Light Vedic and Dark Cosmic', icon: 'palette_outlined', route: AppRoutes.themeScreen, action: 'themeToggle', active: true },
         { id: 'currency', order: 3, labelKey: 'profile.currency', defaultLabel: 'Currency', subtitle: 'Switch between ₹ INR (India) and $ USD (Abroad)', icon: 'currency_exchange', route: AppRoutes.walletScreen, action: 'currencyToggle', active: true },
-        { id: 'privacy', order: 4, labelKey: 'profile.privacy', defaultLabel: 'Privacy', subtitle: 'Manage your birth chart & account privacy', icon: 'lock_outline_rounded', route: AppRoutes.privacyScreen, active: true },
+        { id: 'notificationSettings', order: 4, labelKey: 'profile.notificationSettings', defaultLabel: 'Notification Settings', subtitle: 'Manage reminders, panchang & astro alerts', icon: 'tune_outlined', route: AppRoutes.notificationSettingsScreen, active: true },
+        { id: 'privacy', order: 5, labelKey: 'profile.privacy', defaultLabel: 'Privacy', subtitle: 'Manage your birth chart & account privacy', icon: 'lock_outline_rounded', route: AppRoutes.privacyScreen, active: true },
       ],
     },
     {
@@ -396,11 +419,11 @@ export default function ProfileScreen() {
 
   // User state
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [languageModalOpen, setLanguageModalOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [reportCount, setReportCount] = useState(4);
-  const [consultationCount, setConsultationCount] = useState(2);
-  const [savingProfile, setSavingProfile] = useState(false);
+  const [reportCount, setReportCount] = useState(0);
+  const [consultationCount, setConsultationCount] = useState(0);
 
   const [profileData, setProfileData] = useState({
     name: currentUserName,
@@ -427,37 +450,114 @@ export default function ProfileScreen() {
   const [editPob, setEditPob] = useState('');
   const editScrollRef = useRef<ScrollView>(null);
 
-  // 1. Fetch live dynamic profile configuration from Admin Dashboard API
-  const fetchDynamicProfileConfig = async () => {
-    try {
-      // First load from local storage
-      const cached = await AsyncStorage.getItem(STORAGE_PROFILE_CONFIG_KEY);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (parsed && Array.isArray(parsed.sections)) {
-            setConfig((prev) => ({ ...prev, ...parsed }));
-          }
-        } catch {}
+  const ensureNotificationItems = (sections: DynamicProfileSection[]): DynamicProfileSection[] => {
+    const hasNotif = sections.some((s) =>
+      (s.items || []).some((it) => it.id === 'notifications' || it.route === AppRoutes.notificationsScreen)
+    );
+    const hasNotifSettings = sections.some((s) =>
+      (s.items || []).some(
+        (it) => it.id === 'notificationSettings' || it.route === AppRoutes.notificationSettingsScreen
+      )
+    );
+
+    return sections.map((sec) => {
+      let items = (sec.items || []).map((it) => {
+        if (it.id === 'notifications' || it.route === AppRoutes.notificationsScreen) {
+          return { ...it, route: AppRoutes.notificationsScreen };
+        }
+        if (it.id === 'notificationSettings' || it.route === AppRoutes.notificationSettingsScreen) {
+          return { ...it, route: AppRoutes.notificationSettingsScreen };
+        }
+        return it;
+      });
+
+      if (!hasNotif && sec.id === 'my-account') {
+        items = [
+          ...items,
+          {
+            id: 'notifications',
+            order: items.length + 1,
+            labelKey: 'profile.notifications',
+            defaultLabel: 'Notifications',
+            subtitle: 'Daily horoscopes, muhurat & chat alerts',
+            icon: 'notifications_outlined',
+            route: AppRoutes.notificationsScreen,
+            active: true,
+          },
+        ];
       }
 
-      // Fetch live from server
+      if (!hasNotifSettings && sec.id === 'preferences') {
+        items = [
+          ...items,
+          {
+            id: 'notificationSettings',
+            order: items.length + 1,
+            labelKey: 'profile.notificationSettings',
+            defaultLabel: 'Notification Settings',
+            subtitle: 'Manage reminders, panchang & astro alerts',
+            icon: 'tune_outlined',
+            route: AppRoutes.notificationSettingsScreen,
+            active: true,
+          },
+        ];
+      }
+
+      return { ...sec, items };
+    });
+  };
+
+  const rawUnreadNotificationsCount = useNotificationStore((s) => s.unreadCount);
+  const unreadNotificationsCount = isAuth ? rawUnreadNotificationsCount : 0;
+
+  // 1. Fetch live dynamic profile configuration from Admin Dashboard API
+  const fetchDynamicProfileConfig = useCallback(async (skipCacheHydrate = false) => {
+    try {
+      // First load from local storage only on initial mount
+      if (!skipCacheHydrate) {
+        const cached = await AsyncStorage.getItem(STORAGE_PROFILE_CONFIG_KEY);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && Array.isArray(parsed.sections)) {
+              setConfig((prev) => ({
+                ...prev,
+                ...parsed,
+                sections: ensureNotificationItems(parsed.sections),
+              }));
+            }
+          } catch {}
+        }
+      }
+
+      // Fetch live from server with strict cache-busting so Admin edits always appear immediately
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch(API_ENDPOINTS.profile, { signal: controller.signal });
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(`${API_ENDPOINTS.profile}?_t=${Date.now()}`, {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
+      });
       clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.config) {
-          setConfig({ ...DEFAULT_PROFILE_CONFIG, ...data.config });
-          await AsyncStorage.setItem(STORAGE_PROFILE_CONFIG_KEY, JSON.stringify(data.config));
+          const normalized = {
+            ...DEFAULT_PROFILE_CONFIG,
+            ...data.config,
+            sections: Array.isArray(data.config.sections)
+              ? ensureNotificationItems(data.config.sections)
+              : DEFAULT_PROFILE_CONFIG.sections,
+          };
+          setConfig(normalized);
+          await AsyncStorage.setItem(STORAGE_PROFILE_CONFIG_KEY, JSON.stringify(normalized));
         }
       }
     } catch {
       // Offline fallback already loaded from cache or default
     }
-  };
+  }, []);
 
   const loadUserData = async () => {
     try {
@@ -573,7 +673,31 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    fetchDynamicProfileConfig();
+    fetchDynamicProfileConfig(false);
+    useSupportLegalStore.getState().fetchContent();
+    if (isAuth) {
+      useNotificationStore.getState().fetchNotifications();
+    } else {
+      useNotificationStore.getState().resetForGuest();
+    }
+  }, [isAuth, fetchDynamicProfileConfig]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDynamicProfileConfig(true);
+    }, [fetchDynamicProfileConfig])
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        fetchDynamicProfileConfig(true);
+      }
+    });
+    return () => sub.remove();
+  }, [fetchDynamicProfileConfig]);
+
+  useEffect(() => {
     if (isAuthenticated) {
       loadProfiles().then(() => loadUserData()).catch(() => loadUserData());
     } else {
@@ -582,12 +706,15 @@ export default function ProfileScreen() {
     getWalletBalance().then(setWalletBalance);
     const unsub = subscribeWallet(setWalletBalance);
     return () => unsub();
-  }, []);
+  }, [authUser?.uid, authUser?.phone, authUser?.dob, authUser?.tob, authUser?.pob, authUser?.name, isAuthenticated, activeProfile?.id, activeProfile?.name]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
-      fetchDynamicProfileConfig(),
+      fetchDynamicProfileConfig(true),
+      isAuth
+        ? useNotificationStore.getState().fetchNotifications()
+        : useNotificationStore.getState().resetForGuest(),
       loadProfiles().then(() => loadUserData()).catch(() => loadUserData()),
       getWalletBalance().then(setWalletBalance),
     ]);
@@ -632,17 +759,15 @@ export default function ProfileScreen() {
     if (savingProfile) return;
     setSavingProfile(true);
     try {
-      const normalizedDob = normalizeDobForApi(editDob);
-      const normalizedTob = normalizeTimeForApi(editTob);
+      const formattedDob = formatDobToDDMMYYYY(editDob);
       const updated = {
         name: editName.trim() || profileData.name,
         email: editEmail.trim() || profileData.email,
-        dob: normalizedDob || (profileData.dob !== 'Not specified' && profileData.dob !== 'Sign in to view' ? normalizeDobForApi(profileData.dob) : ''),
-        tob: normalizedTob || (profileData.tob !== 'Not specified' && profileData.tob !== 'Sign in to view' ? normalizeTimeForApi(profileData.tob) : ''),
-        pob: editPob.trim() || (profileData.pob !== 'Not specified' && profileData.pob !== 'Sign in to view' ? profileData.pob : ''),
+        dob: formattedDob || (profileData.dob !== 'Not specified' ? profileData.dob : ''),
+        tob: editTob.trim() || (profileData.tob !== 'Not specified' ? profileData.tob : ''),
+        pob: editPob.trim() || (profileData.pob !== 'Not specified' ? profileData.pob : ''),
       };
 
-      await updateUserProfile(updated);
       if (activeProfile?.id) {
         await updateProfile(activeProfile.id, {
           name: updated.name,
@@ -650,6 +775,11 @@ export default function ProfileScreen() {
           time: updated.tob,
           place: updated.pob,
         });
+        if (updated.email !== profileData.email) {
+          await updateUserProfile({ email: updated.email });
+        }
+      } else {
+        await updateUserProfile(updated);
       }
       setProfileData((prev) => ({
         ...prev,
@@ -697,12 +827,13 @@ export default function ProfileScreen() {
 
   const handleDeleteAccountPress = () => {
     Alert.alert(
-      'Delete Account Permanently?',
-      'Are you sure you want to permanently delete your AstroParihar account?\n\nAll your Janam Kundli charts, consultations, wallet balance, and birth profiles will be erased forever.\n\nOnce deleted, this phone number cannot be reused to log in.',
+      config.deleteAccountConfirmTitle || 'Delete Account Permanently?',
+      config.deleteAccountConfirmMessage ||
+        'Are you sure you want to permanently delete your AstroParihar account?\n\nAll your Janam Kundli charts, consultations, wallet balance, and birth profiles will be erased forever.\n\nOnce deleted, this phone number cannot be reused to log in.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: config.cancelButtonText || 'Cancel', style: 'cancel' },
         {
-          text: 'Delete Account',
+          text: config.deleteAccountButtonText || 'Delete Account',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -723,10 +854,11 @@ export default function ProfileScreen() {
                 nakshatra: config.defaultNakshatra,
               });
               Alert.alert(
-                'Account Deleted',
-                'Your account has been deleted. You can no longer log in with this phone number.'
+                config.deleteAccountSuccessTitle || 'Account Deleted',
+                config.deleteAccountSuccessMessage ||
+                  'Your account has been deleted. You can no longer log in with this phone number.'
               );
-              showSnackBar('Account deleted permanently', '#CF4444');
+              showSnackBar(config.deleteAccountSuccessTitle || 'Account deleted permanently', '#CF4444');
               go(AppRoutes.initial);
             } catch (err: any) {
               showSnackBar('Error deleting account: ' + err?.message, '#CF4444');
@@ -760,6 +892,7 @@ export default function ProfileScreen() {
       AppRoutes.kundliReportsScreen,
       AppRoutes.matchReportsScreen,
       AppRoutes.panchangScreen,
+      AppRoutes.savedAstrologersScreen,
       AppRoutes.consultationHistoryScreen,
       AppRoutes.birthProfilesScreen,
       AppRoutes.remediesScreen,
@@ -790,6 +923,48 @@ export default function ProfileScreen() {
         backgroundColor={colors.background}
         backColor={colors.textPrimary}
         actions={[
+          <Pressable
+            key="profile-bell"
+            testID="profile.notificationsBell"
+            onPress={() => push(AppRoutes.notificationsScreen)}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.cardBorder,
+              marginRight: 6,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Notifications${unreadNotificationsCount > 0 ? `, ${unreadNotificationsCount} unread` : ''}`}
+          >
+            <AppIcon name="notifications_outlined" color={colors.goldAccent} size={19} />
+            {unreadNotificationsCount > 0 ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -3,
+                  right: -3,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  paddingHorizontal: 3.5,
+                  backgroundColor: '#CF4444',
+                  borderWidth: 1.5,
+                  borderColor: colors.background,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '800' }}>
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>,
           {
             icon: isAuth ? 'edit_note_rounded' : 'login_rounded',
             color: colors.goldAccent,
@@ -870,12 +1045,12 @@ export default function ProfileScreen() {
 
           <Pressable onPress={isAuth ? openEditModal : () => go(AppRoutes.signInScreen)}>
             <Text style={{ marginTop: 12, color: colors.textPrimary, fontSize: 21, fontWeight: '800' }}>
-              {isAuth ? profileData.name : t('Guest Seeker', 'Guest Seeker')}
+              {isAuth ? profileData.name : (config.welcomeGuestText || t('Guest Seeker', 'Guest Seeker'))}
             </Text>
           </Pressable>
 
           <Text style={{ marginTop: 2, color: colors.textMuted, fontSize: 13, textAlign: 'center' }}>
-            {isAuth ? profileData.email : t('Sign in to access your sacred astrology profile', 'Sign in to access your sacred astrology profile')}
+            {isAuth ? profileData.email : (config.guestSubtitle || t('Sign in to access your sacred astrology profile', 'Sign in to access your sacred astrology profile'))}
           </Text>
 
           {isAuth && (
@@ -902,7 +1077,7 @@ export default function ProfileScreen() {
                   marginLeft: 6,
                 }}
               >
-                {activeProfile?.type || 'Myself'} • Switch Profile
+                {`${activeProfile?.type || 'Myself'} • ${config.switchProfileSuffix || 'Switch Profile'}`}
               </Text>
               <AppIcon name="arrow_drop_down" size={16} color={colors.goldAccent} />
             </Pressable>
@@ -1037,10 +1212,10 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ marginLeft: 10 }}>
                   <Text style={{ color: colors.textPrimary, fontSize: 14.5, fontWeight: '800' }}>
-                    {t('Birth Details & Location', 'Birth Details & Location')}
+                    {config.birthDetailsCardTitle || t('Birth Details & Location', 'Birth Details & Location')}
                   </Text>
                   <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                    {t('Verified Vedic Kundli Baseline', 'Verified Vedic Kundli Baseline')}
+                    {config.birthDetailsCardSubtitle || t('Verified Vedic Kundli Baseline', 'Verified Vedic Kundli Baseline')}
                   </Text>
                 </View>
               </View>
@@ -1061,7 +1236,7 @@ export default function ProfileScreen() {
               >
                 <AppIcon name="edit_rounded" size={13} color={colors.goldAccent} />
                 <Text style={{ marginLeft: 4, color: colors.goldAccent, fontSize: 11.5, fontWeight: '700' }}>
-                  {t('Edit', 'Edit')}
+                  {config.editButtonLabel || t('Edit', 'Edit')}
                 </Text>
               </Pressable>
             </View>
@@ -1278,28 +1453,36 @@ export default function ProfileScreen() {
               </View>
               <View style={{ marginLeft: 12, flex: 1 }}>
                 <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '800' }}>
-                  {t('Sign In to AstroParihar', 'Sign In to AstroParihar')}
+                  {config.guestCardTitle || t('Sign In to AstroParihar', 'Sign In to AstroParihar')}
                 </Text>
                 <Text style={{ marginTop: 2, color: colors.textMuted, fontSize: 12 }}>
-                  {t('Sign in to unlock your full spiritual profile', 'Sign in to unlock your full spiritual profile')}
+                  {config.guestCardSubtitle || t('Sign in to unlock your full spiritual profile', 'Sign in to unlock your full spiritual profile')}
                 </Text>
               </View>
             </View>
 
             <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 12.5, lineHeight: 18 }}>
-              {t(
-                'profile.guestSignInNotice',
-                'Sign in to access your personal Kundli, birth charts, detailed reports, daily Panchang, wallet & transaction receipts.'
-              )}
+              {config.guestCardNotice ||
+                t(
+                  'profile.guestSignInNotice',
+                  'Sign in to access your personal Kundli, birth charts, detailed reports, daily Panchang, saved astrologers, wallet & transaction receipts.'
+                )}
             </Text>
 
             <View style={{ marginTop: 14, gap: 8 }}>
-              {[
-                { icon: 'auto_stories', text: 'My Kundli & Birth Chart' },
-                { icon: 'description_outlined', text: 'Kundli & Service Reports' },
-                { icon: 'calendar_today_outlined', text: 'Panchang & Auspicious Muhurat' },
-                { icon: 'account_balance_wallet_outlined', text: 'Wallet Balance & Transactions' },
-              ].map((item) => (
+              {(config.guestCardFeatures && config.guestCardFeatures.length > 0
+                ? config.guestCardFeatures.map((text, idx) => ({
+                    icon: ['auto_stories', 'description_outlined', 'calendar_today_outlined', 'star_outline', 'account_balance_wallet_outlined'][idx % 5],
+                    text,
+                  }))
+                : [
+                    { icon: 'auto_stories', text: 'My Kundli & Birth Chart' },
+                    { icon: 'description_outlined', text: 'Kundli & Service Reports' },
+                    { icon: 'calendar_today_outlined', text: 'Panchang & Auspicious Muhurat' },
+                    { icon: 'star_outline', text: 'Saved Astrologers' },
+                    { icon: 'account_balance_wallet_outlined', text: 'Wallet Balance & Transactions' },
+                  ]
+              ).map((item) => (
                 <View key={item.text} style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <AppIcon name={item.icon} size={15} color={colors.goldAccent} />
                   <Text style={{ marginLeft: 8, color: colors.textPrimary, fontSize: 12.5, fontWeight: '600' }}>
@@ -1326,7 +1509,7 @@ export default function ProfileScreen() {
             >
               <AppIcon name="login_rounded" color="#FFFFFF" size={17} />
               <Text style={{ marginLeft: 8, color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
-                {t('Sign In / Register', 'Sign In / Register')}
+                {config.guestSignInButtonText || t('Sign In / Register', 'Sign In / Register')}
               </Text>
             </Pressable>
           </View>
@@ -1339,7 +1522,6 @@ export default function ProfileScreen() {
           ?.map((section) => {
             const activeItems = section.items
               ?.filter((it) => it.active !== false)
-              ?.filter((it) => !['notifications', 'notificationSettings'].includes(it.id))
               ?.sort((a, b) => (a.order || 0) - (b.order || 0));
 
             if (!activeItems || activeItems.length === 0) return null;
@@ -1381,6 +1563,11 @@ export default function ProfileScreen() {
                       trailingValue = currencyCode === 'INR' ? '₹ INR' : '$ USD';
 
                     const itemDisplayLabel = it.defaultLabel || resolveLabel(it.labelKey, it.defaultLabel);
+                    const dynamicBadge =
+                      (it.id === 'notifications' || it.route === AppRoutes.notificationsScreen) &&
+                      unreadNotificationsCount > 0
+                        ? `${unreadNotificationsCount} New`
+                        : it.badge;
 
                     return (
                       <View key={it.id}>
@@ -1415,7 +1602,7 @@ export default function ProfileScreen() {
                               <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '600' }}>
                                 {itemDisplayLabel}
                               </Text>
-                              {it.badge && (
+                              {dynamicBadge && (
                                 <View
                                   style={{
                                     marginLeft: 8,
@@ -1428,7 +1615,7 @@ export default function ProfileScreen() {
                                   }}
                                 >
                                   <Text style={{ color: colors.goldAccent, fontSize: 9.5, fontWeight: '700' }}>
-                                    {it.badge}
+                                    {dynamicBadge}
                                   </Text>
                                 </View>
                               )}
@@ -1508,7 +1695,7 @@ export default function ProfileScreen() {
             >
               <AppIcon name="delete_outline_rounded" size={18} color="#CF4444" />
               <Text style={{ marginLeft: 6, color: '#CF4444', fontSize: 13.5, fontWeight: '600' }}>
-                Delete Account Permanently
+                {config.deleteAccountButtonText || 'Delete Account Permanently'}
               </Text>
             </Pressable>
           </View>
@@ -1558,7 +1745,7 @@ export default function ProfileScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '800' }}>
-                Select Language
+                {config.selectLanguageTitle || 'Select Language'}
               </Text>
               <Pressable onPress={() => setLanguageModalOpen(false)} style={{ padding: 4 }}>
                 <AppIcon name="close" color={colors.textSecondary} size={18} />
@@ -1659,7 +1846,7 @@ export default function ProfileScreen() {
                   {config.editProfileTitle || t('profile.editProfile', 'Edit Profile Details')}
                 </Text>
                 <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                  Manage personal Vedic information
+                  {config.editProfileSubtitle || 'Manage personal Vedic information'}
                 </Text>
               </View>
             </View>
@@ -1668,189 +1855,169 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 32 : 0}
+          {/* Scrollable Form Body with Clean Keyboard Handling */}
+          <ScrollView
+            ref={editScrollRef}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={true}
             style={{ flex: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: 24,
+              paddingTop: 16,
+              paddingBottom: 40,
+            }}
           >
-            {/* Scrollable Form Body with Clean Keyboard Handling */}
-            <ScrollView
-              ref={editScrollRef}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="interactive"
-              showsVerticalScrollIndicator={true}
-              style={{ flex: 1 }}
-              contentContainerStyle={{
-                paddingHorizontal: 24,
-                paddingTop: 16,
-                paddingBottom: 40,
-              }}
-            >
-              {/* Full Name */}
-              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                {config.editNameLabel || 'Full Name'}
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.surfaceVariant,
-                  borderRadius: 14,
-                  borderWidth: 1.5,
-                  borderColor: colors.cardBorder,
-                  paddingHorizontal: 12,
-                  minHeight: 50,
-                  marginBottom: 16,
-                }}
-              >
-                <AppIcon name="person_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                <TextInput
-                  value={editName}
-                  onChangeText={setEditName}
-                  placeholder="Full Name"
-                  placeholderTextColor={colors.textMuted}
-                  style={{
-                    flex: 1,
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: colors.textPrimary,
-                    paddingVertical: 12,
-                  }}
-                />
-              </View>
-
-              {/* Phone / Email */}
-              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                {config.editPhoneOrEmailLabel || 'Phone / Email'}
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.surfaceVariant,
-                  borderRadius: 14,
-                  borderWidth: 1.5,
-                  borderColor: colors.cardBorder,
-                  paddingHorizontal: 12,
-                  minHeight: 50,
-                  marginBottom: 16,
-                }}
-              >
-                <AppIcon name="mail_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                <TextInput
-                  value={editEmail}
-                  onChangeText={setEditEmail}
-                  placeholder="Phone or Email"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  style={{
-                    flex: 1,
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: colors.textPrimary,
-                    paddingVertical: 12,
-                  }}
-                />
-              </View>
-
-              {/* Birth Date & Birth Time */}
-              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                    {config.editDobLabel || 'Date of Birth (DD/MM/YYYY)'}
-                  </Text>
-                  <Pressable
-                    onPress={handlePickEditDob}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingHorizontal: 12,
-                      minHeight: 50,
-                      borderRadius: 14,
-                      backgroundColor: colors.surfaceVariant,
-                      borderWidth: 1.5,
-                      borderColor: colors.cardBorder,
-                    }}
-                  >
-                    <AppIcon name="calendar_today" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                    <Text
-                      style={{
-                        flex: 1,
-                        color: editDob ? colors.textPrimary : colors.textMuted,
-                        fontSize: 13,
-                        fontWeight: '700',
-                        paddingVertical: 12,
-                      }}
-                    >
-                      {editDob || 'DD/MM/YYYY'}
-                    </Text>
-                  </Pressable>
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                    {config.editTobLabel || 'Time of Birth'}
-                  </Text>
-                  <Pressable
-                    onPress={handlePickEditTob}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingHorizontal: 12,
-                      minHeight: 50,
-                      borderRadius: 14,
-                      backgroundColor: colors.surfaceVariant,
-                      borderWidth: 1.5,
-                      borderColor: colors.cardBorder,
-                    }}
-                  >
-                    <AppIcon name="schedule" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
-                    <Text
-                      style={{
-                        flex: 1,
-                        color: editTob ? colors.textPrimary : colors.textMuted,
-                        fontSize: 13,
-                        fontWeight: '700',
-                        paddingVertical: 12,
-                      }}
-                    >
-                      {editTob || 'Select Time'}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              {/* Birth Place Location Input */}
-              <LocationSearchInput
-                value={editPob}
-                onChangeText={setEditPob}
-                label={config.editPobLabel || 'Place of Birth (City, State, Country)'}
-                placeholder="Enter birth place (e.g. Hyderabad, Guntur)"
-              />
-            </ScrollView>
-
-            {/* Fixed Pinned Footer with Save Action Button - Always visible, never covered */}
+            {/* Full Name */}
+            <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+              {config.editNameLabel || 'Full Name'}
+            </Text>
             <View
               style={{
-                paddingHorizontal: 24,
-                paddingTop: 12,
-                paddingBottom: Math.max(insets.bottom, 16),
-                borderTopWidth: 1,
-                borderTopColor: colors.cardBorder,
-                backgroundColor: colors.surface,
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: colors.surfaceVariant,
+                borderRadius: 14,
+                borderWidth: 1.5,
+                borderColor: colors.cardBorder,
+                paddingHorizontal: 12,
+                minHeight: 50,
+                marginBottom: 16,
               }}
             >
-              <ElevatedButton
-                label={config.editSaveButtonText || 'Save Profile Details'}
-                onPress={saveProfileEdits}
-                radius={14}
-                paddingV={14}
-                fontSize={14}
-                fontWeight="800"
+              <AppIcon name="person_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Full Name"
+                placeholderTextColor={colors.textMuted}
+                style={{
+                  flex: 1,
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: colors.textPrimary,
+                  paddingVertical: 12,
+                }}
               />
             </View>
-          </KeyboardAvoidingView>
+
+            {/* Phone / Email */}
+            <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+              {config.editPhoneOrEmailLabel || 'Phone / Email'}
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: colors.surfaceVariant,
+                borderRadius: 14,
+                borderWidth: 1.5,
+                borderColor: colors.cardBorder,
+                paddingHorizontal: 12,
+                minHeight: 50,
+                marginBottom: 16,
+              }}
+            >
+              <AppIcon name="mail_outline" size={20} color={colors.goldAccent} style={{ marginRight: 8 }} />
+              <TextInput
+                value={editEmail}
+                onChangeText={setEditEmail}
+                placeholder="Phone or Email"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={{
+                  flex: 1,
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: colors.textPrimary,
+                  paddingVertical: 12,
+                }}
+              />
+            </View>
+
+            {/* Birth Date & Birth Time */}
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                  {config.editDobLabel || 'Date of Birth (DD/MM/YYYY)'}
+                </Text>
+                <Pressable
+                  onPress={handlePickEditDob}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 12,
+                    minHeight: 50,
+                    borderRadius: 14,
+                    backgroundColor: colors.surfaceVariant,
+                    borderWidth: 1.5,
+                    borderColor: colors.cardBorder,
+                  }}
+                >
+                  <AppIcon name="calendar_today" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
+                    {editDob || 'DD/MM/YYYY'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                  {config.editTobLabel || 'Time of Birth'}
+                </Text>
+                <Pressable
+                  onPress={handlePickEditTob}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 12,
+                    minHeight: 50,
+                    borderRadius: 14,
+                    backgroundColor: colors.surfaceVariant,
+                    borderWidth: 1.5,
+                    borderColor: colors.cardBorder,
+                  }}
+                >
+                  <AppIcon name="schedule" size={17} color={colors.goldAccent} style={{ marginRight: 8 }} />
+                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700', flex: 1 }}>
+                    {editTob || 'Select Time'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Birth Place Location Input */}
+            <LocationSearchInput
+              value={editPob}
+              onChangeText={setEditPob}
+              label={config.editPobLabel || 'Place of Birth (City, State, Country)'}
+              placeholder="Enter birth place (e.g. Hyderabad, Guntur)"
+            />
+          </ScrollView>
+
+          {/* Fixed Pinned Footer with Save Action Button - Always visible, never covered */}
+          <View
+            style={{
+              paddingHorizontal: 24,
+              paddingTop: 12,
+              paddingBottom: Math.max(insets.bottom, 16),
+              borderTopWidth: 1,
+              borderTopColor: colors.cardBorder,
+              backgroundColor: colors.surface,
+            }}
+          >
+            <ElevatedButton
+              label={savingProfile ? 'Saving Profile...' : (config.editSaveButtonText || 'Save Profile Details')}
+              onPress={saveProfileEdits}
+              disabled={savingProfile}
+              loading={savingProfile}
+              radius={14}
+              paddingV={14}
+              fontSize={14}
+              fontWeight="800"
+            />
+          </View>
         </View>
       </BottomSheet>
 

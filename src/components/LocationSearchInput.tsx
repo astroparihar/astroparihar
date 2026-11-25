@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
-  Platform,
   Pressable,
   StyleProp,
   TextInput as RNTextInput,
@@ -57,22 +56,12 @@ export function LocationSearchInput({
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const inputRef = useRef<RNTextInput>(null);
   const debounceTimer = useRef<any>(null);
 
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, () => setKeyboardOpen(true));
-    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardOpen(false));
-
     return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-      showSub.remove();
-      hideSub.remove();
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, []);
 
@@ -147,7 +136,7 @@ export function LocationSearchInput({
           setPredictions([]);
           setShowDropdown(false);
         }
-      } catch {
+      } catch (err) {
         setPredictions([]);
         setShowDropdown(false);
       } finally {
@@ -189,7 +178,7 @@ export function LocationSearchInput({
   };
 
   return (
-    <View style={[{ marginBottom: 12, position: 'relative', zIndex: 40, overflow: 'visible' }, style]}>
+    <View style={[{ marginBottom: 12 }, style]}>
       {/* Label and Google Maps badge */}
       <View
         style={{
@@ -263,9 +252,6 @@ export function LocationSearchInput({
           }}
           onBlur={() => {
             setIsFocused(false);
-            setTimeout(() => {
-              setShowDropdown(false);
-            }, 120);
           }}
           placeholder={placeholder}
           placeholderTextColor={colors.textMuted}
@@ -294,12 +280,7 @@ export function LocationSearchInput({
       {showDropdown && predictions.length > 0 && (
         <View
           style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            ...(keyboardOpen
-              ? { bottom: '100%', marginBottom: 8 }
-              : { top: '100%', marginTop: 6 }),
+            marginTop: 6,
             borderRadius: 14,
             backgroundColor: colors.surface,
             borderWidth: 1.5,
@@ -309,9 +290,8 @@ export function LocationSearchInput({
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.18,
             shadowRadius: 8,
-            elevation: 8,
-            zIndex: 50,
-            maxHeight: 220,
+            elevation: 6,
+            zIndex: 999,
           }}
         >
           <View
@@ -337,75 +317,73 @@ export function LocationSearchInput({
             </Pressable>
           </View>
 
-          <View style={{ maxHeight: 180 }}>
-            {predictions.map((item, index) => (
-              <Pressable
-                key={item.placeId || `${item.description}-${index}`}
-                onPress={() => handleSelect(item)}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
+          {predictions.map((item, index) => (
+            <Pressable
+              key={item.placeId || `${item.description}-${index}`}
+              onPress={() => handleSelect(item)}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 11,
+                backgroundColor: pressed ? withAlpha(colors.goldAccent, 20) : 'transparent',
+                borderBottomWidth: index < predictions.length - 1 ? 1 : 0,
+                borderBottomColor: colors.cardBorder,
+              })}
+            >
+              <View
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  backgroundColor: withAlpha(colors.goldAccent, 20),
                   alignItems: 'center',
-                  paddingHorizontal: 12,
-                  paddingVertical: 11,
-                  backgroundColor: pressed ? withAlpha(colors.goldAccent, 20) : 'transparent',
-                  borderBottomWidth: index < predictions.length - 1 ? 1 : 0,
-                  borderBottomColor: colors.cardBorder,
-                })}
+                  justifyContent: 'center',
+                  marginRight: 10,
+                }}
               >
-                <View
+                <AppIcon name="place" size={16} color={colors.goldAccent} />
+              </View>
+
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text
+                  numberOfLines={1}
                   style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
-                    backgroundColor: withAlpha(colors.goldAccent, 20),
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 10,
+                    fontSize: 13,
+                    fontWeight: '700',
+                    color: colors.textPrimary,
                   }}
                 >
-                  <AppIcon name="place" size={16} color={colors.goldAccent} />
-                </View>
-
-                <View style={{ flex: 1, marginRight: 8 }}>
+                  {item.mainText || item.description}
+                </Text>
+                {item.secondaryText ? (
                   <Text
                     numberOfLines={1}
                     style={{
-                      fontSize: 13,
-                      fontWeight: '700',
-                      color: colors.textPrimary,
+                      fontSize: 11,
+                      color: colors.textMuted,
+                      marginTop: 2,
                     }}
                   >
-                    {item.mainText || item.description}
+                    {item.secondaryText}
                   </Text>
-                  {item.secondaryText ? (
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        fontSize: 11,
-                        color: colors.textMuted,
-                        marginTop: 2,
-                      }}
-                    >
-                      {item.secondaryText}
-                    </Text>
-                  ) : null}
-                </View>
+                ) : null}
+              </View>
 
-                <View
-                  style={{
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    borderRadius: 5,
-                    backgroundColor: withAlpha(colors.goldAccent, 24),
-                  }}
-                >
-                  <Text style={{ fontSize: 9, fontWeight: '800', color: colors.goldAccent }}>
-                    MAPS
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
+              <View
+                style={{
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 5,
+                  backgroundColor: withAlpha(colors.goldAccent, 24),
+                }}
+              >
+                <Text style={{ fontSize: 9, fontWeight: '800', color: colors.goldAccent }}>
+                  MAPS
+                </Text>
+              </View>
+            </Pressable>
+          ))}
         </View>
       )}
     </View>

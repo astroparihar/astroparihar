@@ -11,11 +11,11 @@ import { Keyboard, Platform, Pressable, View } from 'react-native';
 import Animated, { Easing, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '@/components/AppIcon';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { withAlpha } from '@/theme/colors';
 import { ralewayFamily } from '@/theme/fonts';
 import { useTranslation } from '@/theme/languageStore';
 import { useThemeColors } from '@/theme/themeStore';
-import { useCmsStore } from '@/services/cmsStore';
 
 type TabSpec = { route: string; labelKey: string; defaultLabel: string; icon: string; activeIcon: string; testID: string };
 
@@ -77,8 +77,19 @@ export function AppNavigation({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { accent, surface, textMuted, isLight } = useThemeColors();
   const { t } = useTranslation();
-  const cmsNavigation = useCmsStore((s) => s.config.navigation);
+  const cmsNavTabs = useAppScreensCmsStore((s) => s.config.navigation.tabs);
   const currentName = state.routes[state.index]?.name;
+
+  const dynamicSpecs: TabSpec[] = TAB_SPECS.map((base) => {
+    const match = (cmsNavTabs || []).find((c) => c.route === base.route);
+    if (!match) return base;
+    return {
+      ...base,
+      defaultLabel: match.label || base.defaultLabel,
+      icon: match.icon || base.icon,
+      activeIcon: match.activeIcon || base.activeIcon,
+    };
+  });
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   useEffect(() => {
@@ -109,49 +120,32 @@ export function AppNavigation({ state, navigation }: BottomTabBarProps) {
     >
       <View style={{ height: 68, borderRadius: 32, overflow: 'hidden' }}>
         <BlurView
-          intensity={38}
+          intensity={60}
           tint={isLight ? 'light' : 'dark'}
           experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
         <View
           style={{
-            flex: 1,
-            flexDirection: 'row',
-            borderRadius: 32,
-            borderWidth: 1,
-            borderColor: withAlpha(accent, 25),
-            backgroundColor: isLight ? 'rgba(255,255,255,0.10)' : 'rgba(12,15,22,0.14)',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: isLight ? 0.08 : 0.18,
-            shadowRadius: 12,
-            elevation: 6,
+            flex: 1, flexDirection: 'row', borderRadius: 32, borderWidth: 1,
+            borderColor: withAlpha(accent, 51), backgroundColor: withAlpha(surface, isLight ? 235 : 217),
           }}
         >
-          {TAB_SPECS.map((spec) => {
-            const live = Array.isArray(cmsNavigation?.tabs)
-              ? cmsNavigation.tabs.find((tab: any) => tab.route === spec.route)
-              : null;
-            const liveSpec = live ? {
-              ...spec,
-              labelKey: spec.labelKey,
-              defaultLabel: live.label || spec.defaultLabel,
-              icon: live.icon || spec.icon,
-              activeIcon: live.activeIcon || spec.activeIcon,
-            } : spec;
-            return (
-              <TabItem
-                key={spec.route}
-                spec={liveSpec}
-                label={live?.label || t(spec.labelKey, spec.defaultLabel)}
-                active={currentName === spec.route}
-                onPress={() => onTabTap(liveSpec)}
-                accent={accent}
-                muted={textMuted}
-              />
-            );
-          })}
+          {dynamicSpecs.map((spec) => (
+            <TabItem
+              key={spec.route}
+              spec={spec}
+              label={
+                spec.defaultLabel !== TAB_SPECS.find((b) => b.route === spec.route)?.defaultLabel
+                  ? spec.defaultLabel
+                  : t(spec.labelKey, spec.defaultLabel)
+              }
+              active={currentName === spec.route}
+              onPress={() => onTabTap(spec)}
+              accent={accent}
+              muted={textMuted}
+            />
+          ))}
         </View>
       </View>
     </View>

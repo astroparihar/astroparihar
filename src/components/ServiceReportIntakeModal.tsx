@@ -201,7 +201,7 @@ export function ServiceReportFormBody({ config, onSuccess, onCancel, isModal }: 
 
   const handlePickDob = async () => {
     const picked = await pickDate({
-      value: parseDobToDate(dob || '1995-10-15'),
+      value: parseDobToDate(dob),
       minimumDate: new Date(1920, 0, 1),
       maximumDate: new Date(),
     });
@@ -216,7 +216,7 @@ export function ServiceReportFormBody({ config, onSuccess, onCancel, isModal }: 
   };
 
   const handlePickTob = async () => {
-    const picked = await pickTime({ value: parseTimeToDate(tob || '10:30 AM') });
+    const picked = await pickTime({ value: parseTimeToDate(tob) });
     if (picked) {
       setTob(formatTimeOfDay(picked));
     }

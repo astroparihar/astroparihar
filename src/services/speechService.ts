@@ -14,14 +14,19 @@
  */
 
 import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
+import { API_ENDPOINTS } from '@/config/api';
+import {
+  isNeuralAudioReady,
+  playNeuralAudioBase64,
+  stopNeuralAudio,
+} from '@/components/NeuralAudioHost';
 
 export interface AstrologerSpeechOptions {
   language?: string;
   astrologerName?: string;
   astrologerId?: string;
-  voiceId?: string;
   gender?: 'male' | 'female';
+  voiceId?: string;
   onStart?: () => void;
   onDone?: () => void;
   onError?: (error: any) => void;
@@ -128,7 +133,7 @@ export function cleanTextForSpeech(raw: string, lang?: string): string {
   } else if (l.includes('tamil') || l.startsWith('ta')) {
     cleaned = cleaned
       .replace(/Acharya\s+Devavrat\s+Shastri/gi, 'ஆச்சார்ய தேவவ்ரத் சாஸ்திரி')
-      .replace(/Acharya\s+Devavrat/gi, 'ஆச்சார்ய దేవవ్రత్')
+      .replace(/Acharya\s+Devavrat/gi, 'ஆச்சார்ய தேவவ்ரத்')
       .replace(/Acharya\s+Dhananjay\s+Shastri/gi, 'ஆச்சார்ய தனஞ்சய் சாஸ்திரி')
       .replace(/Acharya\s+Dhananjay/gi, 'ஆச்சார்ய தனஞ்சய்')
       .replace(/Pandit\s+Radha\s+Raman/gi, 'பண்டிட் ராதாரமண்')
@@ -164,7 +169,7 @@ export function cleanTextForSpeech(raw: string, lang?: string): string {
       .replace(/Acharya\s+Devavrat\s+Shastri/gi, 'ആചാര്യ ദേവവ്രത് ശാസ്ത്രി')
       .replace(/Acharya\s+Devavrat/gi, 'ആചാര്യ ദേവവ്രത്')
       .replace(/Acharya\s+Dhananjay\s+Shastri/gi, 'ആചാര്യ ധനഞ്ജയ് ശാസ്ത്രി')
-      .replace(/Acharya\s+Dhananjay/gi, 'ആചാര്യ ധനంజയ്')
+      .replace(/Acharya\s+Dhananjay/gi, 'ആചാര്യ ധനഞ്ജയ്')
       .replace(/Pandit\s+Radha\s+Raman/gi, 'പണ്ഡിറ്റ് രാധാരമൺ')
       .replace(/Guruji\s+Sundararam/gi, 'ഗുരുജി സുന്ദരരാം')
       .replace(/Acharya/gi, 'ആചാര്യ')
@@ -261,11 +266,11 @@ export function isFemaleAstrologer(name?: string, gender?: string): boolean {
   return false;
 }
 
-// Android/iOS Male voice identifiers
+// Android/iOS Male voice identifiers (Studio Network HD & Local)
 const MALE_PATTERNS = [
   'male', 'man', 'boy', 'guy', 'david', 'ravi', 'mohan', 'madhav', 'kumar',
   'narayan', 'valluvar', 'george', 'mark', 'daniel', 'alex', 'oliver', 'tom',
-  'evan', 'fred', 'nathan', 'aaron', 'cove', 'echo', 'onyx', 'rishi', 'prabhat', 'anil', 'siddharth',
+  'evan', 'fred', 'nathan', 'aaron', 'cove', 'echo', 'onyx', 'ash', 'rishi', 'prabhat', 'anil', 'siddharth',
   '-tem-', 'tem-network', 'tem-local', '-tem', '_tem',
   '-hid-', 'hid-network', 'hid-local', '-hid', '_hid',
   '-hie-', 'hie-network', 'hie-local', '-hie', '_hie',
@@ -273,12 +278,14 @@ const MALE_PATTERNS = [
   '-him-', 'him-network', 'him-local', '-him', '_him',
   '-tpm-', 'tpm-network', 'tpm-local', '-tpm', '_tpm',
   '-tpb-', 'tpb-network', 'tpb-local', '-tpb', '_tpb',
+  '-tpd-', 'tpd-network', 'tpd-local', '-tpd', '_tpd',
+  '-iom-', 'iom-network', 'iom-local', '-iom', '_iom',
+  '-iol-', 'iol-network', 'iol-local', '-iol', '_iol',
   '-knm-', 'knm-network', 'knm-local', '-knm', '_knm',
   '-knd-', 'knd-network', 'knd-local', '-knd', '_knd',
   '-mlm-', 'mlm-network', 'mlm-local', '-mlm', '_mlm',
   '-mle-', 'mle-network', 'mle-local', '-mle', '_mle',
   '-end-', 'end-network', 'end-local', '-end', '_end',
-  '-enc-', 'enc-network', 'enc-local', '-enc', '_enc',
   '-ene-', 'ene-network', 'ene-local', '-ene', '_ene',
   '-enm-', 'enm-network', 'enm-local', '-enm', '_enm',
   '-dfm-', 'dfm-network', 'dfm-local', '-dfm', '_dfm',
@@ -287,23 +294,26 @@ const MALE_PATTERNS = [
   '_male', '-male', '#male', ':male', 'gender:male', 'gender=male'
 ];
 
-// Android/iOS Female voice identifiers
+// Android/iOS Female voice identifiers (Studio Network HD & Local)
 const FEMALE_PATTERNS = [
   'female', 'woman', 'girl', 'lady', 'zira', 'swara', 'heera', 'shruti', 'pallavi',
   'kalpana', 'samantha', 'ava', 'karen', 'moira', 'victoria', 'siri', 'juniper',
-  'nova', 'shimmer', 'breeze', 'allison', 'susan', 'fiona', 'veena', 'ananya', 'aditi',
+  'nova', 'shimmer', 'coral', 'sage', 'breeze', 'allison', 'susan', 'fiona', 'veena', 'ananya', 'aditi', 'neerja',
   '-tef-', 'tef-network', 'tef-local', '-tef', '_tef',
   '-tee-', 'tee-network', 'tee-local', '-tee', '_tee',
   '-hia-', 'hia-network', 'hia-local', '-hia', '_hia',
   '-hib-', 'hib-network', 'hib-local', '-hib', '_hib',
   '-taf-', 'taf-network', 'taf-local', '-taf', '_taf',
-  '-tpd-', 'tpd-network', 'tpd-local', '-tpd', '_tpd',
   '-tpf-', 'tpf-network', 'tpf-local', '-tpf', '_tpf',
+  '-iob-', 'iob-network', 'iob-local', '-iob', '_iob',
+  '-iog-', 'iog-network', 'iog-local', '-iog', '_iog',
+  '-sfg-', 'sfg-network', 'sfg-local', '-sfg', '_sfg',
   '-knf-', 'knf-network', 'knf-local', '-knf', '_knf',
   '-mlb-', 'mlb-network', 'mlb-local', '-mlb', '_mlb',
   '-mlf-', 'mlf-network', 'mlf-local', '-mlf', '_mlf',
   '-ena-', 'ena-network', 'ena-local', '-ena', '_ena',
   '-enb-', 'enb-network', 'enb-local', '-enb', '_enb',
+  '-enc-', 'enc-network', 'enc-local', '-enc', '_enc',
   '-enf-', 'enf-network', 'enf-local', '-enf', '_enf',
   '-dfc-', 'dfc-network', 'dfc-local', '-dfc', '_dfc',
   '-dff-', 'dff-network', 'dff-local', '-dff', '_dff',
@@ -335,165 +345,158 @@ async function resolveVoiceIdentifier(langCode: string, isFemale: boolean): Prom
     }
 
     const meta = getLanguageMetadata(langCode);
-    const normalizedLangs = new Set([
-      (langCode || '').toLowerCase(),
-      meta.bcp47.toLowerCase(),
-      meta.iso2,
-      meta.iso3,
-      ...(meta.tags || []).map((t) => String(t).toLowerCase()),
-    ]);
 
-    // Filter all voices matching this language AND prefer exact locale matches over any random installed voice.
+    // Filter all voices matching this language
     const matching = cachedVoices.filter((v) => {
       const vLang = (v.language || '').toLowerCase().replace(/_/g, '-');
-      const vName = (v.name || '').toLowerCase();
       const vId = (v.identifier || '').toLowerCase();
-      const exactLangMatch = Array.from(normalizedLangs).some((tag) =>
-        String(tag).length > 0 && (vLang === tag || vLang.startsWith(`${tag}-`) || vId.includes(tag) || vName.includes(tag))
-      );
-      const isoMatch =
+      return (
         vLang.startsWith(meta.iso2) ||
         vLang.startsWith(meta.iso3) ||
-        vId.includes(meta.iso2) ||
-        vName.includes(meta.iso2) ||
-        meta.tags.some((t) => {
-          const tag = String(t).toLowerCase();
-          return vLang.startsWith(tag) || vId.includes(tag) || vName.includes(tag);
-        });
-      return exactLangMatch || isoMatch;
+        meta.tags.some((t) => vLang.startsWith(t) || vId.includes(t))
+      );
     });
 
     if (matching.length === 0) {
-      // Do NOT fall back to a random English voice when the user selected a different language.
-      // Let the native OS TTS engine choose the best available voice for the requested language.
       return { voiceId: undefined, isNativeGenderMatched: false };
     }
 
     const premiumTags = ['enhanced', 'premium', 'natural', 'neural', 'wavenet', 'studio', 'high'];
 
+    const rankSmoothness = (v: Speech.Voice) => {
+      const id = `${v.name || ''} ${v.identifier || ''}`.toLowerCase();
+      let score = 0;
+      if (premiumTags.some((t) => id.includes(t))) score += 40;
+      if (id.includes('network')) score += 25; // Android Google HD Neural voices sound much smoother than robotic local voices
+      if (id.includes('en-in') || id.includes('en_in')) score += 10;
+      if (id.includes('local')) score += 5;
+      return score;
+    };
+
     if (!isFemale) {
-      // 1. Male Voice Search:
-      const maleCandidates = matching.filter((v) => {
-        const lower = `${v.name || ''} ${v.identifier || ''}`.toLowerCase();
-        const hasMale = MALE_PATTERNS.some((k) => lower.includes(k));
-        const hasFemale = FEMALE_PATTERNS.some((k) => lower.includes(k));
-        return hasMale && !hasFemale;
-      });
-
-      // Prefer local offline male voice
-      const localMale = maleCandidates.filter((v) => {
-        const lower = (v.identifier || '').toLowerCase();
-        return lower.includes('local') || !lower.includes('network');
-      });
-
-      if (localMale.length > 0) {
-        return { voiceId: localMale[0].identifier, isNativeGenderMatched: true };
-      }
+      // 1. Male Voice Search (prefer smooth HD network/neural male voices first):
+      const maleCandidates = matching
+        .filter((v) => {
+          const lower = `${v.name || ''} ${v.identifier || ''}`.toLowerCase();
+          const hasMale = MALE_PATTERNS.some((k) => lower.includes(k));
+          const hasFemale = FEMALE_PATTERNS.some((k) => lower.includes(k));
+          return hasMale && !hasFemale;
+        })
+        .sort((a, b) => rankSmoothness(b) - rankSmoothness(a));
 
       if (maleCandidates.length > 0) {
         return { voiceId: maleCandidates[0].identifier, isNativeGenderMatched: true };
       }
 
-      // No native male voice installed on device for this language (common in Telugu, Tamil, Kannada, Malayalam).
-      // Pick the reliable local offline voice for this language and use the Pandit baritone pitch modulator!
-      const localVoices = matching.filter((v) => {
-        const lower = (v.identifier || '').toLowerCase();
-        return lower.includes('local') || !lower.includes('network');
-      });
-
-      const fallbackLocal = localVoices.length > 0 ? localVoices[0] : matching[0];
-      return { voiceId: fallbackLocal?.identifier, isNativeGenderMatched: false };
+      // No native male voice installed on device for this language (common in some regional languages).
+      // Pick the smoothest voice for this language and apply a subtle baritone pitch shift.
+      const sorted = [...matching].sort((a, b) => rankSmoothness(b) - rankSmoothness(a));
+      return { voiceId: sorted[0]?.identifier, isNativeGenderMatched: false };
     } else {
-      // 2. Female Voice Search:
-      const femaleCandidates = matching.filter((v) => {
-        const lower = `${v.name || ''} ${v.identifier || ''}`.toLowerCase();
-        const hasFemale = FEMALE_PATTERNS.some((k) => lower.includes(k));
-        const hasMale = MALE_PATTERNS.some((k) => lower.includes(k));
-        return hasFemale && !hasMale;
-      });
-
-      const localFemale = femaleCandidates.filter((v) => {
-        const lower = (v.identifier || '').toLowerCase();
-        return lower.includes('local') || !lower.includes('network');
-      });
-
-      if (localFemale.length > 0) {
-        return { voiceId: localFemale[0].identifier, isNativeGenderMatched: true };
-      }
+      // 2. Female Voice Search (prefer smooth HD network/neural female voices first):
+      const femaleCandidates = matching
+        .filter((v) => {
+          const lower = `${v.name || ''} ${v.identifier || ''}`.toLowerCase();
+          const hasFemale = FEMALE_PATTERNS.some((k) => lower.includes(k));
+          const hasMale = MALE_PATTERNS.some((k) => lower.includes(k));
+          return hasFemale && !hasMale;
+        })
+        .sort((a, b) => rankSmoothness(b) - rankSmoothness(a));
 
       if (femaleCandidates.length > 0) {
         return { voiceId: femaleCandidates[0].identifier, isNativeGenderMatched: true };
       }
 
-      const localVoices = matching.filter((v) => {
-        const lower = (v.identifier || '').toLowerCase();
-        return lower.includes('local') || !lower.includes('network');
-      });
-
-      const fallbackLocal = localVoices.length > 0 ? localVoices[0] : matching[0];
-      return { voiceId: fallbackLocal?.identifier, isNativeGenderMatched: false };
+      const sorted = [...matching].sort((a, b) => rankSmoothness(b) - rankSmoothness(a));
+      return { voiceId: sorted[0]?.identifier, isNativeGenderMatched: false };
     }
   } catch {
     return { voiceId: undefined, isNativeGenderMatched: false };
   }
 }
 
-/**
- * Speak Astrologer response with 100% reliable voice synthesis and strict gender fidelity across ALL languages.
- * - Male Astrologers: Resonant, mature Pandit baritone (NO high-pitched girl voice in Telugu, Hindi, Tamil, Kannada, Malayalam).
- * - Female Astrologers: Sweet, soothing maternal voice.
- */
-export async function speakAstrologerText(
-  text: string,
-  options: AstrologerSpeechOptions = {}
-): Promise<void> {
-  const clean = cleanTextForSpeech(text, options.language);
-  if (!clean) {
-    options.onDone?.();
-    return;
-  }
-
-  // Invalidate any ongoing or queued speech
-  activeSpeechId += 1;
-  const currentToken = activeSpeechId;
-
-  // Safely stop existing speech only if audio is actively playing, allowing audio pipeline to flush
+async function fetchSmoothNeuralAudioChunk(params: {
+  text: string;
+  lang: string;
+  gender: 'male' | 'female';
+  voiceId?: string;
+  astrologerId?: string;
+  astrologerName?: string;
+}): Promise<string | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 9000);
   try {
-    const isSpeaking = await Speech.isSpeakingAsync().catch(() => false);
-    if (isSpeaking) {
-      await Speech.stop().catch(() => {});
-      await new Promise((resolve) => setTimeout(resolve, 70));
+    const res = await fetch(API_ENDPOINTS.tts, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: params.text,
+        lang: params.lang,
+        gender: params.gender,
+        voiceId: params.voiceId,
+        astrologerId: params.astrologerId,
+        astrologerName: params.astrologerName,
+        format: 'json',
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const voiceUsed = String(data?.voiceUsed || '').toLowerCase();
+    // Only use remote audio if the server synthesized a genuine gender-specific studio voice
+    // (OpenAI ChatGPT gpt-4o-mini-tts / tts-1-hd or true neural voice).
+    // Reject single-voice generic fallbacks (e.g. Google Translate fallback:*) so Male and Female
+    // astrologers ALWAYS keep strictly separate, smooth voices on-device until studio TTS is active.
+    const isGenuineStudioVoice =
+      data?.provider === 'openai' ||
+      voiceUsed.startsWith('openai:') ||
+      voiceUsed.startsWith('neural:');
+    if (
+      data?.success &&
+      isGenuineStudioVoice &&
+      typeof data.audioBase64 === 'string' &&
+      data.audioBase64.length > 64
+    ) {
+      return data.audioBase64;
     }
-  } catch {}
+    return null;
+  } catch {
+    clearTimeout(timeout);
+    return null;
+  }
+}
 
-  const chunks = splitIntoSpeechChunks(clean, 180);
+async function speakWithDeviceFallback(
+  textToSpeak: string,
+  currentToken: number,
+  meta: LanguageMeta,
+  isFemale: boolean,
+  options: AstrologerSpeechOptions,
+  alreadyStarted: boolean
+): Promise<void> {
+  if (currentToken !== activeSpeechId) return;
+  const chunks = splitIntoSpeechChunks(textToSpeak, 180);
   if (chunks.length === 0) {
     options.onDone?.();
     return;
   }
 
-  const meta = getLanguageMetadata(options.language);
-  const isFemale = isFemaleAstrologer(options.astrologerName, options.gender);
-
   const resolved = await resolveVoiceIdentifier(meta.bcp47, isFemale);
+  if (currentToken !== activeSpeechId) return;
   let currentVoiceId = resolved.voiceId;
 
-  // Natural Acoustic Timbre Modulation (ChatGPT-style smooth, clear human voices):
-  let pitch = 1.00;
+  let pitch = 1.0;
   let rate = 0.98;
-
   if (!isFemale) {
-    // MALE ASTROLOGER (Acharya Devavrat / Dhananjay / Swami / Pandit / Bhaskar)
     if (resolved.isNativeGenderMatched) {
       pitch = 0.96;
       rate = 0.98;
     } else {
-      // Natural, warm Pandit baritone without robotic slowdown or distortion
       pitch = 0.88;
       rate = 0.96;
     }
   } else {
-    // FEMALE ASTROLOGER (Devi / Mata / Ananya / Vedika / Priya)
     if (resolved.isNativeGenderMatched) {
       pitch = 1.02;
       rate = 0.98;
@@ -503,24 +506,23 @@ export async function speakAstrologerText(
     }
   }
 
-  options.onStart?.();
+  if (!alreadyStarted) {
+    options.onStart?.();
+  }
 
   let chunkIndex = 0;
   let hasRetriedCurrentChunk = false;
 
   const speakNext = () => {
     if (currentToken !== activeSpeechId) return;
-
     if (chunkIndex >= chunks.length) {
       options.onDone?.();
       return;
     }
 
     const chunk = chunks[chunkIndex];
-    const langToSpeak = meta.bcp47;
-
     Speech.speak(chunk, {
-      language: langToSpeak,
+      language: meta.bcp47,
       voice: currentVoiceId,
       pitch,
       rate,
@@ -531,19 +533,14 @@ export async function speakAstrologerText(
           speakNext();
         }
       },
-      onError: (err) => {
-        console.warn('Speech chunk error for language:', meta.bcp47, err);
+      onError: () => {
         if (currentToken !== activeSpeechId) return;
-
-        // If specific voice ID failed, retry ONCE with fallback default voice using the deep male pitch
         if (currentVoiceId && !hasRetriedCurrentChunk) {
           currentVoiceId = undefined;
           hasRetriedCurrentChunk = true;
           speakNext();
           return;
         }
-
-        // Advance to next chunk so recitation never stalls
         chunkIndex += 1;
         hasRetriedCurrentChunk = false;
         if (chunkIndex < chunks.length) {
@@ -570,16 +567,133 @@ export async function speakAstrologerText(
 }
 
 /**
+ * Speak Astrologer response with smooth, ChatGPT-style studio neural Male & Female voices.
+ * - Primary: Server neural voice engine (/api/tts: OpenAI ChatGPT gpt-4o-mini-tts -> Microsoft Studio Neural)
+ *   with strict Male / Female voice separation and look-ahead chunk prefetching for gapless smooth flow.
+ * - Fallback: Tuned on-device expo-speech if offline or remote audio cannot play.
+ */
+export async function speakAstrologerText(
+  text: string,
+  options: AstrologerSpeechOptions = {}
+): Promise<void> {
+  const clean = cleanTextForSpeech(text, options.language);
+  if (!clean) {
+    options.onDone?.();
+    return;
+  }
+
+  // Invalidate any ongoing or queued speech
+  activeSpeechId += 1;
+  const currentToken = activeSpeechId;
+
+  // Immediately silence both neural audio and native device speech
+  stopNeuralAudio();
+  try {
+    const isSpeaking = await Speech.isSpeakingAsync().catch(() => false);
+    if (isSpeaking) {
+      await Speech.stop().catch(() => { });
+    }
+  } catch { }
+
+  if (currentToken !== activeSpeechId) return;
+
+  const meta = getLanguageMetadata(options.language);
+  const isFemale = isFemaleAstrologer(options.astrologerName, options.gender);
+  const resolvedGender: 'male' | 'female' = isFemale ? 'female' : 'male';
+
+  // Primary Path: Smooth ChatGPT-Style Studio Neural Voice (/api/tts)
+  if (isNeuralAudioReady()) {
+    const neuralChunks = splitIntoSpeechChunks(clean, 420);
+    if (neuralChunks.length > 0) {
+      let hasNotifiedStart = false;
+
+      // Kick off chunk 0 synthesis right away
+      let nextFetchPromise: Promise<string | null> | null = fetchSmoothNeuralAudioChunk({
+        text: neuralChunks[0],
+        lang: meta.iso2,
+        gender: resolvedGender,
+        voiceId: options.voiceId,
+        astrologerId: options.astrologerId,
+        astrologerName: options.astrologerName,
+      });
+
+      for (let i = 0; i < neuralChunks.length; i++) {
+        if (currentToken !== activeSpeechId) return;
+
+        const audioBase64 = nextFetchPromise ? await nextFetchPromise : null;
+        if (currentToken !== activeSpeechId) return;
+
+        // Pre-fetch chunk i+1 in parallel while chunk i plays for seamless ChatGPT-like flow
+        if (i + 1 < neuralChunks.length) {
+          nextFetchPromise = fetchSmoothNeuralAudioChunk({
+            text: neuralChunks[i + 1],
+            lang: meta.iso2,
+            gender: resolvedGender,
+            voiceId: options.voiceId,
+            astrologerId: options.astrologerId,
+            astrologerName: options.astrologerName,
+          });
+        } else {
+          nextFetchPromise = null;
+        }
+
+        if (!audioBase64) {
+          // Smoothly finish remaining text using device fallback so speech never cuts off
+          const remaining = neuralChunks.slice(i).join(' ');
+          await speakWithDeviceFallback(
+            remaining,
+            currentToken,
+            meta,
+            isFemale,
+            options,
+            hasNotifiedStart
+          );
+          return;
+        }
+
+        const played = await playNeuralAudioBase64(audioBase64, {
+          onStart: () => {
+            if (currentToken === activeSpeechId && !hasNotifiedStart) {
+              hasNotifiedStart = true;
+              options.onStart?.();
+            }
+          },
+        });
+
+        if (currentToken !== activeSpeechId) return;
+
+        if (!played) {
+          const remaining = neuralChunks.slice(i).join(' ');
+          await speakWithDeviceFallback(
+            remaining,
+            currentToken,
+            meta,
+            isFemale,
+            options,
+            hasNotifiedStart
+          );
+          return;
+        }
+      }
+
+      if (currentToken === activeSpeechId) {
+        options.onDone?.();
+      }
+      return;
+    }
+  }
+
+  // Fallback Path: On-device tuned TTS when NeuralAudioHost is not mounted or offline
+  await speakWithDeviceFallback(clean, currentToken, meta, isFemale, options, false);
+}
+
+/**
  * Stop active speech and cancel any pending queued chunks immediately
  */
 export async function stopAstrologerSpeech(): Promise<void> {
-  activeSpeechId += 1;
+  activeSpeechId += 1; // Invalidate current speech queue
+  stopNeuralAudio();
   try {
-    if (activeRemoteSound) {
-      await activeRemoteSound.stopAsync().catch(() => {});
-      await activeRemoteSound.unloadAsync().catch(() => {});
-      activeRemoteSound = null;
-    }
     await Speech.stop();
   } catch (err) {
     console.warn('Error stopping speech:', err);
@@ -594,45 +708,5 @@ export async function isAstrologerSpeaking(): Promise<boolean> {
     return await Speech.isSpeakingAsync();
   } catch {
     return false;
-  }
-}
-
-let activeRemoteSound: Audio.Sound | null = null;
-
-async function fetchStudioChunk(text: string, options: AstrologerSpeechOptions): Promise<{ base64: string } | null> {
-  try {
-    const lang = getLanguageCode(options.language);
-    const gender = isFemaleAstrologer(options.astrologerName, options.gender) ? 'female' : 'male';
-    const res = await fetch('https://astroparihar.com/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        text,
-        lang,
-        gender,
-        voiceId: options.voiceId,
-        astrologerId: options.astrologerId,
-        astrologerName: options.astrologerName,
-        format: 'json',
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const providerOk = data?.provider === 'openai' || /^openai:|^neural:/i.test(String(data?.voiceUsed || ''));
-    const fallback = /^fallback:/i.test(String(data?.voiceUsed || ''));
-    if (!providerOk || fallback || typeof data?.audioBase64 !== 'string' || !data.audioBase64) return null;
-    return { base64: data.audioBase64 };
-  } catch { return null; }
-}
-
-async function configureIosSpeechAudioSession() {
-  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-      shouldDuckAndroid: true,
-      interruptionModeIOS: 1,
-      interruptionModeAndroid: 1,
-    }).catch(() => {});
   }
 }

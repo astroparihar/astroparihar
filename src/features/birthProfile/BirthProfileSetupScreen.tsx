@@ -8,20 +8,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, LayoutAnimation, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Keyboard, LayoutAnimation, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedBox, AnimatedPressable, switcherEntering } from '@/components/AnimatedBox';
 import { AppIcon } from '@/components/AppIcon';
 import { ElevatedButton } from '@/components/common';
 import { showSnackBar } from '@/components/overlays';
-import { formatTimeOfDay, normalizeDobForStorage, normalizeTimeForStorage, pickDate, pickTime } from '@/components/pickers';
+import { formatTimeOfDay, pickDate, pickTime } from '@/components/pickers';
 import { LocationSearchInput } from '@/components/LocationSearchInput';
 import { lh, Text, TextInput } from '@/components/Text';
 import { API_ENDPOINTS } from '@/config/api';
 import { useAuthStore } from '@/features/auth/authStore';
 import { AppRoutes, go, push } from '@/navigation/routes';
 import { fetchCalculatedKundli } from '@/services/astrologyService';
+import { fillCmsTemplate, useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { AppColors, withAlpha } from '@/theme/colors';
 import { useThemeColors } from '@/theme/themeStore';
 
@@ -47,10 +48,12 @@ function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
 
 function ProfileTypeSelector({ selectedType, onTypeSelected }: { selectedType: string; onTypeSelected: (t: string) => void }) {
   const colors = useThemeColors();
+  const cms = useAppScreensCmsStore((s) => s.config.birthProfileSetup);
+  const profileTypes = cms.profileTypes?.length ? cms.profileTypes : PROFILE_TYPES;
   return (
     <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
-      <StepTitle title={'Who is this\nprofile for?'} subtitle="Create profiles for yourself and your loved ones." />
-      {PROFILE_TYPES.map((t) => {
+      <StepTitle title={cms.step1Title} subtitle={cms.step1Subtitle} />
+      {profileTypes.map((t) => {
         const sel = selectedType === t.label;
         return (
           <AnimatedPressable
@@ -108,19 +111,21 @@ function BirthDetailsForm(p: {
   date: Date | null; setDate: (d: Date) => void; time: Date | null; setTime: (d: Date) => void;
 }) {
   const colors = useThemeColors();
+  const cms = useAppScreensCmsStore((s) => s.config.birthProfileSetup);
+  const genderOpts = cms.genderOptions?.length ? cms.genderOptions : GENDER_OPTIONS;
   return (
     <ScrollView
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160 }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
-      <StepTitle title={'Your Birth\nDetails'} subtitle="Accurate details help us generate your precise Kundli." />
-      <GlassField label="Full Name">
+      <StepTitle title={cms.step2Title} subtitle={cms.step2Subtitle} />
+      <GlassField label={cms.fullNameLabel}>
         <TextInput
           testID="birthProfile.name"
           value={p.name}
           onChangeText={p.setName}
-          placeholder="Enter your full name"
+          placeholder={cms.fullNamePlaceholder}
           placeholderTextColor={colors.textMuted}
           style={{ color: colors.textPrimary, fontSize: 16 }}
         />
@@ -138,7 +143,7 @@ function BirthDetailsForm(p: {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-            Gender
+            {cms.genderLabel}
           </Text>
           {p.gender ? (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -151,7 +156,7 @@ function BirthDetailsForm(p: {
         </View>
 
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {GENDER_OPTIONS.map((opt) => {
+          {genderOpts.map((opt) => {
             const sel = p.gender === opt.label;
             return (
               <AnimatedPressable
@@ -224,11 +229,11 @@ function BirthDetailsForm(p: {
           if (d) p.setDate(d);
         }}
       >
-        <GlassField label="Date of Birth">
+        <GlassField label={cms.dobLabel}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <AppIcon name="calendar_month_rounded" color={colors.goldAccent} size={20} />
             <Text style={{ marginLeft: 12, fontSize: 15, color: p.date ? colors.textPrimary : colors.textMuted }}>
-              {p.date ? `${p.date.getDate()} / ${p.date.getMonth() + 1} / ${p.date.getFullYear()}` : 'Select date of birth'}
+              {p.date ? `${p.date.getDate()} / ${p.date.getMonth() + 1} / ${p.date.getFullYear()}` : cms.dobPlaceholder}
             </Text>
           </View>
         </GlassField>
@@ -241,18 +246,18 @@ function BirthDetailsForm(p: {
           if (t) p.setTime(t);
         }}
       >
-        <GlassField label="Birth Time">
+        <GlassField label={cms.timeLabel}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <AppIcon name="access_time_rounded" color={colors.goldAccent} size={20} />
             <Text style={{ marginLeft: 12, fontSize: 15, color: p.time ? colors.textPrimary : colors.textMuted }}>
-              {p.time ? formatTimeOfDay(p.time) : 'Select birth time'}
+              {p.time ? formatTimeOfDay(p.time) : cms.timePlaceholder}
             </Text>
           </View>
         </GlassField>
       </Pressable>
       <View style={{ marginTop: 12, padding: 14, borderRadius: 12, backgroundColor: withAlpha(colors.goldAccent, colors.isLight ? 20 : 25), borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center' }}>
         <AppIcon name="info_outline_rounded" color={colors.goldAccent} size={16} />
-        <Text style={{ marginLeft: 10, flex: 1, color: colors.textSecondary, fontSize: 12 }}>Accurate birth time helps us provide more personalised insights.</Text>
+        <Text style={{ marginLeft: 10, flex: 1, color: colors.textSecondary, fontSize: 12 }}>{cms.accuracyTip}</Text>
       </View>
     </ScrollView>
   );
@@ -260,19 +265,20 @@ function BirthDetailsForm(p: {
 
 /* ---------------------------------------------------------------- step 2 */
 function BirthPlace({ value, onChange }: { value: string; onChange: (s: string) => void }) {
+  const cms = useAppScreensCmsStore((s) => s.config.birthProfileSetup);
   return (
     <ScrollView
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160 }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
-      <StepTitle title={'Your Birth\nPlace'} subtitle="Enter the city and country where you were born." />
+      <StepTitle title={cms.step3Title} subtitle={cms.step3Subtitle} />
       <LocationSearchInput
         value={value}
         onChangeText={onChange}
         required
-        label="Birth Place (City, State, Country)"
-        placeholder="Enter birth place (e.g. Mumbai)"
+        label={cms.birthPlaceLabel}
+        placeholder={cms.birthPlacePlaceholder}
         style={{ marginTop: 8 }}
       />
     </ScrollView>
@@ -282,6 +288,7 @@ function BirthPlace({ value, onChange }: { value: string; onChange: (s: string) 
 /* ---------------------------------------------------------------- screen */
 export default function BirthProfileSetupScreen() {
   const colors = useThemeColors();
+  const cms = useAppScreensCmsStore((s) => s.config.birthProfileSetup);
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [currentStep, setCurrentStep] = useState(0);
@@ -333,14 +340,8 @@ export default function BirthProfileSetupScreen() {
     const cleanPhone = pendingAuth?.phone ? pendingAuth.phone.replace(/\D/g, '') : '';
     const uid = pendingAuth?.uid || (cleanPhone ? `phone_${cleanPhone}` : `user_${Date.now()}`);
     const phone = pendingAuth?.phone || '';
-    const formattedDob = normalizeDobForStorage(date);
-    const formattedTob = normalizeTimeForStorage(time);
-
-    if (!formattedDob || !formattedTob) {
-      showSnackBar('Please enter your date of birth and birth time', '#CF4444');
-      setSaving(false);
-      return;
-    }
+    const formattedDob = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '';
+    const formattedTob = time ? formatTimeOfDay(time) : '';
 
     let calculatedZodiac = 'Scorpio';
     let calculatedMoonSign = 'Cancer';
@@ -421,7 +422,7 @@ export default function BirthProfileSetupScreen() {
       await AsyncStorage.setItem('astroparihar_birth_profiles', JSON.stringify([primaryProfileItem]));
     } catch { }
 
-    showSnackBar('Cosmic Birth Profile successfully registered!');
+    showSnackBar(cms.successToast);
     const redirect = useAuthStore.getState().postLoginRedirect;
     if (redirect) {
       useAuthStore.getState().setPostLoginRedirect(null);
@@ -438,7 +439,7 @@ export default function BirthProfileSetupScreen() {
   const nextStep = () => {
     if (currentStep === 0) {
       if (!profileType) {
-        showSnackBar('Please select who this profile is for', '#CF4444');
+        showSnackBar(cms.validationMessages.selectProfileType, '#CF4444');
         return;
       }
       setCurrentStep(1);
@@ -447,19 +448,19 @@ export default function BirthProfileSetupScreen() {
 
     if (currentStep === 1) {
       if (!name.trim()) {
-        showSnackBar('Please enter your full name', '#CF4444');
+        showSnackBar(cms.validationMessages.enterName, '#CF4444');
         return;
       }
       if (!gender) {
-        showSnackBar('Please select your gender', '#CF4444');
+        showSnackBar(cms.validationMessages.selectGender, '#CF4444');
         return;
       }
       if (!date) {
-        showSnackBar('Please select your date of birth', '#CF4444');
+        showSnackBar(cms.validationMessages.selectDob, '#CF4444');
         return;
       }
       if (!time) {
-        showSnackBar('Please select your birth time', '#CF4444');
+        showSnackBar(cms.validationMessages.selectTime, '#CF4444');
         return;
       }
       setCurrentStep(2);
@@ -468,7 +469,7 @@ export default function BirthProfileSetupScreen() {
 
     if (currentStep === 2) {
       if (!birthPlace.trim()) {
-        showSnackBar('Please enter your birth place / location', '#CF4444');
+        showSnackBar(cms.validationMessages.enterBirthPlace, '#CF4444');
         return;
       }
       handleCompleteSetup();
@@ -488,8 +489,10 @@ export default function BirthProfileSetupScreen() {
           <AppIcon name="arrow_back_ios_new_rounded" color={colors.textPrimary} size={18} />
         </Pressable>
         <View style={{ marginLeft: 16, flex: 1 }}>
-          <Text style={{ color: colors.textPrimary, fontSize: 20, fontWeight: '700' }}>Birth Profile</Text>
-          <Text style={{ color: colors.textMuted, fontSize: 12 }}>{`Step ${currentStep + 1} of 3 • Mandatory`}</Text>
+          <Text style={{ color: colors.textPrimary, fontSize: 20, fontWeight: '700' }}>{cms.headerTitle}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+            {fillCmsTemplate(cms.stepSubtitleTemplate, { step: currentStep + 1 })}
+          </Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -500,23 +503,17 @@ export default function BirthProfileSetupScreen() {
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 28 : 0}
-      >
-        <View style={{ flex: 1 }}>
-          <Animated.View key={`step${currentStep}`} style={{ flex: 1 }} entering={switcherEntering(width * 0.05, 350)}>
-            {currentStep === 0 ? (
-              <ProfileTypeSelector selectedType={profileType} onTypeSelected={setProfileType} />
-            ) : currentStep === 1 ? (
-              <BirthDetailsForm name={name} setName={setName} gender={gender} setGender={setGender} date={date} setDate={setDate} time={time} setTime={setTime} />
-            ) : (
-              <BirthPlace value={birthPlace} onChange={setBirthPlace} />
-            )}
-          </Animated.View>
-        </View>
-      </KeyboardAvoidingView>
+      <View style={{ flex: 1 }}>
+        <Animated.View key={`step${currentStep}`} style={{ flex: 1 }} entering={switcherEntering(width * 0.05, 350)}>
+          {currentStep === 0 ? (
+            <ProfileTypeSelector selectedType={profileType} onTypeSelected={setProfileType} />
+          ) : currentStep === 1 ? (
+            <BirthDetailsForm name={name} setName={setName} gender={gender} setGender={setGender} date={date} setDate={setDate} time={time} setTime={setTime} />
+          ) : (
+            <BirthPlace value={birthPlace} onChange={setBirthPlace} />
+          )}
+        </Animated.View>
+      </View>
 
       <View
         style={{
@@ -534,12 +531,12 @@ export default function BirthProfileSetupScreen() {
             onPress={prevStep}
             style={{ flex: 1, marginRight: 12, paddingVertical: 18, borderRadius: 100, borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center', backgroundColor: colors.surfaceVariant }}
           >
-            <Text style={{ color: colors.goldAccent, fontSize: 15, fontWeight: '600' }}>Back</Text>
+            <Text style={{ color: colors.goldAccent, fontSize: 15, fontWeight: '600' }}>{cms.backButton}</Text>
           </Pressable>
         ) : null}
         <ElevatedButton
           testID="birthProfile.next"
-          label={saving ? 'Saving...' : currentStep < 2 ? 'Continue' : 'Complete Setup'}
+          label={saving ? cms.savingLabel : currentStep < 2 ? cms.continueButton : cms.completeButton}
           onPress={nextStep}
           disabled={saving}
           style={{ flex: 2 }}

@@ -20,10 +20,16 @@ import { BottomSheet } from '@/components/overlays';
 import { Text, TextInput } from '@/components/Text';
 import { AstrologerData } from '@/data/astrologers';
 import { useAuthStore } from '@/features/auth/authStore';
-import { fetchAiAstrologers, fetchRealAstrologers } from '@/services/homeDataService';
+import {
+  DEFAULT_REAL_ASTROLOGERS,
+  fetchAiAstrologers,
+  fetchRealAstrologers,
+  STORAGE_REAL_ASTROLOGERS_KEY,
+} from '@/services/homeDataService';
 import { generateZegoRoomId } from '@/services/zegoService';
 import { AppRoutes, push } from '@/navigation/routes';
 import { useCurrencyStore } from '@/services/currencyStore';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { argb, withAlpha } from '@/theme/colors';
 import { useThemeColors } from '@/theme/themeStore';
 
@@ -40,6 +46,7 @@ function SearchHeader({
   onFilterTap: () => void;
 }) {
   const colors = useThemeColors();
+  const cms = useAppScreensCmsStore((s) => s.config.liveAstrologers);
   const isReal = astrologerType === 'real';
 
   return (
@@ -47,15 +54,15 @@ function SearchHeader({
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ flex: 1 }}>
           <Text style={{ color: colors.textPrimary, fontSize: 20, fontWeight: '800' }}>
-            {isReal ? 'Verified Real Astrologers' : '24/7 AI Astrologers'}
+            {isReal ? cms.realHeaderTitle : cms.aiHeaderTitle}
           </Text>
           <Text style={{ color: colors.isLight ? '#7C5205' : colors.goldAccent, fontSize: 11, fontWeight: '600', marginTop: 1 }}>
-            {isReal ? 'Authentic Human Masters from Backend Onboarding' : 'Autonomous Astronomical Engine with AstroParihar AI'}
+            {isReal ? cms.realHeaderSubtitle : cms.aiHeaderSubtitle}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 100, backgroundColor: colors.isLight ? '#DCFCE7' : argb('1A3DCB7A'), borderWidth: 1, borderColor: colors.isLight ? '#86EFAC' : argb('333DCB7A') }}>
           <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.isLight ? '#16A34A' : '#3DCB7A' }} />
-          <Text style={{ marginLeft: 5, color: colors.isLight ? '#15803D' : '#3DCB7A', fontSize: 12, fontWeight: '700' }}>{`${onlineCount} Online`}</Text>
+          <Text style={{ marginLeft: 5, color: colors.isLight ? '#15803D' : '#3DCB7A', fontSize: 12, fontWeight: '700' }}>{`${onlineCount} ${cms.onlineSuffix}`}</Text>
         </View>
       </View>
       <View style={{ flexDirection: 'row', marginTop: 12 }}>
@@ -64,7 +71,7 @@ function SearchHeader({
           <TextInput
             testID="liveAstrologers.search"
             onChangeText={onSearchChanged}
-            placeholder={isReal ? 'Search real astrologers by name or specialty...' : 'Search AI astrological guides...'}
+            placeholder={isReal ? cms.realSearchPlaceholder : cms.aiSearchPlaceholder}
             placeholderTextColor={colors.isLight ? '#8E99A8' : '#6B7A99'}
             style={{ flex: 1, marginLeft: 10, color: colors.textPrimary, fontSize: 14 }}
           />
@@ -105,10 +112,12 @@ const CATEGORIES = [
 ];
 function CategoryChips({ selected, onSelect }: { selected: string; onSelect: (c: string) => void }) {
   const colors = useThemeColors();
+  const cmsCategories = useAppScreensCmsStore((s) => s.config.liveAstrologers.categories);
+  const categoriesList = cmsCategories && cmsCategories.length > 0 ? cmsCategories : CATEGORIES;
   return (
     <View style={{ height: 48 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 6, alignItems: 'center' }}>
-        {CATEGORIES.map((c) => {
+        {categoriesList.map((c) => {
           const sel = selected === c.label;
           return (
             <AnimatedPressable
@@ -156,6 +165,8 @@ export const AI_ASTROLOGERS_DATA: AstrologerData[] = [
     semanticLabel: 'Revered Vedic Acharya with sacred saffron robes',
     category: 'Vedic',
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'ash',
     isFeatured: true,
     discount: 'Free 3 min trial',
   },
@@ -175,6 +186,8 @@ export const AI_ASTROLOGERS_DATA: AstrologerData[] = [
     semanticLabel: 'Authority on Vedic Dosh Nivaran from Ujjain',
     category: 'Remedies',
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'onyx',
     isFeatured: true,
     discount: 'Instant <1s reply',
   },
@@ -194,6 +207,8 @@ export const AI_ASTROLOGERS_DATA: AstrologerData[] = [
     semanticLabel: 'Autonomous celestial AI sage',
     category: 'Spirituality',
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'onyx',
     isFeatured: false,
     discount: 'Top Spiritual AI Seer',
   },
@@ -213,6 +228,8 @@ export const AI_ASTROLOGERS_DATA: AstrologerData[] = [
     semanticLabel: 'Warm compassionate female Vedic astrologer',
     category: 'Marriage',
     isAi: true,
+    voiceGender: 'female',
+    voiceId: 'coral',
     isFeatured: false,
     discount: '98% Compatibility Accuracy',
   },
@@ -232,6 +249,8 @@ export const AI_ASTROLOGERS_DATA: AstrologerData[] = [
     semanticLabel: 'Sharp modern Vedic astrologer in traditional attire',
     category: 'Career',
     isAi: true,
+    voiceGender: 'male',
+    voiceId: 'echo',
     isFeatured: false,
     discount: 'Promotion & Job Timing',
   },
@@ -263,6 +282,8 @@ export function AstrologerCard({ data, index }: { data: AstrologerData; index: n
         astrologerId: data.id as string,
         astrologerName: data.name,
         avatarUrl: data.imageUrl,
+        ...(data.voiceGender ? { voiceGender: data.voiceGender } : {}),
+        ...(data.voiceId ? { voiceId: data.voiceId } : {}),
       });
     } else {
       push(AppRoutes.astrologerDetailScreen, data);
@@ -288,6 +309,7 @@ export function AstrologerCard({ data, index }: { data: AstrologerData; index: n
 
   const id = `liveAstrologers.card.${index}`;
   const colors = useThemeColors();
+  const cms = useAppScreensCmsStore((s) => s.config.liveAstrologers);
   const formatRate = useCurrencyStore((s) => s.formatRate);
   const pricingSettings = useCurrencyStore((s) => s.pricingSettings);
   const defaultRate = pricingSettings.humanAstrologerDefaultRate || 25;
@@ -366,7 +388,7 @@ export function AstrologerCard({ data, index }: { data: AstrologerData; index: n
                     fontWeight: '800',
                   }}
                 >
-                  🔴 OFFLINE
+                  {cms.cardOfflineBadge}
                 </Text>
               </View>
             )}
@@ -463,7 +485,7 @@ export function AstrologerCard({ data, index }: { data: AstrologerData; index: n
                   }}
                 >
                   <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700' }}>
-                    View Profile →
+                    {cms.cardViewProfile}
                   </Text>
                 </Pressable>
               ) : (
@@ -483,7 +505,7 @@ export function AstrologerCard({ data, index }: { data: AstrologerData; index: n
                   >
                     <AppIcon name={isAi ? 'auto_awesome_rounded' : 'chat_bubble_outline_rounded'} color="#FFFFFF" size={12} />
                     <Text style={{ marginLeft: 4, color: '#FFFFFF', fontSize: 11.5, fontWeight: '700' }}>
-                      {isAi ? 'Chat AI' : 'Chat'}
+                      {isAi ? cms.cardChatAi : cms.cardChat}
                     </Text>
                   </Pressable>
 
@@ -504,7 +526,7 @@ export function AstrologerCard({ data, index }: { data: AstrologerData; index: n
                   >
                     <AppIcon name={isAi ? 'headset_mic_rounded' : 'call_rounded'} color={colors.isLight ? '#8B5E0D' : colors.goldAccent} size={12} />
                     <Text style={{ marginLeft: 4, color: colors.isLight ? '#8B5E0D' : colors.goldAccent, fontSize: 11.5, fontWeight: '700' }}>
-                      {isAi ? 'Voice AI' : 'Call'}
+                      {isAi ? cms.cardVoiceAi : cms.cardCall}
                     </Text>
                   </Pressable>
                 </>
@@ -581,27 +603,35 @@ function ChipGroup({
 
 function FilterSheet({
   onlineOnly,
+  astrologerType,
   onOnlineChanged,
   onClose,
 }: {
   onlineOnly: boolean;
+  astrologerType: 'real' | 'ai';
   onOnlineChanged: (v: boolean) => void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const fs = useAppScreensCmsStore((s) => s.config.liveAstrologers.filterSheet);
+  const currencyCode = useCurrencyStore((s) => s.currencyCode);
+  const defaultSort = fs.sortOptions?.[0] || 'Top Rated';
+  const defaultPrice = (currencyCode === 'INR' ? fs.priceOptionsInr?.[0] : fs.priceOptionsUsd?.[0]) || 'All';
+  const defaultGender = fs.genderOptions?.[0] || 'All';
+  const defaultLang = fs.languageOptions?.[0] || 'All';
   const [online, setOnline] = useState(onlineOnly);
-  const [sort, setSort] = useState('Top Rated');
-  const [price, setPrice] = useState('All');
-  const [gender, setGender] = useState('All');
-  const [language, setLanguage] = useState('All');
+  const [sort, setSort] = useState(defaultSort);
+  const [price, setPrice] = useState(defaultPrice);
+  const [gender, setGender] = useState(defaultGender);
+  const [language, setLanguage] = useState(defaultLang);
 
   const handleReset = () => {
     setOnline(false);
-    setSort('Top Rated');
-    setPrice('All');
-    setGender('All');
-    setLanguage('All');
+    setSort(defaultSort);
+    setPrice(defaultPrice);
+    setGender(defaultGender);
+    setLanguage(defaultLang);
   };
 
   return (
@@ -644,10 +674,10 @@ function FilterSheet({
           </View>
           <View>
             <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: '800' }}>
-              Filter Astrologers
+              {fs.title}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-              Refine verified masters & consultations
+              {fs.subtitle}
             </Text>
           </View>
         </View>
@@ -690,10 +720,10 @@ function FilterSheet({
           />
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>
-              Show Online Only
+              {fs.onlineTitle}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
-              Only display masters currently ready to consult
+              {fs.onlineSubtitle}
             </Text>
           </View>
           <Switch
@@ -704,54 +734,41 @@ function FilterSheet({
         </View>
 
         <View style={{ height: 18 }} />
-        <SectionLabel label="Sort By" />
+        <SectionLabel label={fs.sortByLabel} />
         <ChipGroup
           idPrefix="liveAstrologers.filter.sort"
-          options={['Top Rated', 'Price: Low', 'Price: High', 'Most Consulted', 'Experience']}
+          options={fs.sortOptions}
           selected={sort}
           onSelected={setSort}
         />
 
         <View style={{ height: 18 }} />
-        <SectionLabel label="Price Range" />
+        <SectionLabel label={fs.priceRangeLabel} />
         <ChipGroup
           idPrefix="liveAstrologers.filter.price"
-          options={
-            useCurrencyStore.getState().currencyCode === 'INR'
-              ? ['All', 'Under ₹20', '₹20–₹40', '₹40–₹60', '₹60+']
-              : ['All', 'Under $0.25', '$0.25–$0.50', '$0.50–$0.75', '$0.75+']
-          }
+          options={currencyCode === 'INR' ? fs.priceOptionsInr : fs.priceOptionsUsd}
           selected={price}
           onSelected={setPrice}
         />
 
-        <View style={{ height: 18 }} />
-        <SectionLabel label="Gender" />
-        <ChipGroup
-          idPrefix="liveAstrologers.filter.gender"
-          options={['All', 'Male', 'Female']}
-          selected={gender}
-          onSelected={setGender}
-        />
+        {astrologerType === 'real' && (
+          <>
+            <View style={{ height: 18 }} />
+            <SectionLabel label={fs.genderLabel} />
+            <ChipGroup
+              idPrefix="liveAstrologers.filter.gender"
+              options={fs.genderOptions}
+              selected={gender}
+              onSelected={setGender}
+            />
+          </>
+        )}
 
         <View style={{ height: 18 }} />
-        <SectionLabel label="Language" />
+        <SectionLabel label={fs.languageLabel} />
         <ChipGroup
           idPrefix="liveAstrologers.filter.language"
-          options={[
-            'All',
-            'Hindi',
-            'English',
-            'Tamil',
-            'Telugu',
-            'Kannada',
-            'Malayalam',
-            'Bengali',
-            'Marathi',
-            'Gujarati',
-            'Punjabi',
-            'Odia',
-          ]}
+          options={fs.languageOptions}
           selected={language}
           onSelected={setLanguage}
         />
@@ -784,7 +801,7 @@ function FilterSheet({
           }}
         >
           <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '700' }}>
-            Reset
+            {fs.resetLabel}
           </Text>
         </Pressable>
 
@@ -809,7 +826,7 @@ function FilterSheet({
           }}
         >
           <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}>
-            Apply Filters
+            {fs.applyLabel}
           </Text>
         </Pressable>
       </View>
@@ -904,56 +921,58 @@ function matchesCategoryFilter(a: AstrologerData, selectedCategory: string): boo
   return false;
 }
 
+function mapRealAstrologers(realList: any[]): AstrologerData[] {
+  return realList.map((a) => ({
+    id: a.id,
+    name: a.name,
+    specialty: a.specialty,
+    title: [a.specialty, a.experience].filter(Boolean).join(' • '),
+    experience: a.experience,
+    rating: a.rating,
+    reviews: a.reviews,
+    consultations: a.consultations || a.reviews,
+    price: a.price,
+    isOnline: Boolean(a.isOnline),
+    languages: a.languages,
+    imageUrl: a.imageUrl,
+    semanticLabel: a.semanticLabel || a.name,
+    category: getCategoryForAstrologer(a.specialty),
+    isAi: false,
+    bio: a.bio || a.about,
+    education: a.education,
+    certifications: a.certifications,
+    learningSource: a.learningSource,
+    dailyHours: a.dailyHours,
+    city: a.city,
+    badge: a.badge,
+    status: a.status,
+  }));
+}
+
 /* ------------------------------------------------------------------ screen */
 export default function LiveAstrologersScreen() {
   const [astrologerType, setAstrologerType] = useState<'real' | 'ai'>('real');
-  const [realAstrologers, setRealAstrologers] = useState<AstrologerData[]>([]);
+  const [realAstrologers, setRealAstrologers] = useState<AstrologerData[]>(() =>
+    mapRealAstrologers(DEFAULT_REAL_ASTROLOGERS)
+  );
   const [aiAstrologers, setAiAstrologers] = useState<AstrologerData[]>(() =>
     AI_ASTROLOGERS_DATA.map((a) => ({ ...a, isAi: true, category: getCategoryForAstrologer(a.specialty, a.category) }))
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [onlineOnly, setOnlineOnly] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const mapRealAstrologers = (realList: any[]): AstrologerData[] => {
-    return realList.map((a) => ({
-      id: a.id,
-      name: a.name,
-      specialty: a.specialty,
-      title: [a.specialty, a.experience].filter(Boolean).join(' • '),
-      experience: a.experience,
-      rating: a.rating,
-      reviews: a.reviews,
-      consultations: a.consultations || a.reviews,
-      price: a.price,
-      isOnline: Boolean(a.isOnline),
-      languages: a.languages,
-      imageUrl: a.imageUrl,
-      semanticLabel: a.semanticLabel || a.name,
-      category: getCategoryForAstrologer(a.specialty),
-      isAi: false,
-      bio: a.bio || a.about,
-      education: a.education,
-      certifications: a.certifications,
-      learningSource: a.learningSource,
-      dailyHours: a.dailyHours,
-      city: a.city,
-      badge: a.badge,
-      status: a.status,
-    }));
-  };
-
-  const fetchAstrologers = async () => {
+  const fetchAstrologers = async (forceFresh = false) => {
     try {
       const [realList, aiList] = await Promise.all([
-        fetchRealAstrologers(),
-        fetchAiAstrologers(),
+        fetchRealAstrologers(forceFresh),
+        fetchAiAstrologers(forceFresh),
       ]);
 
-      if (realList && realList.length > 0) {
+      if (Array.isArray(realList)) {
         setRealAstrologers(mapRealAstrologers(realList));
       }
 
@@ -974,6 +993,8 @@ export default function LiveAstrologersScreen() {
           semanticLabel: a.semanticLabel || a.name,
           category: getCategoryForAstrologer(a.specialty),
           isAi: true,
+          voiceGender: a.voiceGender,
+          voiceId: a.voiceId,
         }));
 
         setAiAstrologers(liveMappedAi);
@@ -987,7 +1008,7 @@ export default function LiveAstrologersScreen() {
     let isMounted = true;
 
     // 1. Immediately read cached real astrologers from AsyncStorage for instant 0ms display
-    AsyncStorage.getItem('astroparihar_real_astrologers_cache').then((cached) => {
+    AsyncStorage.getItem(STORAGE_REAL_ASTROLOGERS_KEY).then((cached) => {
       if (!isMounted || !cached) return;
       try {
         const list = JSON.parse(cached);
@@ -999,12 +1020,12 @@ export default function LiveAstrologersScreen() {
     });
 
     // 2. Fetch fresh live statuses
-    fetchAstrologers().finally(() => {
+    fetchAstrologers(true).finally(() => {
       if (isMounted) setLoading(false);
     });
 
-    // 3. Spaced polling every 25 seconds instead of 4 seconds
-    const pollInterval = setInterval(fetchAstrologers, 25000);
+    // 3. Spaced polling every 25 seconds so admin Active/Suspend/Online toggles reflect promptly
+    const pollInterval = setInterval(() => fetchAstrologers(true), 25000);
     return () => {
       isMounted = false;
       clearInterval(pollInterval);
@@ -1032,12 +1053,13 @@ export default function LiveAstrologersScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchAstrologers(), new Promise((r) => setTimeout(r, 600))]);
+    await Promise.all([fetchAstrologers(true), new Promise((r) => setTimeout(r, 600))]);
     setRefreshing(false);
   };
 
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
+  const cms = useAppScreensCmsStore((s) => s.config.liveAstrologers);
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.background }} testID="liveAstrologers.screen">
@@ -1081,7 +1103,7 @@ export default function LiveAstrologersScreen() {
           >
             <Text style={{ fontSize: 14 }}>🕉️</Text>
             <Text style={{ marginLeft: 6, color: astrologerType === 'real' ? '#FFFFFF' : (colors.isLight ? '#5A6A85' : '#A0A8C0'), fontSize: 13, fontWeight: '700' }}>
-              Real Astrologers
+              {cms.realTabLabel}
             </Text>
             <View style={{ marginLeft: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, backgroundColor: astrologerType === 'real' ? '#C9A84C' : (colors.isLight ? '#F0EBE0' : argb('26A0A8C0')) }}>
               <Text style={{ color: astrologerType === 'real' ? '#080D1A' : (colors.isLight ? '#5A6A85' : '#A0A8C0'), fontSize: 10, fontWeight: '800' }}>
@@ -1107,7 +1129,7 @@ export default function LiveAstrologersScreen() {
           >
             <Text style={{ fontSize: 14 }}>🔮</Text>
             <Text style={{ marginLeft: 6, color: astrologerType === 'ai' ? '#FFFFFF' : (colors.isLight ? '#5A6A85' : '#A0A8C0'), fontSize: 13, fontWeight: '700' }}>
-              AI Astrologers
+              {cms.aiTabLabel}
             </Text>
             <View style={{ marginLeft: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, backgroundColor: astrologerType === 'ai' ? '#C9A84C' : (colors.isLight ? '#F0EBE0' : argb('26A0A8C0')) }}>
               <Text style={{ color: astrologerType === 'ai' ? '#080D1A' : (colors.isLight ? '#5A6A85' : '#A0A8C0'), fontSize: 10, fontWeight: '800' }}>
@@ -1124,23 +1146,23 @@ export default function LiveAstrologersScreen() {
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
             <ActivityIndicator size="large" color="#C9A84C" />
             <Text style={{ marginTop: 16, color: colors.goldAccent, fontSize: 15, fontWeight: '700' }}>
-              Connecting with Vedic Astrologers...
+              {cms.loadingTitle}
             </Text>
             <Text style={{ marginTop: 6, color: colors.textMuted, fontSize: 13 }}>
-              Loading verified astrological profiles
+              {cms.loadingSubtitle}
             </Text>
           </View>
         ) : filtered.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} testID="liveAstrologers.empty">
             <Text style={{ fontSize: 48 }}>🔍</Text>
-            <Text style={{ marginTop: 16, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>No astrologers found</Text>
-            <Text style={{ marginTop: 8, color: colors.textMuted, fontSize: 14 }}>Try adjusting your search or filters</Text>
+            <Text style={{ marginTop: 16, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>{cms.emptyTitle}</Text>
+            <Text style={{ marginTop: 8, color: colors.textMuted, fontSize: 14 }}>{cms.emptySubtitle}</Text>
             <Pressable
               testID="liveAstrologers.clearFilters"
               onPress={() => { setSearchQuery(''); setSelectedCategory('All'); setOnlineOnly(false); }}
               style={{ marginTop: 24, paddingHorizontal: 12, paddingVertical: 8 }}
             >
-              <Text style={{ color: colors.isLight ? '#713B32' : '#C9A84C', fontWeight: '700', fontSize: 14 }}>Clear Filters</Text>
+              <Text style={{ color: colors.isLight ? '#713B32' : '#C9A84C', fontWeight: '700', fontSize: 14 }}>{cms.clearFiltersLabel}</Text>
             </Pressable>
           </View>
         ) : (
@@ -1154,7 +1176,12 @@ export default function LiveAstrologersScreen() {
         )}
       </View>
       <BottomSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} testID="liveAstrologers.filterSheet">
-        <FilterSheet onlineOnly={onlineOnly} onOnlineChanged={setOnlineOnly} onClose={() => setSheetOpen(false)} />
+        <FilterSheet
+          onlineOnly={onlineOnly}
+          astrologerType={astrologerType}
+          onOnlineChanged={setOnlineOnly}
+          onClose={() => setSheetOpen(false)}
+        />
       </BottomSheet>
     </SafeAreaView>
   );

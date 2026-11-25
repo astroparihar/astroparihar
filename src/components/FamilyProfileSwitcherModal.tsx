@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,16 +8,7 @@ import {
 import { AppIcon } from '@/components/AppIcon';
 import { ElevatedButton, OutlinedButton } from '@/components/common';
 import { BottomSheet, SheetContainer, showSnackBar } from '@/components/overlays';
-import {
-  formatDobToDDMMYYYY,
-  formatTimeOfDay,
-  normalizeDobForStorage,
-  normalizeTimeForStorage,
-  parseDobToDate,
-  parseTimeToDate,
-  pickDate,
-  pickTime,
-} from '@/components/pickers';
+import { formatDobToDDMMYYYY, formatTimeOfDay, parseDobToDate, parseTimeToDate, pickDate, pickTime } from '@/components/pickers';
 import { LocationSearchInput } from '@/components/LocationSearchInput';
 import { Text, TextInput } from '@/components/Text';
 import {
@@ -67,6 +56,12 @@ export function FamilyProfileSwitcherModal({
   const [saving, setSaving] = useState(false);
   const formScrollRef = useRef<ScrollView>(null);
 
+  useEffect(() => {
+    if (!visible) {
+      setMode('list');
+    }
+  }, [visible]);
+
   const resetForm = () => {
     setFormName('');
     setFormType('Child');
@@ -78,22 +73,9 @@ export function FamilyProfileSwitcherModal({
     setEditingProfileId(null);
   };
 
-  useEffect(() => {
-    if (!visible) {
-      setMode('list');
-      resetForm();
-    }
-  }, [visible]);
-
   const handleOpenAdd = () => {
     resetForm();
     setMode('add');
-  };
-
-  const normalizeDobForEditForm = (value?: string) => {
-    const normalized = normalizeDobForStorage(value);
-    if (!normalized) return '1995-10-15';
-    return normalized;
   };
 
   const handleOpenEdit = (profile: BirthProfile) => {
@@ -101,7 +83,7 @@ export function FamilyProfileSwitcherModal({
     setFormName(profile.name);
     setFormType(profile.type || 'Myself');
     setFormGender(profile.gender || 'Male');
-    setFormDob(normalizeDobForEditForm(profile.dob));
+    setFormDob(formatDobToDDMMYYYY(profile.dob) || '15/10/1995');
     setFormTime(profile.time || '12:00 PM');
     setFormPlace(profile.place || 'New Delhi, India');
     setFormSetAsActive(profile.active);
@@ -155,9 +137,6 @@ export function FamilyProfileSwitcherModal({
       return;
     }
 
-    const safeDob = normalizeDobForStorage(formDob) || normalizeDobForEditForm(formDob);
-    const safeTime = normalizeTimeForStorage(formTime || '12:00 PM');
-
     setSaving(true);
     try {
       if (mode === 'edit' && editingProfileId) {
@@ -165,8 +144,8 @@ export function FamilyProfileSwitcherModal({
           name: formName.trim(),
           type: formType,
           gender: formGender,
-          dob: safeDob,
-          time: safeTime,
+          dob: formDob,
+          time: formTime,
           place: formPlace.trim(),
         });
         if (updated) {
@@ -177,8 +156,8 @@ export function FamilyProfileSwitcherModal({
           name: formName.trim(),
           type: formType,
           gender: formGender,
-          dob: safeDob,
-          time: safeTime,
+          dob: formDob,
+          time: formTime,
           place: formPlace.trim(),
           setAsActive: formSetAsActive,
         });
@@ -205,13 +184,8 @@ export function FamilyProfileSwitcherModal({
   return (
     <BottomSheet visible={visible} onClose={onClose} testID="familyProfile.modal">
       <SheetContainer style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 28, maxHeight: 620 }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 28 : 0}
-          style={{ flex: 1 }}
-        >
-          {/* Modal Header */}
-          <View style={styles.headerRow}>
+        {/* Modal Header */}
+        <View style={styles.headerRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <View
               style={[
@@ -446,7 +420,7 @@ export function FamilyProfileSwitcherModal({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
-            style={{ flex: 1 }}
+            style={{ flexShrink: 1 }}
             contentContainerStyle={{ paddingTop: 14, paddingBottom: 40 }}
           >
             {/* Relationship Chips */}
@@ -667,7 +641,6 @@ export function FamilyProfileSwitcherModal({
             </View>
           </ScrollView>
         )}
-        </KeyboardAvoidingView>
       </SheetContainer>
     </BottomSheet>
   );

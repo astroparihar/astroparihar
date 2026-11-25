@@ -7,6 +7,7 @@
  *  - route transitions: splash fade 280 ms; onboarding/birth-profile fade 320 ms; push routes slide 300 ms
  */
 import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,17 +17,19 @@ import { AppState, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppErrorBoundary } from '@/components/ErrorBoundary';
+import { NeuralAudioHost } from '@/components/NeuralAudioHost';
 import { OverlayHost, SnackbarHost } from '@/components/overlays';
 import { PickerHost } from '@/components/pickers';
+import { useAuthStore } from '@/features/auth/authStore';
+import { push } from '@/navigation/routes';
+import {
+  configureForegroundNotificationHandler,
+  useNotificationStore,
+} from '@/services/notificationStore';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { fontAssets } from '@/theme/fonts';
 import { useLanguageStore } from '@/theme/languageStore';
 import { useThemeColors, useThemeStore } from '@/theme/themeStore';
-import { useCmsStore } from '@/services/cmsStore';
-import { useAuthStore } from '@/features/auth/authStore';
-import { heartbeatSession } from '@/services/sessionService';
-import { clearNotificationState, configureNotificationPresentation, fetchNotifications, registerPushTokenIfAuthenticated } from '@/services/notificationService';
-import * as Notifications from 'expo-notifications';
-import { router } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -34,8 +37,8 @@ const PUSH = { animation: 'slide_from_right' as const, animationDuration: 300 };
 const PUSH_ROUTES = [
   'my-kundli-screen', 'match-kundli-screen', 'panchang-screen', 'remedies-screen', 'remedy-detail-screen',
   'horoscope-screen', 'astrologer-detail-screen', 'birth-profiles-screen', 'kundli-reports-screen',
-  'match-reports-screen', 'consultation-history-screen', 'wallet-screen',
-  'language-screen', 'theme-screen', 'privacy-screen',
+  'match-reports-screen', 'saved-astrologers-screen', 'consultation-history-screen', 'wallet-screen',
+  'notifications-screen', 'notification-settings-screen', 'language-screen', 'theme-screen', 'privacy-screen',
   'security-screen', 'help-centre-screen', 'contact-support-screen', 'terms-screen', 'privacy-policy-screen',
   'consultation-screen', 'career-astrology-screen', 'marriage-astrology-screen', 'business-astrology-screen',
   'finance-astrology-screen', 'tarot-screen', 'numerology-screen', 'muhurat-screen', 'spiritual-guidance-screen',
@@ -47,62 +50,107 @@ export default function RootLayout() {
   const hydrated = useThemeStore((s) => s.hydrated);
   const loadTheme = useThemeStore((s) => s.load);
   const loadLanguage = useLanguageStore((s) => s.load);
+  const authUid = useAuthStore((s) => s.user?.uid);
+  const authPhone = useAuthStore((s) => s.user?.phone);
   const colors = useThemeColors();
 
   useEffect(() => {
     loadTheme();
     loadLanguage();
+    configureForegroundNotificationHandler();
+    useNotificationStore.getState().hydrate();
+    useAppScreensCmsStore.getState().hydrate();
+    useAppScreensCmsStore.getState().fetchConfig();
     if (Platform.OS !== 'web') {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
     }
   }, [loadTheme, loadLanguage]);
 
+  // Register push token & refresh inbox ONLY when signed in; clear everything for Guests
+  useEffect(() => {
+    const store = useNotificationStore.getState();
+    const signedIn = Boolean(authUid || authPhone);
+    if (!signedIn) {
+      store.resetForGuest();
+      return;
+    }
+    store.fetchNotifications();
+    if (Platform.OS !== 'web') {
+      store.requestAndRegisterPushToken(true);
+    }
+    import('@/services/sessionService')
+      .then(({ registerOrHeartbeatSession }) => registerOrHeartbeatSession())
+      .catch(() => {});
+  }, [authUid, authPhone]);
+
+  useEffect(() => {
+    const isSignedInNow = () => {
+      const st = useAuthStore.getState();
+      return Boolean(st.isAuthenticated && st.user && (st.user.uid || st.user.phone));
+    };
+
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        if (isSignedInNow()) {
+          useNotificationStore.getState().fetchNotifications();
+          if (Platform.OS !== 'web') {
+            useNotificationStore.getState().requestAndRegisterPushToken(false);
+          }
+          import('@/services/sessionService')
+            .then(({ registerOrHeartbeatSession }) => registerOrHeartbeatSession())
+            .catch(() => {});
+        } else {
+          useNotificationStore.getState().resetForGuest();
+        }
+        useAppScreensCmsStore.getState().fetchConfig(true);
+      }
+    });
+
+    if (Platform.OS === 'web') {
+      return () => appStateSub.remove();
+    }
+
+    const handleResponse = (response: Notifications.NotificationResponse | null | undefined) => {
+      if (!isSignedInNow()) {
+        setTimeout(() => push('/sign-in-screen'), 180);
+        return;
+      }
+      const data = response?.notification?.request?.content?.data as Record<string, any> | undefined;
+      const notifId = typeof data?.notificationId === 'string' ? data.notificationId : '';
+      const actionRoute = typeof data?.actionRoute === 'string' ? data.actionRoute : '';
+      if (notifId) {
+        useNotificationStore.getState().markAsRead(notifId);
+      }
+      if (actionRoute && actionRoute.startsWith('/')) {
+        setTimeout(() => push(actionRoute), 180);
+      }
+    };
+
+    // Handle cold-start launch when user taps a lock-screen push notification
+    Notifications.getLastNotificationResponseAsync()
+      .then((last) => {
+        if (last) handleResponse(last);
+      })
+      .catch(() => {});
+
+    const recvSub = Notifications.addNotificationReceivedListener(() => {
+      if (isSignedInNow()) {
+        useNotificationStore.getState().fetchNotifications();
+      }
+    });
+
+    const respSub = Notifications.addNotificationResponseReceivedListener(handleResponse);
+
+    return () => {
+      appStateSub.remove();
+      recvSub.remove();
+      respSub.remove();
+    };
+  }, []);
+
   useEffect(() => {
     if (fontsLoaded && hydrated) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded, hydrated]);
-
-  useEffect(() => {
-    const cms = useCmsStore.getState();
-    cms.hydrate().then(() => cms.refresh());
-
-    const syncAuthServices = async () => {
-      try {
-        const auth = useAuthStore.getState();
-        await auth.load();
-        configureNotificationPresentation();
-        if (auth.isAuthenticated && auth.user) {
-          await heartbeatSession(auth.user.uid, auth.user.phone);
-          await registerPushTokenIfAuthenticated();
-        } else {
-          await clearNotificationState();
-        }
-        await fetchNotifications(false);
-      } catch {}
-    };
-    syncAuthServices();
-
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        useCmsStore.getState().refresh();
-        syncAuthServices();
-      }
-    });
-    return () => {
-      subscription.remove();
-      const foregroundNotification = Notifications.addNotificationReceivedListener(() => {});
-      const notificationResponse = Notifications.addNotificationResponseReceivedListener(async (response) => {
-        const auth = useAuthStore.getState();
-        if (!auth.isAuthenticated || (!auth.user?.uid && !auth.user?.phone)) {
-          router.replace('/sign-in-screen');
-          return;
-        }
-        const route = response.notification.request.content.data?.route;
-        if (typeof route === 'string' && route.startsWith('/')) router.push(route as any);
-      });
-      foregroundNotification.remove();
-      notificationResponse.remove();
-    };
-  }, []);
 
   if (!fontsLoaded || !hydrated) {
     return <View style={{ flex: 1, backgroundColor: colors.background }} />;
@@ -128,6 +176,7 @@ export default function RootLayout() {
         <OverlayHost />
         <PickerHost />
         <SnackbarHost />
+        <NeuralAudioHost />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

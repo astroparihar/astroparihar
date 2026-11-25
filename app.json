@@ -3,7 +3,7 @@
     "name": "AstroParihar",
     "slug": "astroparihar",
     "scheme": "astroparihar",
-    "version": "1.0.0",
+    "version": "2.5.6",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#FAF9F6",
@@ -63,7 +63,13 @@
           "locationAlwaysAndWhenInUsePermission": "Allow AstroParihar to use your location for accurate Vedic planetary calculations and astrologer discovery."
         }
       ],
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification_icon.png",
+          "color": "#C9A84C"
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
       ["expo-build-properties", { "ios": { "useFrameworks": "dynamic", "buildReactNativeFromSource": true } }]

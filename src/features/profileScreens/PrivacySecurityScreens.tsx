@@ -1,24 +1,33 @@
 /**
- * Port of lib/presentation/profile_screens/privacy_security_screens.dart (PrivacyScreen + SecurityScreen).
- * Dynamic theme support for Light Vedic & Dark Cosmic.
+ * Privacy & Security Screens — 100% Dynamic Content with offline cache,
+ * live Admin Panel sync, pull-to-refresh, and persistent toggle preferences.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppBar } from '@/components/AppBar';
 import { AppIcon } from '@/components/AppIcon';
-import { ProgressRing } from '@/components/common';
+import { ElevatedButton } from '@/components/common';
 import { showSnackBar } from '@/components/overlays';
 import { Text } from '@/components/Text';
 import { IconBadge, ListTile, SettingsCard, SwitchTile, TileDivider } from '@/components/tiles';
-import { AppRoutes, go, pop, push } from '@/navigation/routes';
 import { useAuthStore } from '@/features/auth/authStore';
+import { AppRoutes, go, pop, push } from '@/navigation/routes';
 import { requestPermanentAccountDeletion } from '@/services/accountDeletionService';
-import { fetchSessions, revokeSession, heartbeatSession, getOrCreateSessionId } from '@/services/sessionService';
+import {
+  ActiveDeviceSession,
+  fetchActiveSessions,
+  revokeAllOtherDeviceSessions,
+  revokeDeviceSession,
+} from '@/services/sessionService';
+import { useSupportLegalStore } from '@/services/supportLegalStore';
 import { withAlpha } from '@/theme/colors';
 import { useTranslation } from '@/theme/languageStore';
 import { useThemeColors } from '@/theme/themeStore';
+
+const STORAGE_PRIVACY_PREFS = 'astroparihar_user_privacy_toggles_v1';
 
 const H = ({ children }: { children: string }) => {
   const colors = useThemeColors();
@@ -29,26 +38,75 @@ export function PrivacyScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const { t } = useTranslation();
-  const [settings, setSettings] = useState<Record<string, boolean>>({
-    'Profile Visibility': true,
-    'Show Online Status': true,
-    'Allow Astrologers to View Birth Chart': true,
-    'Personalised Recommendations': true,
-    'Analytics & Improvement': false,
-    'Marketing Communications': false,
+
+  const privacy = useSupportLegalStore((s) => s.content.privacyScreen);
+  const fetchContent = useSupportLegalStore((s) => s.fetchContent);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [settings, setSettings] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    (privacy.controls || []).forEach((c) => {
+      init[c.key] = c.defaultValue;
+    });
+    return init;
   });
+
+  useEffect(() => {
+    fetchContent();
+    AsyncStorage.getItem(STORAGE_PRIVACY_PREFS)
+      .then((raw) => {
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (saved && typeof saved === 'object') {
+            setSettings((prev) => ({ ...prev, ...saved }));
+          }
+        }
+      })
+      .catch(() => {});
+  }, [fetchContent]);
+
+  useEffect(() => {
+    if (privacy.controls && privacy.controls.length > 0) {
+      setSettings((prev) => {
+        const next: Record<string, boolean> = {};
+        privacy.controls.forEach((c) => {
+          next[c.key] = prev[c.key] !== undefined ? prev[c.key] : c.defaultValue;
+        });
+        return next;
+      });
+    }
+  }, [privacy.controls]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchContent();
+    setRefreshing(false);
+  };
+
+  const handleToggle = (k: string, v: boolean) => {
+    setSettings((s) => {
+      const next = { ...s, [k]: v };
+      AsyncStorage.setItem(STORAGE_PRIVACY_PREFS, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+    showSnackBar(`${k} ${v ? 'enabled' : 'disabled'}`, colors.surfaceVariant);
+  };
+
   const keys = Object.keys(settings);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="privacy.screen">
       <AppBar
-        title={t('profile.privacy', 'Privacy')}
+        title={privacy.appBarTitle || t('profile.privacy', 'Privacy')}
         onBack={pop}
         testIDPrefix="privacy"
         backgroundColor={colors.background}
         backColor={colors.textPrimary}
       />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90), gap: 20 }}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldAccent} />}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90), gap: 20 }}
+      >
         <LinearGradient
           colors={[withAlpha('#2D9E6B', colors.isLight ? 20 : 30), colors.surface]}
           start={{ x: 0, y: 0.5 }}
@@ -62,17 +120,19 @@ export function PrivacyScreen() {
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 28 }}>🔒</Text>
+          <Text style={{ fontSize: 28 }}>{privacy.bannerEmoji || '🔒'}</Text>
           <View style={{ marginLeft: 14, flex: 1 }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>Your Privacy Matters</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>
+              {privacy.bannerTitle || 'Your Privacy Matters'}
+            </Text>
             <Text style={{ marginTop: 3, color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>
-              AstroParihar keeps your birth coordinates and consultations completely encrypted and private.
+              {privacy.bannerSubtitle || 'AstroParihar keeps your birth coordinates and consultations completely encrypted and private.'}
             </Text>
           </View>
         </LinearGradient>
 
         <View>
-          <H>Privacy Controls</H>
+          <H>{privacy.controlsSectionTitle || 'Privacy Controls'}</H>
           <SettingsCard>
             {keys.map((k, i) => (
               <View key={k}>
@@ -80,10 +140,7 @@ export function PrivacyScreen() {
                   testID={`privacy.toggle.${i}`}
                   title={k}
                   value={settings[k]}
-                  onChange={(v) => {
-                    setSettings((s) => ({ ...s, [k]: v }));
-                    showSnackBar(`${k} ${v ? 'enabled' : 'disabled'}`, colors.surfaceVariant);
-                  }}
+                  onChange={(v) => handleToggle(k, v)}
                 />
                 {i < keys.length - 1 ? <TileDivider indent={16} endIndent={16} /> : null}
               </View>
@@ -92,44 +149,51 @@ export function PrivacyScreen() {
         </View>
 
         <View>
-          <H>Your Data</H>
+          <H>{privacy.dataSectionTitle || 'Your Data'}</H>
           <SettingsCard>
             <ListTile
               testID="privacy.downloadData"
               leading={<IconBadge icon="download_outlined" color={colors.goldAccent} />}
-              title="Download My Astrological Data"
+              title={privacy.downloadDataTitle || 'Download My Astrological Data'}
               titleColor={colors.goldAccent}
               titleWeight="600"
-              subtitle="Get an encrypted copy of all saved charts and reports"
+              subtitle={privacy.downloadDataSubtitle || 'Get an encrypted copy of all saved charts and reports'}
               trailing="chevron"
-              onPress={() => showSnackBar('Preparing your data archive... Link will be sent via email.', colors.surfaceVariant)}
+              onPress={() =>
+                showSnackBar(
+                  privacy.downloadDataMessage || 'Preparing your data archive... Link will be sent via email.',
+                  colors.surfaceVariant
+                )
+              }
             />
             <TileDivider />
             <ListTile
               testID="privacy.deleteAccount"
               leading={<IconBadge icon="delete_outline_rounded" color="#CF4444" />}
-              title="Delete My Account"
+              title={privacy.deleteAccountTitle || 'Delete My Account'}
               titleColor="#CF4444"
               titleWeight="600"
-              subtitle="Permanently remove your account and all data"
+              subtitle={privacy.deleteAccountSubtitle || 'Permanently remove your account and all data'}
               trailing="chevron"
               onPress={() => {
                 Alert.alert(
-                  'Delete Account Permanently?',
-                  'Are you sure you want to permanently delete your AstroParihar account?\n\nAll your Janam Kundli charts, consultations, wallet balance, and birth profiles will be erased forever.\n\nOnce deleted, this phone number cannot be reused to log in.',
+                  privacy.deleteAccountConfirmTitle || 'Delete Account Permanently?',
+                  privacy.deleteAccountConfirmMessage ||
+                    'Are you sure you want to permanently delete your AstroParihar account?\n\nAll your Janam Kundli charts, consultations, wallet balance, and birth profiles will be erased forever.\n\nOnce deleted, this phone number cannot be reused to log in.',
                   [
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: privacy.cancelButtonText || 'Cancel', style: 'cancel' },
                     {
-                      text: 'Delete Account',
+                      text: privacy.confirmDeleteButtonText || 'Delete Account',
                       style: 'destructive',
                       onPress: async () => {
                         try {
                           await requestPermanentAccountDeletion();
                           Alert.alert(
-                            'Account Deleted',
-                            'Your account has been deleted. You can no longer log in with this phone number.'
+                            privacy.deleteAccountSuccessTitle || 'Account Deleted',
+                            privacy.deleteAccountSuccessMessage ||
+                              'Your account has been deleted. You can no longer log in with this phone number.'
                           );
-                          showSnackBar('Account deleted permanently', '#CF4444');
+                          showSnackBar(privacy.deleteAccountSuccessTitle || 'Account deleted permanently', '#CF4444');
                           go(AppRoutes.initial);
                         } catch (err: any) {
                           showSnackBar('Error deleting account: ' + err?.message, '#CF4444');
@@ -148,7 +212,7 @@ export function PrivacyScreen() {
           <ListTile
             testID="privacy.policyLink"
             leading={<AppIcon name="policy_outlined" color={colors.goldAccent} size={20} />}
-            title="Privacy Policy"
+            title={privacy.privacyPolicyLinkTitle || 'Privacy Policy'}
             trailing="chevron"
             onPress={() => push(AppRoutes.privacyPolicyScreen)}
           />
@@ -156,7 +220,7 @@ export function PrivacyScreen() {
           <ListTile
             testID="privacy.termsLink"
             leading={<AppIcon name="gavel_outlined" color={colors.goldAccent} size={20} />}
-            title="Terms of Service"
+            title={privacy.termsLinkTitle || 'Terms of Service'}
             trailing="chevron"
             onPress={() => push(AppRoutes.termsScreen)}
           />
@@ -166,124 +230,371 @@ export function PrivacyScreen() {
   );
 }
 
+function formatSessionLastActive(session: ActiveDeviceSession): string {
+  if (session.isCurrent) return 'Active now';
+  const ts = session.lastActiveAtMs || Date.parse(session.lastActiveAt || '');
+  if (!ts || Number.isNaN(ts)) return 'Active recently';
+  const diffMs = Math.max(0, Date.now() - ts);
+  if (diffMs < 60_000) return 'Active just now';
+  if (diffMs < 3_600_000) return `Active ${Math.floor(diffMs / 60_000)}m ago`;
+  if (diffMs < 86_400_000) return `Active ${Math.floor(diffMs / 3_600_000)}h ago`;
+  return `Active ${Math.floor(diffMs / 86_400_000)}d ago`;
+}
+
+function getSessionDeviceIcon(platform: string): string {
+  if (platform === 'web') return 'laptop_mac';
+  if (platform === 'ios') return 'phone_iphone';
+  return 'phone_android';
+}
+
 export function SecurityScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const { t } = useTranslation();
-  const user = useAuthStore((s) => s.user);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState<string>('');
 
-  const loadSessions = async (force = false) => {
-    if (!isAuthenticated || !user?.uid && !user?.phone) return;
-    if (force) setRefreshing(true);
-    const id = await getOrCreateSessionId();
-    setCurrentSessionId(id);
-    const result = await fetchSessions(user?.uid || '', user?.phone || '');
-    if (result.revoked) {
-      await useAuthStore.getState().logout();
-      Alert.alert('Signed Out', 'This session was signed out from another device.');
-      go(AppRoutes.signInScreen);
+  const sec = useSupportLegalStore((s) => s.content.securityScreen);
+  const fetchContent = useSupportLegalStore((s) => s.fetchContent);
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authUser = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [sessions, setSessions] = useState<ActiveDeviceSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState('');
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [revokingAll, setRevokingAll] = useState(false);
+
+  const loadSessions = useCallback(async () => {
+    if (!isAuthenticated) {
+      setSessions([]);
+      setCurrentSessionId('');
       return;
     }
-    if (result.ok) {
-      const list = Array.isArray(result.data?.sessions) ? result.data.sessions : Array.isArray(result.data) ? result.data : [];
-      const normalized = list.map((s: any) => ({
-        ...s,
-        sessionId: String(s.sessionId || s.id || ''),
-        deviceName: s.deviceName || s.name || 'iPhone',
-        osLabel: s.osLabel || 'iOS',
-        appVersion: s.appVersion || '1.0.0',
-        current: s.current === true || String(s.sessionId || s.id || '') === id,
-      }));
-      normalized.sort((a: any, b: any) => Number(b.current) - Number(a.current));
-      setSessions(normalized);
+    setLoadingSessions(true);
+    try {
+      const result = await fetchActiveSessions();
+      if (result.currentSessionRevoked) {
+        showSnackBar('This session was signed out from another device.', '#CF4444');
+        go(AppRoutes.signInScreen);
+        return;
+      }
+      setSessions(result.sessions);
+      setCurrentSessionId(result.currentSessionId);
+    } finally {
+      setLoadingSessions(false);
     }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchContent();
+  }, [fetchContent]);
+
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchContent(), loadSessions()]);
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      heartbeatSession(user?.uid || '', user?.phone || '').then((r) => {
-        if (r.revoked) {
-          useAuthStore.getState().logout();
-          Alert.alert('Signed Out', 'This session was signed out from another device.');
-          go(AppRoutes.signInScreen);
-        }
-      });
-      loadSessions();
-    }
-  }, [isAuthenticated, user?.uid, user?.phone]);
-
-  const revokeOne = (targetId: string) => {
-    Alert.alert('Revoke Session', 'Sign out this device?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Revoke', style: 'destructive', onPress: async () => {
-        const r = await revokeSession(user?.uid || '', user?.phone || '', targetId);
-        if (!r.ok) { showSnackBar('Could not revoke this session', '#CF4444'); return; }
-        setSessions((prev) => prev.filter((s) => s.sessionId !== targetId));
-      } },
-    ]);
+  const handleChangeMobileNumber = () => {
+    Alert.alert(
+      'Change Mobile Number?',
+      'To switch to a different mobile number, you will be signed out of this session and asked to verify your new number via OTP.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Verify New Number',
+          onPress: async () => {
+            await logout();
+            go(AppRoutes.signInScreen);
+          },
+        },
+      ]
+    );
   };
 
-  const revokeOthers = () => {
-    Alert.alert('Sign Out Other Devices', `Sign out ${sessions.filter((s) => !s.current).length} other device(s)?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: async () => {
-        const r = await revokeSession(user?.uid || '', user?.phone || '', undefined, true, currentSessionId);
-        if (!r.ok) { showSnackBar('Could not sign out other devices', '#CF4444'); return; }
-        setSessions((prev) => prev.filter((s) => s.current));
-      } },
-    ]);
+  const handleRevokeSession = (session: ActiveDeviceSession) => {
+    Alert.alert(
+      'Revoke Device Session?',
+      `Sign out "${session.deviceName}" from your AstroParihar account?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: sec.revokeButtonText || 'Revoke',
+          style: 'destructive',
+          onPress: async () => {
+            setRevokingId(session.sessionId);
+            const ok = await revokeDeviceSession(session.sessionId);
+            setRevokingId(null);
+            if (ok) {
+              setSessions((prev) => prev.filter((item) => item.sessionId !== session.sessionId));
+              showSnackBar(`Signed out ${session.deviceName}`, '#2D9E6B');
+            } else {
+              showSnackBar('Could not revoke session. Please try again.', '#CF4444');
+            }
+          },
+        },
+      ]
+    );
   };
+
+  const handleRevokeAllOtherSessions = () => {
+    const otherCount = sessions.filter((s) => !s.isCurrent).length;
+    if (otherCount === 0 || !currentSessionId) return;
+
+    Alert.alert(
+      'Sign Out Other Devices?',
+      `This will immediately revoke ${otherCount} other active ${otherCount === 1 ? 'session' : 'sessions'} while keeping this device signed in.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out Others',
+          style: 'destructive',
+          onPress: async () => {
+            setRevokingAll(true);
+            const ok = await revokeAllOtherDeviceSessions(currentSessionId);
+            setRevokingAll(false);
+            if (ok) {
+              setSessions((prev) => prev.filter((item) => item.isCurrent));
+              showSnackBar('Signed out all other devices', '#2D9E6B');
+            } else {
+              showSnackBar('Could not revoke other sessions. Please try again.', '#CF4444');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const otherSessionsCount = sessions.filter((s) => !s.isCurrent).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="security.screen">
-      <AppBar title={t('profile.security', 'Security')} onBack={pop} testIDPrefix="security" backgroundColor={colors.background} backColor={colors.textPrimary} />
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadSessions(true)} tintColor={colors.goldAccent} />} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90), gap: 20 }}>
+      <AppBar
+        title={sec.appBarTitle || t('profile.security', 'Security')}
+        onBack={pop}
+        testIDPrefix="security"
+        backgroundColor={colors.background}
+        backColor={colors.textPrimary}
+      />
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldAccent} />}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90), gap: 20 }}
+      >
         {!isAuthenticated ? (
-          <SettingsCard>
-            <View style={{ padding: 20, alignItems: 'center' }}>
-              <IconBadge icon="security_outlined" color={colors.goldAccent} size={34} />
-              <Text style={{ marginTop: 12, color: colors.textPrimary, fontSize: 16, fontWeight: '700', textAlign: 'center' }}>Sign In to Manage Account Security</Text>
-              <Pressable testID="security.signIn" onPress={() => push(AppRoutes.signInScreen)} style={{ marginTop: 16, borderRadius: 100, backgroundColor: colors.goldAccent, paddingHorizontal: 20, paddingVertical: 10 }}>
-                <Text style={{ color: '#0A0E1A', fontSize: 13, fontWeight: '800' }}>Sign In / Register</Text>
-              </Pressable>
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.cardBorder,
+              padding: 24,
+              alignItems: 'center',
+            }}
+          >
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: withAlpha(colors.goldAccent, 24),
+                borderWidth: 1,
+                borderColor: withAlpha(colors.goldAccent, 60),
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <AppIcon name="verified_user" color={colors.goldAccent} size={30} />
             </View>
-          </SettingsCard>
+            <Text style={{ marginTop: 16, color: colors.textPrimary, fontSize: 17, fontWeight: '700', textAlign: 'center' }}>
+              Sign In to Manage Account Security
+            </Text>
+            <Text style={{ marginTop: 8, color: colors.textMuted, fontSize: 13, lineHeight: 19, textAlign: 'center' }}>
+              Sign in with your mobile number via OTP to manage your verified mobile credential and active device sessions.
+            </Text>
+            <ElevatedButton
+              label="Sign In / Register"
+              onPress={() => go(AppRoutes.signInScreen)}
+              bg={colors.goldAccent}
+              fg="#FFFFFF"
+              style={{ marginTop: 20, width: '100%' }}
+              paddingV={13}
+              fontSize={14}
+            />
+          </View>
         ) : (
-          <> 
-            <LinearGradient colors={colors.isLight ? ['#F0FFF7', '#F2E9DE'] : [withAlpha('#2D9E6B', 25), colors.surfaceVariant]} style={{ padding: 18, borderRadius: 20, borderWidth: 1, borderColor: withAlpha('#2D9E6B', 70), flexDirection: 'row', alignItems: 'center' }}>
-              <IconBadge icon="verified_user_outlined" color="#2D9E6B" size={30} />
-              <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '800' }}>OTP-Protected Account</Text>
-                <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 12 }}>Verified mobile: {user?.phone || '—'}</Text>
+          <>
+            <LinearGradient
+              colors={[withAlpha('#2D9E6B', colors.isLight ? 22 : 32), colors.surface]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{
+                padding: 18,
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: withAlpha('#2D9E6B', 80),
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: withAlpha('#2D9E6B', 28),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <AppIcon name="verified_user" color="#2D9E6B" size={24} />
+              </View>
+              <View style={{ marginLeft: 14, flex: 1 }}>
+                <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '700' }}>
+                  OTP-Protected Account
+                </Text>
+                <Text style={{ marginTop: 3, color: colors.textMuted, fontSize: 12, lineHeight: 17 }}>
+                  {authUser?.phone
+                    ? `Verified mobile: ${authUser.phone}`
+                    : 'Your account uses passwordless mobile OTP verification.'}
+                </Text>
               </View>
             </LinearGradient>
 
             <View>
-              <H>Account Credentials</H>
+              <H>{sec.credentialsSectionTitle || 'Account Credentials'}</H>
               <SettingsCard>
-                <ListTile testID="security.changePhone" leading={<IconBadge icon="phone_outlined" color="#4FC3F7" />} title="Change Mobile Number" subtitle={`Linked: ${user?.phone || '—'}`} trailing="chevron" onPress={() => Alert.alert('Change Mobile Number', 'Switching numbers signs out this session and requires OTP verification on the new number.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Continue', style: 'destructive', onPress: async () => { await useAuthStore.getState().logout(); go(AppRoutes.signInScreen); } }])} />
+                <ListTile
+                  testID="security.changePhone"
+                  leading={<IconBadge icon="phone_outlined" color="#4FC3F7" />}
+                  title={sec.changePhoneTitle || 'Change Mobile Number'}
+                  subtitle={
+                    authUser?.phone
+                      ? `Linked: ${authUser.phone}`
+                      : sec.changePhoneSubtitle || 'Update linked OTP number'
+                  }
+                  trailing="chevron"
+                  onPress={handleChangeMobileNumber}
+                />
               </SettingsCard>
             </View>
 
             <View>
-              <H>Active Sessions</H>
+              <H>{sec.sessionSectionTitle || 'Active Sessions'}</H>
               <SettingsCard>
-                {sessions.map((s, i) => (
-                  <View key={s.sessionId || i}>
-                    {i > 0 ? <TileDivider /> : null}
-                    <ListTile leading={<IconBadge icon={s.platform === 'ios' ? 'phone_iphone' : 'devices_outlined'} color={s.current ? '#2D9E6B' : colors.goldAccent} />} titleNode={<View style={{ flexDirection: 'row', alignItems: 'center' }}><Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700' }}>{s.deviceName}</Text>{s.current ? <View style={{ marginLeft: 8, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: withAlpha('#2D9E6B', 25) }}><Text style={{ color: '#2D9E6B', fontSize: 10, fontWeight: '700' }}>Current</Text></View> : null}</View>} subtitle={`${s.osLabel} • v${s.appVersion} • ${s.current ? 'Active now' : s.lastActiveAt ? `Active ${s.lastActiveAt}` : 'Active recently'}`} trailing={!s.current ? (<Pressable testID={`security.revoke.${i}`} onPress={() => revokeOne(s.sessionId)}><Text style={{ color: '#CF4444', fontSize: 12, fontWeight: '700' }}>Revoke</Text></Pressable>) : null} />
+                {loadingSessions && sessions.length === 0 ? (
+                  <View style={{ padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                    <ActivityIndicator size="small" color={colors.goldAccent} />
+                    <Text style={{ color: colors.textMuted, fontSize: 13 }}>Loading active sessions...</Text>
                   </View>
-                ))}
+                ) : (
+                  sessions.map((session, i) => {
+                    const isRevokingThis = revokingId === session.sessionId;
+                    const versionPart = session.appVersion ? ` • v${session.appVersion}` : '';
+                    const subtitleText = `${session.osLabel}${versionPart} • ${formatSessionLastActive(session)}`;
+
+                    return (
+                      <View key={session.sessionId}>
+                        {i > 0 ? <TileDivider /> : null}
+                        <ListTile
+                          leading={
+                            <IconBadge
+                              icon={getSessionDeviceIcon(session.platform)}
+                              color={session.isCurrent ? '#2D9E6B' : colors.goldAccent}
+                            />
+                          }
+                          titleNode={
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                              <Text
+                                style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '600', flexShrink: 1 }}
+                                numberOfLines={1}
+                              >
+                                {session.deviceName}
+                              </Text>
+                              {session.isCurrent ? (
+                                <View
+                                  style={{
+                                    paddingHorizontal: 7,
+                                    paddingVertical: 2,
+                                    borderRadius: 6,
+                                    backgroundColor: withAlpha('#2D9E6B', 25),
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <Text style={{ color: '#2D9E6B', fontSize: 10, fontWeight: '700' }}>
+                                    {sec.currentBadgeText || 'Current'}
+                                  </Text>
+                                </View>
+                              ) : null}
+                            </View>
+                          }
+                          subtitle={subtitleText}
+                          trailing={
+                            session.isCurrent ? null : (
+                              <Pressable
+                                testID={`security.revoke.${i}`}
+                                disabled={isRevokingThis || revokingAll}
+                                onPress={() => handleRevokeSession(session)}
+                                style={{ paddingHorizontal: 8, paddingVertical: 6 }}
+                              >
+                                {isRevokingThis ? (
+                                  <ActivityIndicator size="small" color="#CF4444" />
+                                ) : (
+                                  <Text style={{ color: '#CF4444', fontSize: 12, fontWeight: '700' }}>
+                                    {sec.revokeButtonText || 'Revoke'}
+                                  </Text>
+                                )}
+                              </Pressable>
+                            )
+                          }
+                        />
+                      </View>
+                    );
+                  })
+                )}
               </SettingsCard>
-              {sessions.filter((s) => !s.current).length > 0 ? (
-                <Pressable testID="security.revokeOthers" onPress={revokeOthers} style={{ marginTop: 12, borderRadius: 100, borderWidth: 1, borderColor: '#CF4444', alignItems: 'center', paddingVertical: 12 }}><Text style={{ color: '#CF4444', fontSize: 13, fontWeight: '800' }}>Sign Out All Other Devices ({sessions.filter((s) => !s.current).length})</Text></Pressable>
-              ) : sessions.length === 1 ? (
-                <Text style={{ marginTop: 10, color: colors.textMuted, fontSize: 11, textAlign: 'center' }}>Only this device is currently signed in to your account.</Text>
+
+              {!loadingSessions && otherSessionsCount === 0 && sessions.length > 0 ? (
+                <Text style={{ marginTop: 10, color: colors.textMuted, fontSize: 12, paddingHorizontal: 4 }}>
+                  Only this device is currently signed in to your account.
+                </Text>
+              ) : null}
+
+              {otherSessionsCount > 0 ? (
+                <Pressable
+                  testID="security.revokeAllOthers"
+                  disabled={revokingAll}
+                  onPress={handleRevokeAllOtherSessions}
+                  style={{
+                    marginTop: 12,
+                    paddingVertical: 13,
+                    paddingHorizontal: 16,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: withAlpha('#CF4444', 90),
+                    backgroundColor: withAlpha('#CF4444', colors.isLight ? 14 : 22),
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    gap: 8,
+                  }}
+                >
+                  {revokingAll ? (
+                    <ActivityIndicator size="small" color="#CF4444" />
+                  ) : (
+                    <>
+                      <AppIcon name="logout_rounded" color="#CF4444" size={16} />
+                      <Text style={{ color: '#CF4444', fontSize: 13, fontWeight: '700' }}>
+                        Sign Out All Other Devices ({otherSessionsCount})
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
               ) : null}
             </View>
           </>

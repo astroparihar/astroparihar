@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -41,6 +42,7 @@ import {
 } from '@/services/consultationService';
 import { AppColors, withAlpha } from '@/theme/colors';
 import { useThemeColors } from '@/theme/themeStore';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 
 type MainTab = 'overview' | 'consultations' | 'earnings' | 'profile';
 type ConsultSubTab = 'requests' | 'active' | 'history';
@@ -65,6 +67,10 @@ const PRIMARY_SKILL_OPTIONS = [
 export default function AstrologerDashboardScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const cms = useAppScreensCmsStore((s) => s.config.astrologerDashboard);
+  const primarySkillOptions = cms.primarySkillOptions?.length
+    ? cms.primarySkillOptions
+    : PRIMARY_SKILL_OPTIONS;
 
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
@@ -130,8 +136,43 @@ export default function AstrologerDashboardScreen() {
   // Sign Out & Withdraw Modals
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState<boolean>(false);
+  const [accountBlocked, setAccountBlocked] = useState<{
+    type: 'suspended' | 'deactivated';
+    reason: string;
+  } | null>(null);
 
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const evaluateRemoteRestriction = useCallback(async (remoteData: Record<string, any> | null) => {
+    if (!remoteData) return false;
+    const status = String(remoteData.status || remoteData.lifecycleStatus || '')
+      .toLowerCase()
+      .trim();
+    const isSuspended = Boolean(remoteData.isSuspended || status === 'suspended');
+    const isDeactivated = Boolean(
+      remoteData.isActive === false ||
+        remoteData.dashboardDisabled === true ||
+        status === 'deactivated' ||
+        status === 'inactive' ||
+        status === 'blocked'
+    );
+
+    if (isSuspended || isDeactivated) {
+      setIsOnline(false);
+      setActiveCallSession(null);
+      setAccountBlocked({
+        type: isSuspended ? 'suspended' : 'deactivated',
+        reason:
+          String(remoteData.suspensionReason || '').trim() ||
+          (isSuspended
+            ? 'Your astrologer account has been suspended by the administrator. Dashboard access is disabled.'
+            : 'Your astrologer account has been deactivated by the administrator. Dashboard access is disabled.'),
+      });
+      await AsyncStorage.removeItem(ASTRO_SESSION_KEY).catch(() => {});
+      return true;
+    }
+    return false;
+  }, []);
 
   // 1. Hydrate Astrologer Session & Fetch Real Profile from Firestore
   const loadAstrologerData = useCallback(async () => {
@@ -161,6 +202,8 @@ export default function AstrologerDashboardScreen() {
       // Fetch live profile from Firestore (`astrologers/{id}` or `candidates/{id}`)
       const remoteData = await fetchAstrologerProfileFromFirestore(targetId);
       if (remoteData) {
+        const blocked = await evaluateRemoteRestriction(remoteData);
+        if (blocked) return;
         if (remoteData.name) setAstrologerName(remoteData.name);
         if (remoteData.email) setEmail(remoteData.email);
         if (typeof remoteData.isOnline === 'boolean') setIsOnline(remoteData.isOnline);
@@ -259,15 +302,22 @@ export default function AstrologerDashboardScreen() {
   }, [loadAstrologerData]);
 
   useEffect(() => {
-    if (!currentId) return;
+    if (!currentId || accountBlocked) return;
     refreshConsultations(currentId);
-    pollTimerRef.current = setInterval(() => {
+    let tickCount = 0;
+    pollTimerRef.current = setInterval(async () => {
       refreshConsultations(currentId);
+      tickCount += 1;
+      // Check live suspension/deactivation status every ~7 seconds
+      if (tickCount % 2 === 0) {
+        const liveProfile = await fetchAstrologerProfileFromFirestore(currentId);
+        await evaluateRemoteRestriction(liveProfile);
+      }
     }, 3500);
     return () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
-  }, [currentId, refreshConsultations]);
+  }, [currentId, accountBlocked, refreshConsultations, evaluateRemoteRestriction]);
 
   // 3. In-Call Countdown Timer
   useEffect(() => {
@@ -582,6 +632,113 @@ export default function AstrologerDashboardScreen() {
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
+  if (accountBlocked) {
+    const isSuspended = accountBlocked.type === 'suspended';
+    return (
+      <SafeAreaView
+        edges={['top', 'bottom']}
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, justifyContent: 'center', padding: 24 },
+        ]}
+        testID="astrologerDashboard.blockedScreen"
+      >
+        <StatusBar style={colors.isLight ? 'dark' : 'light'} />
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: 24,
+            borderWidth: 1.5,
+            borderColor: 'rgba(220, 38, 38, 0.45)',
+            padding: 24,
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 22,
+              backgroundColor: 'rgba(220, 38, 38, 0.14)',
+              borderWidth: 1,
+              borderColor: 'rgba(220, 38, 38, 0.35)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 16,
+            }}
+          >
+            <AppIcon name="block" size={36} color="#DC2626" />
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              borderRadius: 100,
+              backgroundColor: 'rgba(220, 38, 38, 0.14)',
+              marginBottom: 10,
+            }}
+          >
+            <Text style={{ color: '#DC2626', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>
+              {isSuspended
+                ? (cms.blockedSuspendedTitle || 'Account Suspended')
+                : (cms.blockedDeactivatedTitle || 'Account Deactivated')}
+            </Text>
+          </View>
+          <Text
+            style={{
+              color: colors.textPrimary,
+              fontSize: 20,
+              fontWeight: '800',
+              textAlign: 'center',
+            }}
+          >
+            Astrologer Dashboard Disabled
+          </Text>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              textAlign: 'center',
+              marginTop: 10,
+              ...lh(13.5, 1.5),
+            }}
+          >
+            {accountBlocked.reason}
+          </Text>
+          <Text
+            style={{
+              color: colors.textMuted,
+              textAlign: 'center',
+              marginTop: 8,
+              ...lh(12, 1.45),
+            }}
+          >
+            Your profile has been hidden from the customer app and your dashboard session has been signed out until reactivated by an administrator.
+          </Text>
+
+          <View style={{ width: '100%', gap: 10, marginTop: 22 }}>
+            <ElevatedButton
+              label={cms.blockedContactSupportBtn || 'Contact Admin Support'}
+              icon="mail_outline"
+              onPress={() => {
+                Linking.openURL(
+                  'mailto:astropariharuk@gmail.com?subject=Astrologer%20Account%20Suspension%20Support'
+                ).catch(() => showSnackBar('Admin Email: astropariharuk@gmail.com'));
+              }}
+              paddingV={13}
+              radius={14}
+            />
+            <OutlinedButton
+              label={cms.blockedReturnLoginBtn || 'Return to Astrologer Login'}
+              onPress={() => go(AppRoutes.astrologerLoginScreen)}
+              paddingV={12}
+              radius={14}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView
       edges={['bottom']}
@@ -590,7 +747,7 @@ export default function AstrologerDashboardScreen() {
     >
       <StatusBar style={colors.isLight ? 'dark' : 'light'} />
       <AppBar
-        title="Astrologer Portal"
+        title={cms.headerTitle || 'Astrologer Portal'}
         testIDPrefix="astrologerDashboard.appBar"
         actions={[
           {
@@ -611,15 +768,15 @@ export default function AstrologerDashboardScreen() {
       >
         {(
           [
-            { id: 'overview', label: 'Overview', icon: 'dashboard', badge: 0 },
+            { id: 'overview', label: cms.mainTabs?.overview || 'Overview', icon: 'dashboard', badge: 0 },
             {
               id: 'consultations',
-              label: 'Consultations',
+              label: cms.mainTabs?.consultations || 'Consultations',
               icon: 'forum',
               badge: incomingRequests.length + activeSessions.length,
             },
-            { id: 'earnings', label: 'Earnings', icon: 'account_balance_wallet', badge: 0 },
-            { id: 'profile', label: 'Profile', icon: 'person', badge: 0 },
+            { id: 'earnings', label: cms.mainTabs?.earnings || 'Earnings', icon: 'account_balance_wallet', badge: 0 },
+            { id: 'profile', label: cms.mainTabs?.profile || 'Profile', icon: 'person', badge: 0 },
           ] as const
         ).map((tab) => {
           const isActive = activeTab === tab.id;
@@ -854,7 +1011,7 @@ export default function AstrologerDashboardScreen() {
                     <View style={{ marginLeft: 10, flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                         <Text style={{ color: colors.textPrimary, fontSize: 13.5, fontWeight: '800' }}>
-                          Supervised Probation Active
+                          {cms.probationBannerTitle || 'Supervised Probation Active'}
                         </Text>
                         <View
                           style={{
@@ -904,7 +1061,7 @@ export default function AstrologerDashboardScreen() {
                       marginLeft: 8,
                     }}
                   >
-                    Verified Full-Time Astrologer • Full consultation privileges active
+                    {cms.fullTimeBannerTitle || 'Verified Full-Time Astrologer • Full consultation privileges active'}
                   </Text>
                 </View>
               </View>
@@ -928,7 +1085,7 @@ export default function AstrologerDashboardScreen() {
                     </Text>
                     <StatusBadge
                       status={isOnline ? 'online' : 'offline'}
-                      customLabel={isOnline ? 'You are Online' : 'You are Offline'}
+                      customLabel={isOnline ? (cms.onlineLabel || 'You are Online') : (cms.offlineLabel || 'You are Offline')}
                     />
                   </View>
                   <Text style={{ color: 'rgba(247,239,228,0.75)', fontSize: 12, marginTop: 4 }}>
@@ -1129,7 +1286,7 @@ export default function AstrologerDashboardScreen() {
               </View>
 
               <ElevatedButton
-                label={isSavingProfile ? 'Saving Details...' : 'Save Profile & About Details'}
+                label={isSavingProfile ? (cms.savingProfileLabel || 'Saving Details...') : (cms.saveProfileButtonLabel || 'Save Profile & About Details')}
                 loading={isSavingProfile}
                 icon="save"
                 onPress={handleSaveProfileDetails}
@@ -1167,7 +1324,9 @@ export default function AstrologerDashboardScreen() {
                       fontWeight: '700',
                     }}
                   >
-                    {showOnWebsite ? '● Active in customer directory' : '○ Hidden from customers'}
+                    {showOnWebsite
+                      ? (cms.directoryVisibleLabel || '● Active in customer directory')
+                      : (cms.directoryHiddenLabel || '○ Hidden from customers')}
                   </Text>
                 </View>
 
@@ -1349,9 +1508,9 @@ export default function AstrologerDashboardScreen() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {(
                 [
-                  { id: 'requests', label: 'Incoming Requests', count: incomingRequests.length },
-                  { id: 'active', label: 'Active Sessions', count: activeSessions.length },
-                  { id: 'history', label: 'History', count: historySessions.length },
+                  { id: 'requests', label: cms.consultSubTabs?.requests || 'Incoming Requests', count: incomingRequests.length },
+                  { id: 'active', label: cms.consultSubTabs?.active || 'Active Sessions', count: activeSessions.length },
+                  { id: 'history', label: cms.consultSubTabs?.history || 'History', count: historySessions.length },
                 ] as const
               ).map((st) => {
                 const active = consultSubTab === st.id;
@@ -1643,7 +1802,7 @@ export default function AstrologerDashboardScreen() {
                 ₹{totalEarnings.toLocaleString()}
               </Text>
               <ElevatedButton
-                label="Withdraw Funds"
+                label={cms.withdrawButtonLabel || 'Withdraw Funds'}
                 icon="account_balance"
                 onPress={() => setShowWithdrawModal(true)}
                 style={{ marginTop: 12 }}
@@ -2015,7 +2174,7 @@ export default function AstrologerDashboardScreen() {
               </View>
 
               <ElevatedButton
-                label={isSavingProfile ? 'Saving Changes...' : 'Save Profile Changes'}
+                label={isSavingProfile ? (cms.savingProfileLabel || 'Saving Changes...') : (cms.saveProfileButtonLabel || 'Save Profile Changes')}
                 loading={isSavingProfile}
                 icon="save"
                 onPress={handleSaveProfileDetails}
@@ -2040,7 +2199,10 @@ export default function AstrologerDashboardScreen() {
       {/* =====================================================================================
           FULL-SCREEN LIVE CALL SESSION + IN-CALL CUSTOMER REPORTS DRAWER (`/call/[roomID]`)
          ===================================================================================== */}
-      <PortalOverlay visible={activeCallSession !== null} onRequestClose={() => setActiveCallSession(null)}>
+      <PortalOverlay
+        visible={activeCallSession !== null}
+        onRequestClose={() => setActiveCallSession(null)}
+      >
         <SafeAreaView style={{ flex: 1, backgroundColor: '#050811' }}>
           {/* Top Floating Call Control Bar (Matches `/call/[roomID]/page.tsx` lines 386-441) */}
           <View style={styles.callTopHeader}>
@@ -2465,7 +2627,7 @@ export default function AstrologerDashboardScreen() {
             Select Primary Skill / Specialty
           </Text>
           <ScrollView style={{ maxHeight: 340 }}>
-            {PRIMARY_SKILL_OPTIONS.map((sk) => (
+            {primarySkillOptions.map((sk) => (
               <Pressable
                 key={sk}
                 onPress={() => {
@@ -2531,7 +2693,7 @@ export default function AstrologerDashboardScreen() {
             <AppIcon name="logout_rounded" size={28} color={AppColors.error} />
           </View>
           <Text style={{ color: colors.textPrimary, fontSize: 19, fontWeight: '800' }}>
-            Confirm Sign Out
+            {cms.logoutModalTitle || 'Confirm Sign Out'}
           </Text>
           <Text
             style={{
@@ -2541,11 +2703,11 @@ export default function AstrologerDashboardScreen() {
               ...lh(13, 1.45),
             }}
           >
-            Are you sure you want to sign out of your Astrologer Dashboard? You will need to log in again to manage customer consultations.
+            {cms.logoutModalMessage || 'Are you sure you want to sign out of your Astrologer Dashboard? You will need to log in again to manage customer consultations.'}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 18, width: '100%' }}>
             <OutlinedButton
-              label="Cancel"
+              label={cms.logoutCancelBtn || 'Cancel'}
               onPress={() => setShowLogoutModal(false)}
               color={colors.textSecondary}
               borderColor={colors.cardBorder}
@@ -2553,7 +2715,7 @@ export default function AstrologerDashboardScreen() {
               paddingV={13}
             />
             <ElevatedButton
-              label="Yes, Sign Out"
+              label={cms.logoutConfirmBtn || 'Yes, Sign Out'}
               bg={AppColors.error}
               onPress={confirmSignOut}
               style={{ flex: 1 }}

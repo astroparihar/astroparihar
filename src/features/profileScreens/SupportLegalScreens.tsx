@@ -1,45 +1,33 @@
 /**
- * Port of lib/presentation/profile_screens/support_legal_screens.dart
- * (HelpCentreScreen, ContactSupportScreen, TermsOfServiceScreen, PrivacyPolicyScreen).
- * Dynamic theme support for Light Vedic & Dark Cosmic.
+ * Support & Legal Screens — 100% Dynamic Content with offline cache,
+ * live Admin Panel sync, pull-to-refresh, interactive FAQ topic filtering,
+ * and live Firestore support ticket submission.
  */
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Keyboard, Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppBar } from '@/components/AppBar';
 import { AppIcon } from '@/components/AppIcon';
 import { ElevatedButton } from '@/components/common';
 import { showSnackBar } from '@/components/overlays';
 import { lh, Text, TextInput } from '@/components/Text';
+import { API_ENDPOINTS } from '@/config/api';
+import { useAuthStore } from '@/features/auth/authStore';
 import { AppRoutes, pop, push } from '@/navigation/routes';
+import { AppContactOption, useSupportLegalStore } from '@/services/supportLegalStore';
+import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { withAlpha } from '@/theme/colors';
 import { useTranslation } from '@/theme/languageStore';
 import { useThemeColors } from '@/theme/themeStore';
-import { fetchDynamicFeed, postDynamic } from '@/services/dynamicApi';
-
-const CATEGORIES = [
-  { emoji: '🔮', title: 'Getting Started', count: 8, color: '#9370DB' },
-  { emoji: '💬', title: 'Consultations', count: 12, color: '#4FC3F7' },
-  { emoji: '💳', title: 'Payments & Wallet', count: 10, color: '#FFD700' },
-  { emoji: '📜', title: 'Reports & Kundli', count: 7, color: '#FF6B6B' },
-  { emoji: '👤', title: 'Account & Profile', count: 9, color: '#81C784' },
-  { emoji: '🔒', title: 'Privacy & Security', count: 6, color: '#FFB347' },
-];
-
-const FAQS = [
-  { q: 'How do I start a consultation with an astrologer?', a: 'Go to the Astrologers tab, browse available astrologers, and tap Chat or Call on any astrologer card. Ensure you have sufficient wallet balance before starting.' },
-  { q: 'How is my birth chart calculated?', a: 'AstroParihar uses traditional Vedic (Jyotish) calculations based on your exact birth date, time, and place. The chart uses the Lahiri ayanamsha system, which is the standard for Vedic astrology.' },
-  { q: 'Can I get a refund for a consultation?', a: 'If a consultation ends within 5 minutes due to technical issues, the amount is automatically refunded to your wallet. For other concerns, contact our support team within 24 hours.' },
-  { q: 'How do I add money to my wallet?', a: 'Go to Profile → Wallet → Add Money. Select an amount and choose your payment method (UPI, Card, or Net Banking). The amount is credited instantly.' },
-  { q: 'Are my consultations private?', a: 'Yes. All consultations are completely private and confidential. Your birth details and conversation history are encrypted and never shared with third parties.' },
-  { q: 'How accurate is the AI Astrologer?', a: 'AstroParihar AI is trained on classical Vedic texts and provides guidance based on your birth chart. For complex life decisions, we recommend consulting a human astrologer for deeper personalised insights.' },
-  { q: 'Can I create profiles for family members?', a: 'Yes. Go to Profile → Birth Profiles → Add New Profile. You can create profiles for yourself, partner, children, and other family members.' },
-];
 
 const H = ({ children, mt = 0 }: { children: string; mt?: number }) => {
   const colors = useThemeColors();
-  return <Text style={{ marginTop: mt, marginBottom: 12, color: colors.textPrimary, fontSize: 16, fontWeight: '700' }}>{children}</Text>;
+  return (
+    <Text style={{ marginTop: mt, marginBottom: 12, color: colors.textPrimary, fontSize: 16, fontWeight: '700' }}>
+      {children}
+    </Text>
+  );
 };
 
 export function HelpCentreScreen() {
@@ -47,36 +35,98 @@ export function HelpCentreScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [focused, setFocused] = useState(false);
   const [gridW, setGridW] = useState(0);
-  const [faqs, setFaqs] = useState(FAQS);
-  const cell = gridW > 0 ? (gridW - 20) / 3 : 0;
-  const filtered = faqs.map((f, i) => ({ ...f, i })).filter((f) => !query || f.q.toLowerCase().includes(query.toLowerCase()));
-  const toggle = (i: number) => setExpanded((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; });
+  const [refreshing, setRefreshing] = useState(false);
+
+  const help = useSupportLegalStore((s) => s.content.helpCentre);
+  const fetchContent = useSupportLegalStore((s) => s.fetchContent);
+  const helpMicro = useAppScreensCmsStore((s) => s.config.cmsMicroLabels.helpCentre);
 
   useEffect(() => {
-    fetchDynamicFeed('/api/app-dynamic/support-legal', 'support_legal').then((data) => {
-      const live = data?.faqs || data?.help?.faqs || data?.config?.faqs;
-      if (Array.isArray(live) && live.length) setFaqs(live.map((f: any) => ({ q: f.q || f.question || '', a: f.a || f.answer || '' })));
+    fetchContent();
+  }, [fetchContent]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchContent();
+    setRefreshing(false);
+  };
+
+  const cell = gridW > 0 ? (gridW - 20) / 3 : 0;
+  const filtered = (help.faqs || [])
+    .map((f, i) => ({ ...f, i }))
+    .filter((f) => {
+      const matchesCategory =
+        !selectedCategory || (f.category && f.category.toLowerCase() === selectedCategory.toLowerCase());
+      const q = query.trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        f.q.toLowerCase().includes(q) ||
+        f.a.toLowerCase().includes(q) ||
+        (f.category && f.category.toLowerCase().includes(q));
+      return matchesCategory && matchesQuery;
     });
-  }, []);
+
+  const toggle = (i: number) =>
+    setExpanded((s) => {
+      const n = new Set(s);
+      if (n.has(i)) n.delete(i);
+      else n.add(i);
+      return n;
+    });
+
+  const handleCategoryPress = (title: string) => {
+    if (selectedCategory?.toLowerCase() === title.toLowerCase()) {
+      setSelectedCategory(null);
+    } else {
+      setSelectedCategory(title);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="helpCentre.screen">
       <AppBar
-        title={t('profile.helpCentre', 'Help Centre')}
+        title={help.appBarTitle || t('profile.helpCentre', 'Help Centre')}
         onBack={pop}
         testIDPrefix="helpCentre"
         backgroundColor={colors.background}
         backColor={colors.textPrimary}
       />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90) }} keyboardShouldPersistTaps="handled">
-        <View style={{ height: 52, borderRadius: 14, backgroundColor: colors.surface, borderWidth: focused ? 1.5 : 1, borderColor: focused ? colors.goldAccent : colors.cardBorder, flexDirection: 'row', alignItems: 'center' }}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldAccent} />}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90) }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View
+          style={{
+            height: 52,
+            borderRadius: 14,
+            backgroundColor: colors.surface,
+            borderWidth: focused ? 1.5 : 1,
+            borderColor: focused ? colors.goldAccent : colors.cardBorder,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
           <AppIcon name="search_rounded" color={colors.textMuted} style={{ marginHorizontal: 12 }} />
-          <TextInput testID="helpCentre.search" value={query} onChangeText={setQuery} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="Search help articles..." style={{ flex: 1, fontSize: 15 }} />
+          <TextInput
+            testID="helpCentre.search"
+            value={query}
+            onChangeText={setQuery}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={help.searchPlaceholder || 'Search help articles...'}
+            style={{ flex: 1, fontSize: 15 }}
+          />
           {query ? (
-            <Pressable testID="helpCentre.search.clear" onPress={() => setQuery('')} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable
+              testID="helpCentre.search.clear"
+              onPress={() => setQuery('')}
+              style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
+            >
               <AppIcon name="clear_rounded" color={colors.textMuted} size={18} />
             </Pressable>
           ) : null}
@@ -102,47 +152,190 @@ export function HelpCentreScreen() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 28 }}>🎧</Text>
+                <Text style={{ fontSize: 28 }}>{help.needHelpBanner?.emoji || '🎧'}</Text>
                 <View style={{ flex: 1, marginLeft: 14 }}>
-                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>Need more help?</Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>Our Vedic support team is available 24/7</Text>
+                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>
+                    {help.needHelpBanner?.title || 'Need more help?'}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                    {help.needHelpBanner?.subtitle || 'Our Vedic support team is available 24/7'}
+                  </Text>
                 </View>
                 <AppIcon name="chevron_right_rounded" color={colors.goldAccent} />
               </LinearGradient>
             </Pressable>
-            <H mt={20}>Browse by Topic</H>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }} onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
-              {cell > 0 && CATEGORIES.map((c) => (
-                <View key={c.title} style={{ width: cell, height: cell / 1.1, borderRadius: 14, backgroundColor: withAlpha(c.color, colors.isLight ? 15 : 20), borderWidth: 1, borderColor: withAlpha(c.color, 60), alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 22 }}>{c.emoji}</Text>
-                  <Text numberOfLines={2} style={{ marginTop: 4, color: c.color, fontSize: 10, fontWeight: '700', textAlign: 'center' }}>{c.title}</Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 9 }}>{`${c.count} articles`}</Text>
-                </View>
-              ))}
+            <H mt={20}>{help.browseTopicsTitle || 'Browse by Topic'}</H>
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}
+              onLayout={(e) => setGridW(e.nativeEvent.layout.width)}
+            >
+              {cell > 0 &&
+                (help.categories || []).map((c) => {
+                  const isSelected = selectedCategory?.toLowerCase() === c.title.toLowerCase();
+                  const liveCount = (help.faqs || []).filter(
+                    (f) => f.category?.toLowerCase() === c.title.toLowerCase()
+                  ).length;
+                  return (
+                    <Pressable
+                      key={c.title}
+                      onPress={() => handleCategoryPress(c.title)}
+                      style={{
+                        width: cell,
+                        height: cell / 1.05,
+                        borderRadius: 14,
+                        backgroundColor: isSelected
+                          ? withAlpha(c.color, colors.isLight ? 40 : 45)
+                          : withAlpha(c.color, colors.isLight ? 15 : 20),
+                        borderWidth: isSelected ? 2 : 1,
+                        borderColor: isSelected ? c.color : withAlpha(c.color, 60),
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 22 }}>{c.emoji}</Text>
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          marginTop: 4,
+                          color: isSelected ? colors.textPrimary : c.color,
+                          fontSize: 10.5,
+                          fontWeight: isSelected ? '800' : '700',
+                          textAlign: 'center',
+                        }}
+                      >
+                        {c.title}
+                      </Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 9, marginTop: 2 }}>
+                        {`${liveCount || c.count || 0} ${helpMicro.faqsSuffix}`}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
             </View>
             <View style={{ height: 24 }} />
           </>
         ) : null}
-        <H>Frequently Asked Questions</H>
+
+        <H>{help.faqsTitle || 'Frequently Asked Questions'}</H>
+
+        {selectedCategory ? (
+          <View
+            style={{
+              marginBottom: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: 12,
+              backgroundColor: withAlpha(colors.goldAccent, colors.isLight ? 20 : 25),
+              borderWidth: 1,
+              borderColor: colors.goldAccent,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+              <AppIcon name="filter_alt_rounded" color={colors.goldAccent} size={18} />
+              <Text
+                numberOfLines={1}
+                style={{ marginLeft: 6, color: colors.textPrimary, fontSize: 13, fontWeight: '700' }}
+              >
+                {`${selectedCategory} (${filtered.length} ${helpMicro.faqsSuffix})`}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setSelectedCategory(null)}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 8,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
+              }}
+            >
+              <Text style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '700' }}>{helpMicro.showAllLabel}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {filtered.map((f) => {
           const isExp = expanded.has(f.i);
           return (
-            <View key={f.i} style={{ marginBottom: 8, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: isExp ? colors.goldAccent : colors.cardBorder }}>
-              <Pressable testID={`helpCentre.faq.${f.i}`} onPress={() => toggle(f.i)} style={{ padding: 14, flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ flex: 1, color: colors.textPrimary, fontSize: 13, fontWeight: '600' }}>{f.q}</Text>
-                <AppIcon name={isExp ? 'keyboard_arrow_up_rounded' : 'keyboard_arrow_down_rounded'} color={colors.goldAccent} size={20} />
+            <View
+              key={f.i}
+              style={{
+                marginBottom: 8,
+                borderRadius: 14,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: isExp ? colors.goldAccent : colors.cardBorder,
+              }}
+            >
+              <Pressable
+                testID={`helpCentre.faq.${f.i}`}
+                onPress={() => toggle(f.i)}
+                style={{ padding: 14, flexDirection: 'row', alignItems: 'flex-start' }}
+              >
+                <View style={{ flex: 1 }}>
+                  {f.category ? (
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: '700',
+                        color: colors.goldAccent,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {f.category}
+                    </Text>
+                  ) : null}
+                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '600', lineHeight: 18 }}>
+                    {f.q}
+                  </Text>
+                </View>
+                <AppIcon
+                  name={isExp ? 'keyboard_arrow_up_rounded' : 'keyboard_arrow_down_rounded'}
+                  color={colors.goldAccent}
+                  size={20}
+                  style={{ marginLeft: 8, marginTop: 2 }}
+                />
               </Pressable>
-              {isExp ? <Text style={{ paddingHorizontal: 14, paddingBottom: 14, color: colors.textSecondary, ...lh(12, 1.5) }}>{f.a}</Text> : null}
+              {isExp ? (
+                <Text style={{ paddingHorizontal: 14, paddingBottom: 14, color: colors.textSecondary, ...lh(12.5, 1.6) }}>
+                  {f.a}
+                </Text>
+              ) : null}
             </View>
           );
         })}
-        {filtered.length === 0 ? <Text testID="helpCentre.noResults" style={{ paddingVertical: 40, textAlign: 'center', color: colors.textMuted }}>No results found</Text> : null}
+        {filtered.length === 0 ? (
+          <Text testID="helpCentre.noResults" style={{ paddingVertical: 40, textAlign: 'center', color: colors.textMuted }}>
+            {help.noResultsText || 'No results found'}
+          </Text>
+        ) : null}
       </ScrollView>
     </View>
   );
 }
 
-function FormField({ label, hint, multiline, testID, value, onChange }: { label: string; hint: string; multiline?: boolean; testID: string; value: string; onChange: (value: string) => void }) {
+function FormField({
+  label,
+  hint,
+  value,
+  onChangeText,
+  multiline,
+  testID,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  multiline?: boolean;
+  testID: string;
+}) {
   const colors = useThemeColors();
   const [focused, setFocused] = useState(false);
   return (
@@ -151,7 +344,7 @@ function FormField({ label, hint, multiline, testID, value, onChange }: { label:
       <TextInput
         testID={testID}
         value={value}
-        onChangeText={onChange}
+        onChangeText={onChangeText}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={hint}
@@ -177,25 +370,95 @@ export function ContactSupportScreen() {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const options = [
-    { emoji: '💬', title: 'Live Chat', desc: 'Chat with our support team instantly', color: '#4FC3F7', action: 'Start Chat' },
-    { emoji: '📧', title: 'Email Support', desc: 'support@astroparihar.com', color: '#2D9E6B', action: 'Send Email' },
-    { emoji: '📞', title: 'Phone Support', desc: '+91 1800-ASTRO (Toll Free)', color: '#FFB347', action: 'Call Now' },
-    { emoji: '📱', title: 'WhatsApp', desc: 'Message us on WhatsApp', color: '#25D366', action: 'Open WhatsApp' },
-  ];
+  const authUser = useAuthStore((s) => s.user);
+
+  const contact = useSupportLegalStore((s) => s.content.contactSupport);
+  const fetchContent = useSupportLegalStore((s) => s.fetchContent);
+  const contactMicro = useAppScreensCmsStore((s) => s.config.cmsMicroLabels.contactSupport);
+
+  const [refreshing, setRefreshing] = useState(false);
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchContent();
+  }, [fetchContent]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchContent();
+    setRefreshing(false);
+  };
+
+  const handleContactAction = (o: AppContactOption) => {
+    if (o.value) {
+      Linking.openURL(o.value).catch(() => {
+        showSnackBar(`Could not open ${o.title}. Please try again.`, colors.surfaceVariant);
+      });
+      return;
+    }
+    if (o.actionType === 'chat') {
+      push(AppRoutes.aiChatScreen);
+      return;
+    }
+    showSnackBar(`Connecting to ${o.title}...`, colors.surfaceVariant);
+  };
+
+  const handleSubmitTicket = async () => {
+    if (submitting) return;
+    if (!subject.trim() || !description.trim()) {
+      showSnackBar(contactMicro.validationToast, '#CF4444');
+      return;
+    }
+    Keyboard.dismiss();
+    setSubmitting(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.supportTickets, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: subject.trim(),
+          description: description.trim(),
+          userName: authUser?.name || 'Guest Seeker',
+          userPhone: authUser?.phone || '',
+          userEmail: authUser?.email || '',
+          userUid: authUser?.uid || '',
+          source: 'mobile-app',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        setSubject('');
+        setDescription('');
+        showSnackBar(
+          data.message || contact.ticketSuccessMessage || `Support ticket submitted! Ticket ID #${data.ticketId}`,
+          '#2D9E6B'
+        );
+      } else {
+        showSnackBar(data?.error || 'Could not submit ticket. Please try again.', '#CF4444');
+      }
+    } catch {
+      showSnackBar('Network error submitting ticket. Please try again.', '#CF4444');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="contactSupport.screen">
       <AppBar
-        title={t('profile.contactSupport', 'Contact Support')}
+        title={contact.appBarTitle || t('profile.contactSupport', 'Contact Support')}
         onBack={pop}
         testIDPrefix="contactSupport"
         backgroundColor={colors.background}
         backColor={colors.textPrimary}
       />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90) }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldAccent} />}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90) }}
+        keyboardShouldPersistTaps="handled"
+      >
         <LinearGradient
           colors={
             colors.isLight
@@ -206,13 +469,16 @@ export function ContactSupportScreen() {
           end={{ x: 1, y: 0.5 }}
           style={{ padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center' }}
         >
-          <Text style={{ fontSize: 40 }}>🎧</Text>
-          <Text style={{ marginTop: 10, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>We&apos;re Here to Help</Text>
+          <Text style={{ fontSize: 40 }}>{contact.banner?.emoji || '🎧'}</Text>
+          <Text style={{ marginTop: 10, color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>
+            {contact.banner?.title || "We're Here to Help"}
+          </Text>
           <Text style={{ marginTop: 6, color: colors.textMuted, fontSize: 12, textAlign: 'center' }}>
-            Our customer care team is available 24/7 to assist you with any questions or consultations.
+            {contact.banner?.subtitle ||
+              'Our customer care team is available 24/7 to assist you with any questions or consultations.'}
           </Text>
           <View style={{ marginTop: 12, flexDirection: 'row', gap: 20 }}>
-            {[['Chat', '< 2 min'], ['Email', '< 4 hrs'], ['Call', '< 5 min']].map(([l, timeStr]) => (
+            {(contact.responseTimes || []).map(([l, timeStr]) => (
               <View key={l} style={{ alignItems: 'center' }}>
                 <Text style={{ color: colors.goldAccent, fontSize: 12, fontWeight: '700' }}>{timeStr}</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 10 }}>{l}</Text>
@@ -221,11 +487,11 @@ export function ContactSupportScreen() {
           </View>
         </LinearGradient>
 
-        <H mt={24}>Contact Options</H>
-        {options.map((o) => (
+        <H mt={24}>{contact.optionsTitle || 'Contact Options'}</H>
+        {(contact.options || []).map((o) => (
           <Pressable
             key={o.title}
-            onPress={() => showSnackBar(`Connecting to ${o.title}...`, colors.surfaceVariant)}
+            onPress={() => handleContactAction(o)}
             style={{
               marginBottom: 10,
               padding: 14,
@@ -237,40 +503,73 @@ export function ContactSupportScreen() {
               alignItems: 'center',
             }}
           >
-            <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: withAlpha(o.color, colors.isLight ? 20 : 25), alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                backgroundColor: withAlpha(o.color, colors.isLight ? 20 : 25),
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <Text style={{ fontSize: 22 }}>{o.emoji}</Text>
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
               <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '600' }}>{o.title}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 11 }}>{o.desc}</Text>
             </View>
-            <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: withAlpha(o.color, 25), borderWidth: 1, borderColor: withAlpha(o.color, 80) }}>
+            <View
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: withAlpha(o.color, 25),
+                borderWidth: 1,
+                borderColor: withAlpha(o.color, 80),
+              }}
+            >
               <Text style={{ color: o.color, fontSize: 11, fontWeight: '700' }}>{o.action}</Text>
             </View>
           </Pressable>
         ))}
 
-        <H mt={24}>Submit a Ticket</H>
-        <View style={{ padding: 16, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorder, gap: 12 }}>
-          <FormField testID="contactSupport.subject" label="Subject" hint="Briefly describe your inquiry" value={subject} onChange={setSubject} />
-          <FormField testID="contactSupport.description" label="Description" hint="Provide more details..." multiline value={description} onChange={setDescription} />
+        <H mt={24}>{contact.ticketTitle || 'Submit a Ticket'}</H>
+        <View
+          style={{
+            padding: 16,
+            borderRadius: 18,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            gap: 12,
+          }}
+        >
+          <FormField
+            testID="contactSupport.subject"
+            label={contact.ticketSubjectLabel || 'Subject'}
+            hint={contact.ticketSubjectHint || 'Briefly describe your inquiry'}
+            value={subject}
+            onChangeText={setSubject}
+          />
+          <FormField
+            testID="contactSupport.description"
+            label={contact.ticketDescLabel || 'Description'}
+            hint={contact.ticketDescHint || 'Provide more details...'}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
           <ElevatedButton
             testID="contactSupport.submit"
-            label={submitting ? 'Submitting...' : 'Submit Ticket'}
-            onPress={async () => {
-              if (!subject.trim() || !description.trim()) { showSnackBar('Please enter a subject and description', '#CF4444'); return; }
-              setSubmitting(true);
-              const r = await postDynamic('/api/app-dynamic/support-tickets', { subject: subject.trim(), description: description.trim() });
-              setSubmitting(false);
-              if (!r.ok) { showSnackBar(r.data?.message || 'Could not submit support ticket', '#CF4444'); return; }
-              setSubject(''); setDescription('');
-              showSnackBar(r.data?.ticketId ? `Support ticket submitted: ${r.data.ticketId}` : 'Support ticket submitted successfully', colors.surfaceVariant);
-            }}
+            label={submitting ? contactMicro.submittingLabel : contact.ticketButtonLabel || 'Submit Ticket'}
+            onPress={handleSubmitTicket}
+            disabled={submitting}
+            loading={submitting}
             radius={12}
             paddingV={14}
             fontSize={14}
             style={{ marginTop: 4 }}
-            loading={submitting}
           />
         </View>
       </ScrollView>
@@ -278,7 +577,23 @@ export function ContactSupportScreen() {
   );
 }
 
-function LegalScreen({ title, emoji, sections, testID }: { title: string; emoji: string; sections: Array<[string, string]>; testID: string }) {
+function LegalScreen({
+  title,
+  emoji,
+  lastUpdated,
+  sections,
+  testID,
+  onRefresh,
+  refreshing,
+}: {
+  title: string;
+  emoji: string;
+  lastUpdated?: string;
+  sections: [string, string][];
+  testID: string;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   return (
@@ -290,19 +605,32 @@ function LegalScreen({ title, emoji, sections, testID }: { title: string; emoji:
         backgroundColor={colors.background}
         backColor={colors.textPrimary}
       />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90) }}>
-        <View style={{ padding: 14, borderRadius: 14, backgroundColor: withAlpha(colors.goldAccent, colors.isLight ? 20 : 15), borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center' }}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldAccent} />}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(150, insets.bottom + 90) }}
+      >
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 14,
+            backgroundColor: withAlpha(colors.goldAccent, colors.isLight ? 20 : 15),
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
           <Text style={{ fontSize: 20 }}>{emoji}</Text>
           <View style={{ marginLeft: 10 }}>
             <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>{title}</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 11 }}>Last updated: January 2026</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 11 }}>{lastUpdated || 'Last updated: January 2026'}</Text>
           </View>
         </View>
         <View style={{ height: 20 }} />
-        {sections.map(([t, c]) => (
-          <View key={t} style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.goldAccent, fontSize: 14, fontWeight: '700' }}>{t}</Text>
-            <Text style={{ marginTop: 8, color: colors.textSecondary, ...lh(13, 1.6) }}>{c}</Text>
+        {sections.map(([heading, body]) => (
+          <View key={heading} style={{ marginBottom: 20 }}>
+            <Text style={{ color: colors.goldAccent, fontSize: 14, fontWeight: '700' }}>{heading}</Text>
+            <Text style={{ marginTop: 8, color: colors.textSecondary, ...lh(13, 1.6) }}>{body}</Text>
           </View>
         ))}
       </ScrollView>
@@ -312,39 +640,58 @@ function LegalScreen({ title, emoji, sections, testID }: { title: string; emoji:
 
 export function TermsOfServiceScreen() {
   const { t } = useTranslation();
+  const terms = useSupportLegalStore((s) => s.content.terms);
+  const fetchContent = useSupportLegalStore((s) => s.fetchContent);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchContent();
+  }, [fetchContent]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchContent();
+    setRefreshing(false);
+  };
+
   return (
     <LegalScreen
       testID="terms.screen"
-      title={t('profile.terms', 'Terms of Service')}
-      emoji="⚖️"
-      sections={[
-        ['1. Acceptance of Terms', "By accessing or using AstroParihar's services, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.\n\nAstroParihar provides astrology-related content, AI-powered guidance, and connections to professional astrologers for informational and guidance purposes."],
-        ['2. Services Provided', 'AstroParihar offers:\n• AI-powered astrology guidance\n• Live consultations with verified astrologers\n• Kundli generation and analysis\n• Horoscope reports and predictions\n• Vedic remedies and recommendations\n• Panchang and astrological calendar\n\nAll services are provided for spiritual guidance and should not replace professional medical, legal, or financial advice.'],
-        ['3. User Accounts', 'You are responsible for maintaining the confidentiality of your account credentials. You must provide accurate birth details for accurate astrological analysis.'],
-        ['4. Payments and Refunds', 'Wallet credits can be utilized for consultations and reports in real-time. Unused balance is stored securely.'],
-        ['5. Disclaimer', 'Astrology is an ancient practice. Our services are for spiritual guidance. We do not promote fear-based astrology or guarantee specific outcomes.'],
-        ['6. Privacy', 'Your birth data and consultation history are kept strictly confidential. We do not sell personal data to third parties.'],
-        ['7. Contact', 'For questions about these Terms, contact us at:\nlegal@astroparihar.com\n\nAstroParihar'],
-      ]}
+      title={terms.title || t('profile.terms', 'Terms of Service')}
+      emoji={terms.emoji || '⚖️'}
+      lastUpdated={terms.lastUpdated}
+      sections={terms.sections || []}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
     />
   );
 }
 
 export function PrivacyPolicyScreen() {
   const { t } = useTranslation();
+  const privacyPolicy = useSupportLegalStore((s) => s.content.privacyPolicy);
+  const fetchContent = useSupportLegalStore((s) => s.fetchContent);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchContent();
+  }, [fetchContent]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchContent();
+    setRefreshing(false);
+  };
+
   return (
     <LegalScreen
       testID="privacyPolicy.screen"
-      title={t('profile.privacyPolicy', 'Privacy Policy')}
-      emoji="🔒"
-      sections={[
-        ['1. Information We Collect', 'We collect the following information to provide our services:\n\n• Personal details: Name, email, phone number\n• Birth details: Date, time, and place of birth\n• Usage data: App interactions and preferences\n• Payment information: Transaction records\n• Consultation history: Chat and call records'],
-        ['2. How We Use Your Information', 'Your information is used to:\n• Generate accurate Kundli and horoscope reports\n• Connect you with appropriate astrologers\n• Provide personalised recommendations\n• Process payments and maintain wallet balance\n• Improve our AI astrology models\n• Send relevant notifications (with your consent)'],
-        ['3. Data Security', 'AstroParihar employs industry-standard security measures:\n• End-to-end encryption for consultations\n• Secure payment processing via 256-bit SSL\n• Regular security audits\n• Strict access controls\n\nYour birth data is treated as sensitive personal information and is never shared without your explicit consent.'],
-        ['4. Data Sharing', 'We do not sell your personal data. We may share data with:\n• Astrologers (only birth details necessary for consultation)\n• Payment processors (for transaction processing)\n\nWe never share your consultation content with third parties.'],
-        ['5. Your Rights', 'You have the right to:\n• Access your personal data\n• Correct inaccurate information\n• Delete your account and data\n• Download an archive copy of your data'],
-        ['6. Contact Us', 'For privacy-related queries:\nprivacy@astroparihar.com\n\nAstroParihar Privacy Team'],
-      ]}
+      title={privacyPolicy.title || t('profile.privacyPolicy', 'Privacy Policy')}
+      emoji={privacyPolicy.emoji || '🔒'}
+      lastUpdated={privacyPolicy.lastUpdated}
+      sections={privacyPolicy.sections || []}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
     />
   );
 }
