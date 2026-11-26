@@ -27,7 +27,7 @@ import {
   STORAGE_REAL_ASTROLOGERS_KEY,
 } from '@/services/homeDataService';
 import { generateZegoRoomId } from '@/services/zegoService';
-import { AppRoutes, push } from '@/navigation/routes';
+import { AppRoutes, push, useExtra } from '@/navigation/routes';
 import { useCurrencyStore } from '@/services/currencyStore';
 import { useAppScreensCmsStore } from '@/services/appScreensCmsStore';
 import { argb, withAlpha } from '@/theme/colors';
@@ -951,7 +951,18 @@ function mapRealAstrologers(realList: any[]): AstrologerData[] {
 
 /* ------------------------------------------------------------------ screen */
 export default function LiveAstrologersScreen() {
-  const [astrologerType, setAstrologerType] = useState<'real' | 'ai'>('real');
+  const extra = useExtra<{ astrologerType?: 'real' | 'ai'; type?: 'real' | 'ai'; tab?: 'real' | 'ai' }>();
+  const [astrologerType, setAstrologerType] = useState<'real' | 'ai'>(() => {
+    const t = extra?.astrologerType || extra?.type || extra?.tab;
+    return t === 'ai' ? 'ai' : 'real';
+  });
+
+  useEffect(() => {
+    const t = extra?.astrologerType || extra?.type || extra?.tab;
+    if (t === 'real' || t === 'ai') {
+      setAstrologerType(t);
+    }
+  }, [extra]);
   const [realAstrologers, setRealAstrologers] = useState<AstrologerData[]>(() =>
     mapRealAstrologers(DEFAULT_REAL_ASTROLOGERS)
   );

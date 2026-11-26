@@ -736,6 +736,7 @@ export default function ProfileScreen() {
       const initialDate = parseDobToDate(editDob);
       const chosen = await pickDate({
         value: initialDate,
+        minimumDate: new Date(1900, 0, 1),
         maximumDate: new Date(),
       });
       if (chosen) {

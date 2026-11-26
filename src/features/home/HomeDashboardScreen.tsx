@@ -1781,7 +1781,7 @@ function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAst
         </View>
         <Pressable
           testID="home.aiAstrologers.viewAll"
-          onPress={() => push(AppRoutes.aiChatScreen)}
+          onPress={() => push(AppRoutes.liveAstrologersScreen, { astrologerType: 'ai' })}
           style={{
             paddingHorizontal: 10,
             paddingVertical: 5,
@@ -1806,13 +1806,7 @@ function AiAstrologersCarousel({ aiAstrologers = [] }: { aiAstrologers?: LiveAst
             key={a.id || a.name}
             testID={`home.aiAstrologer.${a.id || a.name}`}
             onPress={() => {
-              push(AppRoutes.aiChatScreen, {
-                astrologerId: a.id,
-                astrologerName: a.name,
-                avatarUrl: a.imageUrl,
-                ...(a.voiceGender ? { voiceGender: a.voiceGender } : {}),
-                ...(a.voiceId ? { voiceId: a.voiceId } : {}),
-              });
+              push(AppRoutes.astrologerDetailScreen, a);
             }}
             style={{
               width: 300,

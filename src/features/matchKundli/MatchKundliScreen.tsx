@@ -122,7 +122,7 @@ function PersonCard({
   const onPickDate = async () => {
     const picked = await pickDate({
       value: new Date(1994, 4, 12),
-      minimumDate: new Date(1940, 0, 1),
+      minimumDate: new Date(1900, 0, 1),
       maximumDate: new Date(),
     });
     if (picked) {
