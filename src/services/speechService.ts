@@ -415,6 +415,11 @@ async function resolveVoiceIdentifier(langCode: string, isFemale: boolean): Prom
   }
 }
 
+interface SmoothNeuralAudioResult {
+  audioBase64: string;
+  voiceUsed: string;
+}
+
 async function fetchSmoothNeuralAudioChunk(params: {
   text: string;
   lang: string;
@@ -422,7 +427,7 @@ async function fetchSmoothNeuralAudioChunk(params: {
   voiceId?: string;
   astrologerId?: string;
   astrologerName?: string;
-}): Promise<string | null> {
+}): Promise<SmoothNeuralAudioResult | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 9000);
   try {
@@ -459,7 +464,7 @@ async function fetchSmoothNeuralAudioChunk(params: {
       typeof data.audioBase64 === 'string' &&
       data.audioBase64.length > 64
     ) {
-      return data.audioBase64;
+      return { audioBase64: data.audioBase64, voiceUsed };
     }
     return null;
   } catch {
@@ -609,7 +614,7 @@ export async function speakAstrologerText(
       let hasNotifiedStart = false;
 
       // Kick off chunk 0 synthesis right away
-      let nextFetchPromise: Promise<string | null> | null = fetchSmoothNeuralAudioChunk({
+      let nextFetchPromise: Promise<SmoothNeuralAudioResult | null> | null = fetchSmoothNeuralAudioChunk({
         text: neuralChunks[0],
         lang: meta.iso2,
         gender: resolvedGender,
@@ -621,7 +626,7 @@ export async function speakAstrologerText(
       for (let i = 0; i < neuralChunks.length; i++) {
         if (currentToken !== activeSpeechId) return;
 
-        const audioBase64 = nextFetchPromise ? await nextFetchPromise : null;
+        const chunkResult = nextFetchPromise ? await nextFetchPromise : null;
         if (currentToken !== activeSpeechId) return;
 
         // Pre-fetch chunk i+1 in parallel while chunk i plays for seamless ChatGPT-like flow
@@ -638,7 +643,7 @@ export async function speakAstrologerText(
           nextFetchPromise = null;
         }
 
-        if (!audioBase64) {
+        if (!chunkResult) {
           // Smoothly finish remaining text using device fallback so speech never cuts off
           const remaining = neuralChunks.slice(i).join(' ');
           await speakWithDeviceFallback(
@@ -652,14 +657,24 @@ export async function speakAstrologerText(
           return;
         }
 
-        const played = await playNeuralAudioBase64(audioBase64, {
-          onStart: () => {
-            if (currentToken === activeSpeechId && !hasNotifiedStart) {
-              hasNotifiedStart = true;
-              options.onStart?.();
-            }
+        // When server uses fallback TTS (Google TTS), it is natively female for Indic languages.
+        // For authentic male astrologers (Acharya Devavrat, Guru Brihaspati, etc.), apply acoustic
+        // baritone pitch modulation (0.87) to produce a calm, rich, mature Pandit baritone!
+        const isMaleFallback = !isFemale && Boolean(chunkResult.voiceUsed && chunkResult.voiceUsed.startsWith('fallback:'));
+        const pitchShift = isMaleFallback ? 0.87 : 1.0;
+
+        const played = await playNeuralAudioBase64(
+          chunkResult.audioBase64,
+          {
+            onStart: () => {
+              if (currentToken === activeSpeechId && !hasNotifiedStart) {
+                hasNotifiedStart = true;
+                options.onStart?.();
+              }
+            },
           },
-        });
+          { pitchShift }
+        );
 
         if (currentToken !== activeSpeechId) return;
 

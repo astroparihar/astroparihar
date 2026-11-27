@@ -8,6 +8,10 @@ export interface NeuralAudioCallbacks {
   onError?: (err: any) => void;
 }
 
+export interface NeuralAudioOptions {
+  pitchShift?: number;
+}
+
 interface ActivePlayback {
   id: number;
   callbacks: NeuralAudioCallbacks;
@@ -64,7 +68,8 @@ export function isNeuralAudioReady(): boolean {
  */
 export function playNeuralAudioBase64(
   base64Mp3: string,
-  callbacks: NeuralAudioCallbacks = {}
+  callbacks: NeuralAudioCallbacks = {},
+  options?: NeuralAudioOptions
 ): Promise<boolean> {
   return new Promise((resolve) => {
     if (!base64Mp3 || base64Mp3.length < 32) {
@@ -107,6 +112,12 @@ export function playNeuralAudioBase64(
       try {
         const audio = new (globalThis as any).Audio(`data:audio/mpeg;base64,${base64Mp3}`);
         webHtmlAudioGlobal = audio;
+        if (options?.pitchShift && options.pitchShift !== 1.0) {
+          try {
+            audio.preservesPitch = false;
+            audio.playbackRate = options.pitchShift;
+          } catch {}
+        }
         audio.onplay = () => {
           if (myId === playbackSeq) callbacks.onStart?.();
         };
@@ -142,7 +153,11 @@ export function playNeuralAudioBase64(
     }, 3500);
 
     try {
-      const payload = JSON.stringify({ id: myId, b64: base64Mp3 });
+      const payload = JSON.stringify({
+        id: myId,
+        b64: base64Mp3,
+        pitchShift: options?.pitchShift || 1.0,
+      });
       webViewRefGlobal.injectJavaScript(
         `if (window.__apPlayAudio) { window.__apPlayAudio(${payload}); } else { window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ERROR', id: ${myId}, msg: 'Bridge missing' })); } true;`
       );
@@ -234,6 +249,22 @@ const NEURAL_AUDIO_HTML = `
 
           audioEl.src = currentUrl;
           audioEl.volume = 1.0;
+          var pitchShift = payload && typeof payload.pitchShift === 'number' ? payload.pitchShift : 1.0;
+          if (pitchShift && pitchShift !== 1.0) {
+            try {
+              audioEl.preservesPitch = false;
+              audioEl.mozPreservesPitch = false;
+              audioEl.webkitPreservesPitch = false;
+              audioEl.playbackRate = pitchShift;
+            } catch (e) {}
+          } else {
+            try {
+              audioEl.preservesPitch = true;
+              audioEl.mozPreservesPitch = true;
+              audioEl.webkitPreservesPitch = true;
+              audioEl.playbackRate = 1.0;
+            } catch (e) {}
+          }
           var playPromise = audioEl.play();
           if (playPromise && typeof playPromise.catch === 'function') {
             playPromise.catch(function(err) {
