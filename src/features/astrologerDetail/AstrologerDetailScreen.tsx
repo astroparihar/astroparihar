@@ -529,7 +529,7 @@ export default function AstrologerDetailScreen() {
   };
 
   const { height: screenH } = useWindowDimensions();
-  const tabPagerHeight = tab === 0 ? 880 : tab === 1 ? Math.max(520, reviewsList.length * 175 + 240) : 640;
+  const tabPagerHeight = tab === 0 ? 580 : tab === 1 ? Math.max(380, reviewsList.length * 175 + 200) : 460;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }} testID="astrologerDetail.screen">
@@ -912,7 +912,7 @@ export default function AstrologerDetailScreen() {
             </View>,
           ]}
         </TabPager>
-        <View style={{ height: 180 + insets.bottom }} />
+        <View style={{ height: 100 + insets.bottom }} />
       </Animated.ScrollView>
 
       {/* Pinned Toolbar */}

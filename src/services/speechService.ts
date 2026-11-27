@@ -444,14 +444,15 @@ async function fetchSmoothNeuralAudioChunk(params: {
     if (!res.ok) return null;
     const data = await res.json();
     const voiceUsed = String(data?.voiceUsed || '').toLowerCase();
-    // Only use remote audio if the server synthesized a genuine gender-specific studio voice
-    // (OpenAI ChatGPT gpt-4o-mini-tts / tts-1-hd or true neural voice).
-    // Reject single-voice generic fallbacks (e.g. Google Translate fallback:*) so Male and Female
-    // astrologers ALWAYS keep strictly separate, smooth voices on-device until studio TTS is active.
+    // Accept remote audio if the server synthesized a genuine studio voice (OpenAI / neural)
+    // OR a language-specific Google TTS fallback (voiceUsed starts with 'fallback:') so that
+    // non-English languages (Telugu, Hindi, Tamil, etc.) also receive audio instead of silence.
     const isGenuineStudioVoice =
       data?.provider === 'openai' ||
+      data?.provider === 'neural' ||
       voiceUsed.startsWith('openai:') ||
-      voiceUsed.startsWith('neural:');
+      voiceUsed.startsWith('neural:') ||
+      voiceUsed.startsWith('fallback:');
     if (
       data?.success &&
       isGenuineStudioVoice &&

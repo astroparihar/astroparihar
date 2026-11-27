@@ -714,7 +714,7 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
   const colors = useThemeColors();
   const homeCms = useAppScreensCmsStore((s) => s.config.home);
   const [w, setW] = useState(0);
-  const cell = w > 0 ? (w - 24) / 3 : 0;
+  const cell = w > 0 ? Math.floor((w - 26) / 3) : 0;
   const baseActions = (homeCms.quickActions?.length ? homeCms.quickActions : DEFAULT_QUICK_ACTIONS) as typeof DEFAULT_QUICK_ACTIONS;
   const [remedyBadgeOverride, setRemedyBadgeOverride] = useState<string | null>(null);
 
@@ -760,7 +760,7 @@ function QuickActionsGrid({ refreshKey }: { refreshKey?: number }) {
         <Text style={{ color: colors.goldAccent, fontSize: 11, fontWeight: '700' }}>{homeCms.quickActionsBadge}</Text>
       </View>
       <View style={{ marginTop: 14, paddingHorizontal: 20 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
           {cell > 0 &&
             actions.map((a) => (
               <Pressable

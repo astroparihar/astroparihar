@@ -232,7 +232,7 @@ export const DEFAULT_PROFILE_CONFIG: DynamicProfileConfig = {
       active: true,
       items: [
         { id: 'myKundli', order: 1, labelKey: 'profile.myKundli', defaultLabel: 'My Kundli', subtitle: 'Your detailed birth chart & planetary positions', icon: 'auto_stories', route: AppRoutes.myKundliScreen, active: true },
-        { id: 'myRemedies', order: 2, labelKey: 'profile.myRemedies', defaultLabel: 'My Remedies (अष्ट परिहार)', subtitle: 'Personalised 8-directional remedial remedies', icon: 'auto_awesome', route: AppRoutes.remediesScreen, badge: '8 in 1', active: true },
+        { id: 'myRemedies', order: 2, labelKey: 'profile.myRemedies', defaultLabel: 'My Remedies', subtitle: 'अष्ट परिहार – Personalised 8-directional remedial remedies', icon: 'auto_awesome', route: AppRoutes.remediesScreen, badge: '8 in 1', active: true },
         { id: 'birthProfiles', order: 3, labelKey: 'profile.birthProfiles', defaultLabel: 'Birth Profiles', subtitle: 'Family, partner & seeker kundli profiles', icon: 'person_outline_rounded', route: AppRoutes.birthProfilesScreen, active: true },
         { id: 'kundliReports', order: 4, labelKey: 'profile.kundliReports', defaultLabel: 'Reports & Guides', subtitle: 'Vedic consultation summaries, Parihara & PDF guides', icon: 'description_outlined', route: AppRoutes.kundliReportsScreen, active: true },
         { id: 'matchReports', order: 5, labelKey: 'profile.matchReports', defaultLabel: 'Match Reports', subtitle: '36 Guna Ashtakoot matrimonial reports', icon: 'favorite_border', route: AppRoutes.matchReportsScreen, active: true },
